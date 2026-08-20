@@ -107,6 +107,9 @@ class Ledger:
         evidence_accepted: bool | None = None,
         second_adjudicator: str = "",
         raw_score: float | None = None,
+        decided_by_role: str = "",
+        presented_utc: str = "",
+        decided_utc: str = "",
     ) -> tuple[Adjudication, Claim]:
         """Record a human decision, and the claim it asserts (FR-7.6).
 
@@ -163,6 +166,18 @@ class Ledger:
                 "decided_at": adjudication.decided_at.isoformat(),
                 "note": note,
                 "seconds_to_decision": seconds_to_decision,
+                # FR-9.3/9.4. Who decided is already recorded; WHAT THEY ARE was not, and it is
+                # the field the measurement turns on -- `errata_ecosystem.reviewer` refuses to
+                # produce a rate from anyone but a domain reviewer, because a decision by the
+                # person who wrote the extractor is the author's opinion of the author's boxes.
+                # Absent means "not stated", which reads as `implementer` downstream: every row
+                # written before this field existed was in fact an implementer's.
+                "decided_by_role": decided_by_role,
+                # The elapsed seconds above are computed in the browser. These are the endpoints
+                # they were computed from, recorded so the duration can be checked rather than
+                # trusted -- a single elapsed number cannot be audited, two timestamps can.
+                "presented_utc": presented_utc,
+                "decided_utc": decided_utc,
                 "evidence_accepted": evidence_accepted,
                 "second_adjudicator": second_adjudicator,
                 "counter_evidence_was_empty": not decided.counter_evidence.supporting,

@@ -225,6 +225,9 @@ class AuditService:
         second_adjudicator: str = "",
         seconds: float | None = None,
         evidence_accepted: bool | None = None,
+        decided_by_role: str = "",
+        presented_utc: str = "",
+        decided_utc: str = "",
     ) -> tuple[Redline, str]:
         """Record one decision. Returns the redline and a sentence for the reviewer."""
         found = self.find_redline(redline_id)
@@ -261,6 +264,9 @@ class AuditService:
             seconds_to_decision=seconds,
             evidence_accepted=evidence_accepted,
             raw_score=outcome.confidence.raw_score,
+            decided_by_role=decided_by_role,
+            presented_utc=presented_utc,
+            decided_utc=decided_utc,
         )
 
         sentence = (
@@ -643,8 +649,18 @@ def _adjudication_form(result: SkuAudit, outcome: AttributeOutcome, *, decided: 
         f"<input type='hidden' name='redline_id' value='{_e(redline.redline_id)}'>"
         f"<input type='hidden' name='sku' value='{_e(result.record.sku_id)}'>"
         "<input type='hidden' name='seconds' value='' class='seconds'>"
+        "<input type='hidden' name='presented_utc' value='' class='presented'>"
+        "<input type='hidden' name='decided_utc' value='' class='decided'>"
         "<label class='field'>Your name</label>"
         "<input type='text' name='by' required size='24'>"
+        "<label class='field'>Your role (decides whether this session can be measured)</label>"
+        "<select name='role' required>"
+        "<option value=''>-- state your role --</option>"
+        "<option value='domain_reviewer'>Domain reviewer -- I judge product data for a living "
+        "and I did not build this tool</option>"
+        "<option value='implementer'>Implementer -- I worked on Errata</option>"
+        "<option value='other'>Other</option>"
+        "</select>"
         f"{second}"
         "<label class='field'>Did the box support the claim? (FR-9.4)</label>"
         "<select name='evidence_accepted'>"
@@ -764,10 +780,18 @@ def _sku_page(service: AuditService, result: SkuAudit, *, focus_id: str = "") ->
         f"{len(result.declined)} declined</p>"
     )
     timer = (
-        "<script>document.addEventListener('DOMContentLoaded',function(){var t=Date.now();"
+        # FR-9.3. The elapsed seconds AND the two endpoints they were computed from. An elapsed
+        # number on its own cannot be audited -- nothing about "47.3" says when it started or
+        # whether the tab sat open over lunch. Two ISO timestamps can be read, checked against the
+        # ledger's own event time, and thrown out if they disagree.
+        "<script>document.addEventListener('DOMContentLoaded',function(){"
+        "var t=Date.now();var iso=new Date(t).toISOString();"
         "document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',"
-        "function(){var s=f.querySelector('.seconds');if(s){s.value=((Date.now()-t)/1000)"
-        ".toFixed(1);}});});});</script>"
+        "function(){var now=Date.now();"
+        "var s=f.querySelector('.seconds');if(s){s.value=((now-t)/1000).toFixed(1);}"
+        "var p=f.querySelector('.presented');if(p){p.value=iso;}"
+        "var d=f.querySelector('.decided');if(d){d.value=new Date(now).toISOString();}"
+        "});});});</script>"
     )
     return (
         f"<main>{header}</main>"
@@ -989,6 +1013,9 @@ class _Handler(BaseHTTPRequestHandler):
                     second_adjudicator=field("second"),
                     seconds=float(seconds) if seconds else None,
                     evidence_accepted=None if not evidence else evidence == "yes",
+                    decided_by_role=field("role"),
+                    presented_utc=field("presented_utc"),
+                    decided_utc=field("decided_utc"),
                 )
             except (ValueError, KeyError) as error:
                 message = str(error).splitlines()[0]

@@ -231,6 +231,25 @@ FILE FORMAT -- one JSON object per line:
    "attributes_verified": 1, "provenance": "timed_human"}
 
 Run it with:  errata-r3 reviewer --sessions <file>
+
+THE SHORTEST PATH -- no session file needed
+  The console now records everything above by itself. It asks the reviewer for their role, stamps
+  `presented_utc` when the row renders and `decided_utc` on submit, and asks the FR-9.4 question.
+  So the whole measurement is:
+
+      errata-audit serve --open --ledger var/audit/session1.jsonl
+      # the reviewer works through 30+ rows, choosing "Domain reviewer" as their role
+      errata-r3 reviewer --ledger var/audit/session1.jsonl
+
+  That is the entire remaining cost of FR-9.3 and FR-9.4: roughly half an hour of one person who
+  reads datasheets for a living and did not build this. Until this session the console had no way
+  to record that such a person was one -- `sessions_from_ledger` stamped every row `implementer`,
+  hard-coded -- so an expert could have worked through the whole queue and produced nothing. Two
+  of the numbers the PRD calls the ones a buyer actually cares about were blocked on a `<select>`.
+
+  What software cannot do is verify the role. A person types it. Everything above is designed so
+  that producing a false measurement requires somebody to assert a false role in an append-only
+  ledger under their own name, rather than a number appearing because nobody was asked.
 """
 
 
@@ -266,10 +285,20 @@ def load_sessions(path: Path | str | None = None) -> tuple[ReviewerSession, ...]
 def sessions_from_ledger(ledger_path: Path | str) -> tuple[ReviewerSession, ...]:
     """Adjudications already in a ledger, read as sessions.
 
-    These are real decisions and they are **not** a measurement: the ledger records who decided
-    and what, not how long it took, and the deciders were the people building the tool. Reading
-    them anyway is deliberate -- it shows exactly how far the existing data gets, which is further
-    than nothing and short of a number.
+    **The role is read from the row, not assumed.** It used to be hard-coded to ``implementer``,
+    which was true of every row that existed and made the console incapable of ever producing a
+    measurement: a genuine domain reviewer could sit down, work through the queue, and their
+    session would be filed as the implementer's because nothing asked them who they were. The
+    console now requires a role and records it; this reads it back.
+
+    ``implementer`` remains the fallback for a row with no role, and that is not a default so much
+    as a fact: every adjudication written before the field existed was made by somebody building
+    the tool.
+
+    The rest of the original caveat stands. These are real decisions and they are **not** a
+    measurement -- the deciders were the people building the tool, and
+    :func:`report` refuses them for that reason. Reading them anyway shows exactly how far the
+    existing data gets, which is further than nothing and short of a number.
     """
     path = Path(ledger_path)
     if not path.exists():
@@ -288,10 +317,13 @@ def sessions_from_ledger(ledger_path: Path | str) -> tuple[ReviewerSession, ...]
             ReviewerSession(
                 session_id=f"ledger:{path.name}",
                 reviewer_id=str(payload.get("decided_by", "unknown")),
-                reviewer_role="implementer",
+                reviewer_role=str(payload.get("decided_by_role") or "implementer"),
                 redline_id=str(payload.get("redline_id", "")),
                 decision=decision,
                 provenance=SessionProvenance.LEDGER_REPLAY,
+                presented_utc=str(payload.get("presented_utc") or ""),
+                decided_utc=str(payload.get("decided_utc") or ""),
+                evidence_accepted=payload.get("evidence_accepted"),
             )
         )
     return tuple(sessions)
