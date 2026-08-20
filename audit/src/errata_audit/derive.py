@@ -83,12 +83,18 @@ def fingerprint(method: str = "") -> ExtractorFingerprint:
 
     ``params_sha256`` is left empty rather than filled with a hash of nothing: this extractor is
     deterministic and parameterless, and a hash of an empty parameter set would imply parameters
-    exist and were captured.
+    exist and were captured. ``model_id`` is empty for the same reason -- no model produced this --
+    and ``ExtractorFingerprint`` now enforces the pairing: naming a model without the three hashes
+    that make its output reconstructible raises (NFR-2).
+
+    The strategy goes in ``method``. It used to go in ``model_id``, which was wrong in a way that
+    only mattered later: a derivation method is not a model id, and leaving it there would have
+    made the NFR-2 check fire on every rule-based claim in the repository.
     """
     return ExtractorFingerprint(
         name="errata-audit.derive",
         version=DERIVE_VERSION,
-        model_id=method,
+        method=method,
         grammar_version=VALUESEM_GRAMMAR_VERSION,
     )
 

@@ -51,7 +51,11 @@ def make_evidence(**kwargs: object) -> Evidence:
     return Evidence(**base)  # type: ignore[arg-type]
 
 
-FINGERPRINT = ExtractorFingerprint(name="span-required", version="0.1.0", model_id="test")
+# No model produced these test claims, so model_id is empty -- which is what turns off NFR-2's
+# reconstructibility check. This fixture previously said `model_id="test"`, which asserted a model
+# had been involved while recording nothing about it; the validator on ExtractorFingerprint now
+# rejects that pairing, and rightly caught this line the moment it was added.
+FINGERPRINT = ExtractorFingerprint(name="span-required", version="0.1.0", method="test")
 
 
 # ------------------------------------------------------------------- no provenance, no claim --
@@ -347,3 +351,38 @@ def test_the_safety_list_matches_bare_keys_and_uris() -> None:
     assert is_safety_class("Tripping Characteristic")
     assert not is_safety_class("package_depth")
     assert not is_safety_class("")
+
+
+# ------------------------------------------------------------------------------------------------
+# NFR-2 -- a model claim must be reconstructible
+# ------------------------------------------------------------------------------------------------
+
+
+def test_naming_a_model_without_its_hashes_is_rejected() -> None:
+    """The day an LLM selector is wired in, this is what stops the fingerprint staying empty.
+
+    The three hashes are legitimately blank today: R1's extractor is rule-based and has no prompt,
+    no sampling parameters and no decode constraints. The failure this guards is the *next* commit
+    -- a model wired in, `model_id` filled because it is obviously right to fill it, and the three
+    fields that make the output reproducible left at their defaults because nothing complained.
+    """
+    with pytest.raises(ValidationError, match="NFR-2"):
+        ExtractorFingerprint(name="llm-selector", version="1.0.0", model_id="claude-opus-5")
+
+
+def test_a_model_claim_with_every_hash_is_accepted() -> None:
+    fingerprint = ExtractorFingerprint(
+        name="llm-selector",
+        version="1.0.0",
+        model_id="claude-opus-5",
+        prompt_sha256="a" * 64,
+        params_sha256="b" * 64,
+        decode_constraints_sha256="c" * 64,
+    )
+    assert fingerprint.model_id == "claude-opus-5"
+
+
+def test_a_rule_based_claim_needs_no_hashes() -> None:
+    """Empty is the honest record for an extractor that has no prompt to hash."""
+    fingerprint = ExtractorFingerprint(name="errata-audit.derive", version="1.0.0", method="table_cell")
+    assert fingerprint.prompt_sha256 == ""

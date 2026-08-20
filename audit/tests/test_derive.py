@@ -401,7 +401,10 @@ def test_the_fingerprint_records_how_the_value_was_found(ordering_table_pdf: Pat
     )
     fingerprint = result.claim.extractor
     assert fingerprint.name == "errata-audit.derive"
-    assert fingerprint.model_id == "table_cell"
+    assert fingerprint.method == "table_cell"
+    assert fingerprint.model_id == "", (
+        "no model produced this claim, and NFR-2 keys the reconstructibility check on model_id"
+    )
     assert fingerprint.grammar_version
 
 

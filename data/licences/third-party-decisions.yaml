@@ -1,0 +1,67 @@
+# NFR-7 -- third-party licence decisions.
+#
+# Every runtime dependency whose licence is not on `errata_ecosystem.licences.PERMISSIVE_LICENCES`
+# must appear here, or the build fails. This file is the record of a decision having been MADE --
+# not a list of things to ignore. Widening the allowlist to make a check pass is the failure mode
+# it exists to prevent; naming the dependency, its terms and who accepted them is the alternative.
+#
+# status:
+#   acknowledged  a person has read the terms and accepted the risk, with a rationale below.
+#                 The check reports it loudly on every run and does not fail.
+#   open          the risk is known and NOT accepted. The check FAILS. This is the correct state
+#                 for anything awaiting a decision -- an unresolved licence risk should not be able
+#                 to sit quietly in a green build.
+#
+# Regenerate nothing. This file is written by hand, on purpose.
+
+version: "errata-licence-decisions/1.0.0"
+
+decisions:
+  - dependency: pymupdf
+    licence: "AGPL-3.0-or-later OR Artifex Commercial"
+    status: acknowledged
+    owner: "UNASSIGNED -- see `decision required` below"
+    reviewed: "2026-08-21"
+    used_by:
+      - errata-audit (layout.py, tables.py -- the char-indexed text layer and word boxes)
+    why_it_is_used: >-
+      PyMuPDF produces the word list whose ordering and offsets define `errata-layout/1.0.0`.
+      Every stored `Evidence.char_span` in every claim this repository has ever emitted is an
+      offset into a text layer this library produced, and ADR-002 makes the bounding box a
+      projection of that span. The dependency is not incidental; it is the coordinate system.
+
+    the_risk: >-
+      AGPL-3.0 is strong copyleft WITH a network clause. Section 13 extends the obligation to
+      users who interact with the software remotely, and `errata-audit serve` is exactly that -- a
+      web application with a reviewer queue, served over HTTP. Under the AGPL half of the dual
+      licence, offering that service to a customer obliges us to offer the complete corresponding
+      source of the whole work to every user of it. That is incompatible with shipping Errata as a
+      commercial product under Apache-2.0, which is what the README and every pyproject declare.
+      Distributing a wheel that depends on PyMuPDF carries the same obligation to whoever receives
+      it.
+
+    why_acknowledged_rather_than_open: >-
+      Because the exposure is real but not yet realised: nothing has been distributed and no
+      service has been offered to a third party. The build should not be red for a risk that has
+      not been taken. It should be loud, dated and owned -- which is what this entry is. It flips
+      to `open` the day a wheel is published or a hosted instance is offered to anyone outside
+      this repository, and the CI check prints this text on every single run until then.
+
+    decision_required: >-
+      One of three, and it is a business decision rather than an engineering one:
+
+      1. BUY the Artifex commercial licence. Cleanest. The dual licence exists for this. Cost
+         unknown to this repository; nobody has asked.
+      2. REPLACE PyMuPDF with pypdfium2 (Apache-2.0 / BSD-3-Clause, PDFium upstream). Technically
+         possible and NOT cheap: PDFium's text extraction does not reproduce PyMuPDF's word
+         ordering, so `errata-layout` would take a MAJOR version bump and every stored char span
+         from before the change becomes uninterpretable without the old engine. ADR-002 was
+         written for precisely this event -- coordinates are regenerable from spans -- but spans
+         themselves are not regenerable across a reordering. A migration would have to re-derive
+         and re-register, not re-project.
+      3. ACCEPT the AGPL and open-source the served component. Consistent with the licence, and it
+         means the reviewer console cannot be a proprietary differentiator.
+
+      Option 2 is the only one that can be done unilaterally and it is the most expensive. That
+      asymmetry is the whole reason this is written down rather than discovered during a
+      procurement review.

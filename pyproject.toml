@@ -13,6 +13,11 @@ minversion = "8.0"
 # anything are tested here with the rest. Removing this entry is part of deleting the spike.
 testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests", "spike"]
 addopts = "-q --strict-markers --strict-config"
+# `--strict-markers` is on, so a marker has to be declared here to be usable. That is the
+# right setting and it means this list is the register of what a test may claim about itself.
+markers = [
+    "slow: starts a subprocess or reads a real datasheet. Still runs by default -- NFR-1 is not tested by a check that is usually skipped -- but named so it can be excluded deliberately (-m 'not slow') rather than by someone quietly deleting it.",
+]
 filterwarnings = ["error"]
 
 [tool.ruff]

@@ -1,0 +1,173 @@
+# Errata -- the build.
+#
+# NFR-7's acceptance criterion names this file: "CI licence check on every build". Until it
+# existed there was no build, and every guard in the repository -- the frozen-split check, the
+# ECLASS content scanner, the licence hygiene check, the reproduction receipt -- ran only when
+# somebody remembered to type `pytest`.
+#
+# Three jobs, and the third is the interesting one.
+#
+#   build             the whole suite on a clean machine, on every push and PR.
+#   clean-room        the R3 reproduction, run on a runner nobody here controls.
+#   supply-chain      what `python -m build` actually put in the wheels.
+#
+# Everything a job does is a line in scripts/ci.sh, which runs the same way locally. A pipeline
+# that only exists as YAML is a second definition of "correct" that drifts from the first one.
+
+name: build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  # Weekly, because two of the things this repository depends on live on other people's servers.
+  # An upstream document that changes is a finding (FR-1.3) and a finding nobody looks for is not
+  # one. This is how we look.
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: suite and guards (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 is what pyproject targets; 3.13 is what a new contributor will actually have
+        # installed. A repository whose determinism is its product should know that it holds on
+        # both rather than on whichever one the author happened to run.
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: install
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --quiet --upgrade pip setuptools wheel build
+          python -m pip install --quiet -r requirements-lock.txt
+          python -m pip install --quiet --no-deps \
+            -e ./valuesem -e ./spec -e ./comparator -e ./bench \
+            -e ./audit -e ./scale -e ./ecosystem
+
+      - name: R2 demonstration corpus
+        run: .venv/bin/python scale/tools/build_scale_catalog.py
+
+      # --fast because the reference documents are ABB's and ETIM's, fetched rather than
+      # committed (FR-9.5). The measured gates that need them run in the clean-room job, which
+      # is allowed to be unavailable in a way that a lint failure is not.
+      - name: build
+        run: bash scripts/ci.sh --fast
+
+  clean-room:
+    name: clean-room reproduction
+    runs-on: ubuntu-latest
+    # Not a blocking job, and the reason matters. It depends on two third-party servers staying
+    # up. An upstream file that CHANGED is a finding and fails loudly inside the fetch script,
+    # which verifies every sha256 before use. An upstream that is merely unreachable is not our
+    # correctness, and going red for it would teach everyone to ignore a red build.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: install
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --quiet --upgrade pip setuptools wheel build
+          python -m pip install --quiet -r requirements-lock.txt
+          python -m pip install --quiet --no-deps \
+            -e ./valuesem -e ./spec -e ./comparator -e ./bench \
+            -e ./audit -e ./scale -e ./ecosystem
+          .venv/bin/python scale/tools/build_scale_catalog.py
+
+      - name: reconstruct the reference corpus from its publishers
+        run: bash scripts/fetch_reference_data.sh
+
+      - name: reproduce the published numbers
+        run: |
+          .venv/bin/errata-r3 reproduce --json var/r3/ci-receipt.json
+          .venv/bin/errata-r3 gold verify
+          .venv/bin/errata-r0 equivalence
+
+      # The measurement that had never been taken: the shipped extractor on the grounding metric.
+      # Printed on every clean-room run so that a change to `derive` shows up as a moved number
+      # here rather than being noticed months later.
+      - name: score the shipped extractor
+        run: |
+          .venv/bin/errata-r3 corpus score --extractor tableblind
+          .venv/bin/errata-r3 corpus score --extractor r1
+          .venv/bin/errata-r3 corpus score --extractor r1-textwindow
+
+      - name: upload the receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reproduction-receipt
+          path: var/r3/
+          if-no-files-found: warn
+
+  supply-chain:
+    name: what the wheels actually contain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: install
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --quiet --upgrade pip setuptools wheel build
+          python -m pip install --quiet -r requirements-lock.txt
+          python -m pip install --quiet --no-deps \
+            -e ./valuesem -e ./spec -e ./comparator -e ./bench \
+            -e ./audit -e ./scale -e ./ecosystem
+
+      # FR-9.8 and ADR-003. A clean working tree says nothing about what a package-data glob swept
+      # into a wheel, and "no licensed dictionary content committed" is a claim about what we ship.
+      - name: build every distribution and scan it
+        run: |
+          . .venv/bin/activate
+          mkdir -p var/ci/dist
+          for d in valuesem spec comparator bench audit scale ecosystem; do
+            python -m build --outdir var/ci/dist "$d"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          from errata_ecosystem.eclass import assert_clean, scan_distribution
+          built = sorted(Path("var/ci/dist").glob("*"))
+          assert built, "nothing was built"
+          assert_clean([scan_distribution(p) for p in built])
+          print(f"scanned {len(built)} built distribution(s): clean")
+          PY
+
+      - name: NFR-7 licence hygiene, against the built distributions
+        run: |
+          . .venv/bin/activate
+          python - <<'PY'
+          from pathlib import Path
+          from errata_ecosystem.licences import check_licences
+          report = check_licences(distributions=tuple(sorted(Path("var/ci/dist").glob("*"))))
+          print(report.text())
+          raise SystemExit(0 if report.ok else 1)
+          PY

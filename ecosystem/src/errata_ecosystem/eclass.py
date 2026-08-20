@@ -29,6 +29,7 @@ from __future__ import annotations
 import csv
 import os
 import re
+import tarfile
 import zipfile
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
@@ -261,6 +262,45 @@ def scan(root: Path | str | None = None) -> ScanReport:
     return ScanReport(root=str(base), files_scanned=scanned, findings=tuple(findings))
 
 
+def _archive_members(path: Path) -> Iterator[tuple[str, bytes]]:
+    """Every file in a built distribution, whichever of the two shapes it is.
+
+    ``python -m build`` produces **two** artifacts per distribution: a ``.whl``, which is a zip,
+    and an ``.sdist`` ``.tar.gz``, which is not. Reading only the wheel would leave the sdist --
+    the artifact that carries *more* files, because it is built from the source tree rather than
+    from a package list -- unscanned. That is the wrong half to skip.
+
+    (This was found by running the check in CI for the first time: it raised ``BadZipFile`` on the
+    first sdist it met. The scanner had only ever been pointed at wheels by hand.)
+    """
+    if path.suffix == ".whl" or path.suffix == ".zip":
+        with zipfile.ZipFile(path) as bundle:
+            for member in bundle.namelist():
+                if member.endswith("/"):
+                    continue
+                with bundle.open(member) as handle:
+                    yield member, handle.read()
+        return
+
+    if path.name.endswith((".tar.gz", ".tgz", ".tar.bz2", ".tar.xz")):
+        with tarfile.open(path, "r:*") as bundle:
+            for member in bundle.getmembers():
+                if not member.isfile():
+                    continue
+                handle = bundle.extractfile(member)
+                if handle is None:
+                    continue
+                with handle:
+                    yield member.name, handle.read()
+        return
+
+    raise ValueError(
+        f"{path.name}: not a distribution this scanner recognises (expected .whl or a source "
+        "tarball). Refusing rather than skipping -- an artifact that goes unscanned because "
+        "nobody taught the scanner its extension is exactly the gap FR-9.8 is about."
+    )
+
+
 def scan_distribution(archive: Path | str) -> ScanReport:
     """The check FR-9.8 actually makes: *inspect the build artifact*.
 
@@ -270,22 +310,18 @@ def scan_distribution(archive: Path | str) -> ScanReport:
     path = Path(archive)
     findings: list[ScanFinding] = []
     scanned = 0
-    with zipfile.ZipFile(path) as bundle:
-        for member in bundle.namelist():
-            if member.endswith("/"):
-                continue
-            scanned += 1
-            with bundle.open(member) as handle:
-                try:
-                    text = handle.read().decode("utf-8")
-                except UnicodeDecodeError:
-                    continue
-            for number, line in enumerate(text.splitlines(), start=1):
-                match = ECLASS_IRDI.search(line)
-                if match:
-                    findings.append(
-                        ScanFinding(path=f"{path.name}!{member}", line=number, sample=match.group(0))
-                    )
+    for member, payload in _archive_members(path):
+        scanned += 1
+        try:
+            text = payload.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        for number, line in enumerate(text.splitlines(), start=1):
+            match = ECLASS_IRDI.search(line)
+            if match:
+                findings.append(
+                    ScanFinding(path=f"{path.name}!{member}", line=number, sample=match.group(0))
+                )
     return ScanReport(root=str(path), files_scanned=scanned, findings=tuple(findings))
 
 

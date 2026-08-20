@@ -32,6 +32,12 @@ from .claim import (
     emit_abstention,
     emit_extracted_claim,
 )
+from .determinism import (
+    NotReproducible,
+    assert_reproducible,
+    canonical_payload,
+    payload_digest,
+)
 from .policy import ResolutionPolicy, RuleAction, builtin_policy, load_policy
 from .redline import (
     Adjudication,
@@ -81,16 +87,20 @@ __all__ = [
     "Evidence",
     "ExtractorFingerprint",
     "Fetch",
+    "NotReproducible",
     "Redline",
     "ResolutionPolicy",
     "RevisionNotFoundError",
     "RuleAction",
     "Severity",
     "__version__",
+    "assert_reproducible",
     "builtin_policy",
+    "canonical_payload",
     "emit_abstention",
     "emit_extracted_claim",
     "is_safety_class",
     "load_policy",
+    "payload_digest",
     "sha256_bytes",
 ]

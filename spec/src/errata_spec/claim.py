@@ -138,18 +138,70 @@ class Evidence(BaseModel):
 
 
 class ExtractorFingerprint(BaseModel):
-    """Everything needed to reproduce a machine claim byte for byte (NFR-1, NFR-2)."""
+    """Everything needed to reproduce a machine claim byte for byte (NFR-1, NFR-2).
+
+    **The three hashes are empty today and that is correct today.** R1's extractor is rule-based:
+    it has no prompt, no sampling parameters and no decode constraints, and filling those fields
+    with the sha256 of an empty string would assert that a prompt was captured when none exists.
+
+    **It stops being correct the moment a model is wired in**, and that is the failure this class
+    now refuses to have. NFR-2 says "every claim records model id, prompt sha256, params sha256,
+    decode-constraint sha256", with the acceptance criterion "any claim's provenance is fully
+    reconstructible". A model-generated claim carrying three empty hashes satisfies the *schema*
+    and fails the *requirement* -- silently, and nobody would notice until someone tried to
+    reproduce a claim and found there was nothing to reproduce it from.
+
+    So :attr:`model_id` is the discriminator: naming a model asserts that a model produced this,
+    and a model that produced something has a prompt, parameters and decode constraints whose
+    hashes are exactly what makes the output reconstructible. Setting it without them raises.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     name: str
     version: str
+
     model_id: str = ""
+    """The model that produced this claim, empty when none did.
+
+    Not a free-text label. Setting it turns on the NFR-2 completeness check below, so it means
+    "a model was involved" and nothing else -- notably it is **not** the place to record which
+    code path ran; that is :attr:`method`, which exists because this field was being used for it.
+    """
+
+    method: str = ""
+    """Which strategy inside the extractor produced this -- ``table_cell``, ``text_window``.
+
+    Split out from :attr:`model_id`, which it was previously being carried in. A derivation method
+    is not a model id, and overloading the field would have meant either the NFR-2 check firing on
+    every rule-based claim or never firing at all.
+    """
+
     prompt_sha256: str = ""
     params_sha256: str = ""
     decode_constraints_sha256: str = ""
     grammar_version: str = ""
     """The value-semantics grammar version that normalized the value (FR-4.5)."""
+
+    @model_validator(mode="after")
+    def _a_model_claim_is_reconstructible(self) -> ExtractorFingerprint:
+        """NFR-2, enforced rather than hoped for."""
+        if not self.model_id:
+            return self
+        missing = [
+            field
+            for field in ("prompt_sha256", "params_sha256", "decode_constraints_sha256")
+            if not getattr(self, field)
+        ]
+        if missing:
+            raise ValueError(
+                f"extractor {self.name!r} names model_id={self.model_id!r} but leaves {missing} "
+                "empty. NFR-2 requires every model-produced claim to be fully reconstructible, and "
+                "a claim whose prompt and decode constraints were never captured cannot be "
+                "reproduced or defended. Record the hashes, or leave model_id empty because no "
+                "model was involved -- do not do neither."
+            )
+        return self
 
 
 class Confidence(BaseModel):

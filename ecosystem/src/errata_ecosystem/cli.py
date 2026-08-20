@@ -31,6 +31,7 @@ from .eclass import ECLASS_ENV_VAR, assert_clean, scan, scan_distribution
 from .extractors import EXTRACTORS
 from .goldset import VerificationLevel, load_gold_set, verify
 from .leaderboard import leaderboard, losses, render_html, render_json, render_text
+from .licences import check_licences
 from .reproduce import Verdict, full_report, reproduce, write_json
 from .reviewer import PROTOCOL, load_sessions, sessions_from_ledger
 from .reviewer import report as reviewer_report
@@ -118,6 +119,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     corpus.add_argument("--out", help="write the built corpus here as YAML")
 
+    sub.add_parser("licences", help="NFR-7 -- the licence check CI runs on every build")
+
     vocab = sub.add_parser("vocab", help="resolve an attribute term to its canonical uri (N15)")
     vocab.add_argument("term")
 
@@ -157,11 +160,20 @@ def _dispatch(args: argparse.Namespace) -> int:
             return _cmd_reproduce(args)
         case "corpus":
             return _cmd_corpus(args)
+        case "licences":
+            return _cmd_licences()
         case "vocab":
             print(canonical_uri(args.term))
             return EXIT_OK
         case _:
             return _cmd_status()
+
+
+def _cmd_licences() -> int:
+    """NFR-7's acceptance criterion is "CI licence check on every build". This is that check."""
+    report = check_licences()
+    print(report.text())
+    return EXIT_OK if report.ok else EXIT_FINDINGS
 
 
 def _cmd_corpus(args: argparse.Namespace) -> int:
