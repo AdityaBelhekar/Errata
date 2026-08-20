@@ -58,6 +58,7 @@ __all__ = [
     "DEFAULT_HEADLINE_BUDGET",
     "GATE_EXIT_CODES",
     "RESCOPE_BELOW",
+    "SENSITIVITY_EXPONENTS",
     "SYNTHETIC_BANNER",
     "AllocationResult",
     "ClassDistribution",
@@ -69,6 +70,8 @@ __all__ = [
     "LabelFloor",
     "PoolingModel",
     "Provenance",
+    "SensitivityPoint",
+    "SensitivityReport",
     "Strategy",
     "allocate",
     "assess",
@@ -77,6 +80,7 @@ __all__ = [
     "load_distribution",
     "render_report",
     "report_as_dict",
+    "sensitivity",
     "sweep",
     "synthetic_distribution",
 ]
@@ -1371,3 +1375,170 @@ def report_as_dict(report: CoverageReport) -> dict[str, Any]:
         ],
         "caveats": report.caveats,
     }
+
+
+# ================================================================================================
+# Sensitivity -- what the missing histogram would actually change
+#
+# Gate 3 is NOT_MEASURED and has been since the beginning, for a reason three independent hunts
+# confirmed: nobody publishes SKU counts per ETIM class. `docs/data-request-etim-distribution.md`
+# is written and waiting, and D-1 Route C says stop spending on the hunt.
+#
+# That leaves a question nobody had asked, and it is answerable from here: **how much does the
+# missing data actually matter?** The gate's finding is a contrast -- you can calibrate most of a
+# catalog's volume and almost none of its taxonomy -- and a contrast can survive not knowing the
+# exact numbers. `synthetic_distribution`'s own docstring already points at the method: "the
+# exponent is a parameter precisely so a reader can move it and watch the conclusion move."
+# Nobody moved it.
+#
+# So this sweeps it, over a range wide enough to contain any catalog anyone would call a catalog,
+# and reports the whole curve rather than a plausible band -- because asserting which exponent is
+# plausible would be inventing the very number that cannot be obtained. The real histogram, when
+# it arrives, picks ONE POINT on this curve. What the sweep says is where the conclusion would
+# have to be different for that point to matter.
+#
+# This does not make gate 3 measured and nothing here reports a verdict. It answers a different
+# question, honestly, instead of answering the original one dishonestly.
+# ================================================================================================
+
+#: Zipf exponents to sweep. Deliberately wider than anybody's idea of realistic: 0.4 is nearly
+#: flat -- every class holding roughly the same number of products, which no real catalog does --
+#: and 2.2 is extreme concentration, a handful of classes holding nearly everything. Bracketing
+#: the plausible region from well outside it means the answer does not depend on an assumption
+#: about where the plausible region is, which is the assumption that cannot be checked.
+SENSITIVITY_EXPONENTS: tuple[float, ...] = (0.4, 0.6, 0.8, 1.0, 1.1, 1.3, 1.5, 1.8, 2.2)
+
+
+@dataclass(frozen=True, slots=True)
+class SensitivityPoint:
+    """The headline contrast at one assumed skew."""
+
+    zipf_exponent: float
+    class_coverage: float
+    sku_coverage: float
+    classes_unreachable: int
+    classes_total: int
+
+    @property
+    def contrast_holds(self) -> bool:
+        """The finding gate 3 exists to expose: most of the volume, almost none of the taxonomy.
+
+        "Almost none" is :data:`RESCOPE_BELOW` -- the same threshold the gate itself uses to decide
+        that a class-conditional promise should be rescoped -- rather than a second number invented
+        for this sweep.
+        """
+        return self.class_coverage < RESCOPE_BELOW < self.sku_coverage
+
+
+@dataclass(frozen=True, slots=True)
+class SensitivityReport:
+    budget: int
+    strategy: Strategy
+    points: tuple[SensitivityPoint, ...]
+
+    @property
+    def holds_everywhere(self) -> bool:
+        return all(p.contrast_holds for p in self.points)
+
+    @property
+    def crossover(self) -> SensitivityPoint | None:
+        """The first swept exponent at which the contrast stops holding, if any."""
+        return next((p for p in self.points if not p.contrast_holds), None)
+
+    def text(self) -> str:
+        lines = [
+            "GATE 3 SENSITIVITY -- what the missing class histogram would change",
+            "",
+            f"  budget {self.budget:,} labels, strategy {self.strategy.value}",
+            "",
+            "  The real distribution is not obtainable (D-1). This sweeps the ONE assumption a",
+            "  synthetic stand-in makes -- how concentrated the catalog is -- across a range wider",
+            "  than any real catalog, and reports whether gate 3's finding depends on it.",
+            "",
+            f"  {'zipf':>6s} {'class cov':>11s} {'sku cov':>9s} {'unreachable':>12s}   contrast",
+        ]
+        for p in self.points:
+            lines.append(
+                f"  {p.zipf_exponent:6.1f} {p.class_coverage:11.2%} {p.sku_coverage:9.2%} "
+                f"{p.classes_unreachable:12,d}   "
+                + ("holds" if p.contrast_holds else "DOES NOT HOLD")
+            )
+        lines.append("")
+
+        pinned = {round(p.class_coverage, 6) for p in self.points}
+        if len(pinned) < len(self.points):
+            lines += [
+                "  NOTE THE CLASS-COVERAGE COLUMN. It barely moves, and at most swept skews it does",
+                "  not move at all. That is not a bug in the sweep -- it is the arithmetic. Greedy",
+                "  funds classes to exactly their floor, largest first, so it clears about",
+                "  budget/floor classes no matter what shape the catalog is, as long as that many",
+                "  classes hold at least a floor's worth of SKUs. The distribution decides how much",
+                "  VOLUME those classes carry; it barely touches how many CLASSES clear.",
+                "",
+                "  Which means the missing histogram bears on one half of gate 3 and not the other.",
+                "  The class-coverage half -- the half the finding is about -- is a property of the",
+                "  budget and the conformal floor, both of which are known.",
+                "",
+            ]
+
+        if self.holds_everywhere:
+            lines += [
+                "  THE FINDING DOES NOT DEPEND ON THE MISSING DATA. At every skew from nearly flat",
+                "  to extreme concentration, a realistic labelling budget calibrates most of the",
+                "  catalog's volume and under "
+                f"{RESCOPE_BELOW:.0%} of its taxonomy. Obtaining the real histogram would replace a",
+                "  range with a point; it would not change what the point says.",
+                "",
+                "  That is a reason to keep gate 3 NOT_MEASURED without treating it as a blocker,",
+                "  and it is NOT a substitute for measuring it: a sweep over an assumed FAMILY of",
+                "  shapes cannot rule out a real catalog that is not in the family at all.",
+            ]
+        else:
+            crossover = self.crossover
+            assert crossover is not None
+            lines += [
+                f"  THE FINDING FLIPS at zipf_exponent={crossover.zipf_exponent}. Below that skew,",
+                "  class coverage clears the rescope threshold and gate 3's premise fails.",
+                "",
+                "  This makes the real histogram HIGH priority rather than merely absent, and it",
+                "  says exactly what to ask about: whether the real catalog is more or less",
+                f"  concentrated than exponent {crossover.zipf_exponent}. Send",
+                "  docs/data-request-etim-distribution.md.",
+            ]
+        return "\n".join(lines)
+
+
+def sensitivity(
+    *,
+    budget: int = DEFAULT_HEADLINE_BUDGET,
+    strategy: Strategy = Strategy.GREEDY,
+    exponents: Iterable[float] = SENSITIVITY_EXPONENTS,
+    floor: LabelFloor | None = None,
+    pooling: PoolingModel | None = None,
+    classes: int = ETIM_10_CLASS_COUNT,
+    skus: int = SYNTHETIC_DEFAULT_SKUS,
+) -> SensitivityReport:
+    """Sweep the one assumption a synthetic distribution makes, and report whether it matters.
+
+    ``strategy`` defaults to GREEDY because that is the strategy a commercial
+    operator would actually run, and it is the one the module's headline finding is about.
+    """
+    floor = floor or label_floor()
+    pooling = pooling or PoolingModel()
+
+    points: list[SensitivityPoint] = []
+    for exponent in exponents:
+        distribution = synthetic_distribution(
+            classes=classes, skus=skus, zipf_exponent=exponent
+        )
+        point = assess(distribution, allocate(distribution, budget, floor, strategy, pooling))
+        points.append(
+            SensitivityPoint(
+                zipf_exponent=exponent,
+                class_coverage=point.class_coverage,
+                sku_coverage=point.sku_coverage,
+                classes_unreachable=point.classes_unreachable,
+                classes_total=point.classes_total,
+            )
+        )
+    return SensitivityReport(budget=budget, strategy=strategy, points=tuple(points))

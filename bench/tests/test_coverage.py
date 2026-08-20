@@ -443,3 +443,94 @@ def test_load_distribution_without_declared_provenance_notes_the_assumption() ->
     into a verdict by omission (see load_distribution's own docstring)."""
     dist = cov.load_distribution(FIXTURES / "sample_distribution.csv")
     assert any("did not declare a provenance" in note for note in dist.notes)
+
+
+# ================================================================================================
+# Gate 3 sensitivity -- how much the missing histogram actually matters
+#
+# Gate 3 has been NOT_MEASURED since the beginning because nobody publishes SKU counts per ETIM
+# class, and three independent hunts confirmed it. That left a question nobody had asked and which
+# IS answerable from here: does the finding depend on the data we cannot get?
+# ================================================================================================
+
+
+def test_the_gate_3_finding_survives_every_plausible_catalog_shape() -> None:
+    """The contrast holds from nearly flat to extreme concentration.
+
+    Gate 3's finding is not a number, it is a contrast: a realistic labelling budget calibrates
+    most of a catalog's volume and almost none of its taxonomy. If that flipped somewhere inside
+    the swept range, the missing histogram would be urgent and the sweep would say which direction
+    to ask about. It does not flip, so obtaining the real histogram replaces a range with a point
+    without changing what the point says.
+    """
+    from errata_bench.coverage import sensitivity
+
+    report = sensitivity()
+
+    assert len(report.points) >= 5, "the sweep is too narrow to establish anything"
+    assert report.holds_everywhere, (
+        f"the contrast now fails at zipf_exponent={report.crossover.zipf_exponent}. That is a "
+        "real change in what gate 3 means and it makes the data request urgent -- read it before "
+        "relaxing this assertion."
+    )
+    assert report.crossover is None
+
+
+def test_the_sweep_brackets_the_plausible_region_from_outside_it() -> None:
+    """Asserting which exponent is realistic would invent the number that cannot be obtained.
+
+    So the range is deliberately wider than any real catalog on both sides: 0.4 is nearly flat,
+    which no catalog is, and 2.2 is a handful of classes holding nearly everything.
+    """
+    from errata_bench.coverage import SENSITIVITY_EXPONENTS
+
+    assert min(SENSITIVITY_EXPONENTS) <= 0.5
+    assert max(SENSITIVITY_EXPONENTS) >= 2.0
+
+
+def test_class_coverage_is_a_property_of_the_budget_not_of_the_catalog() -> None:
+    """The structural result the sweep exposes, and the reason it is worth having.
+
+    Greedy funds classes to exactly their floor, largest first, so it clears roughly budget/floor
+    classes whatever shape the catalog is -- as long as that many classes hold a floor's worth of
+    SKUs. The distribution decides how much VOLUME those classes carry and barely touches how many
+    CLASSES clear.
+
+    So the missing histogram bears on one half of gate 3 and not the other, and the half the
+    finding is about is a property of the budget and the conformal floor, both of which are known.
+    """
+    from errata_bench.coverage import sensitivity
+
+    points = sensitivity().points
+    mid = [p for p in points if 0.4 <= p.zipf_exponent <= 1.5]
+
+    class_coverages = {round(p.class_coverage, 6) for p in mid}
+    assert len(class_coverages) == 1, (
+        "class coverage now moves with catalog shape across the mid range. That breaks the "
+        "structural claim in the report's own text, which must be rewritten rather than the "
+        "assertion loosened."
+    )
+
+    sku_coverages = {round(p.sku_coverage, 4) for p in mid}
+    assert len(sku_coverages) == len(mid), "SKU coverage should move with shape; it is the half " \
+        "the histogram actually decides"
+
+
+def test_the_sweep_is_not_a_verdict() -> None:
+    """It answers a different question and must never be mistaken for the gate.
+
+    A sweep over an assumed FAMILY of shapes cannot rule out a real catalog outside the family,
+    and the report has to say so on its own face rather than in a commit message.
+    """
+    from errata_bench.coverage import sensitivity
+
+    text = sensitivity().text()
+    assert "NOT a substitute for measuring it" in text
+    assert "cannot rule out a real catalog that is not in the family" in text
+
+
+def test_the_sensitivity_command_never_exits_zero() -> None:
+    """Returning 0 would let a CI job record gate 3 as passed by a command that measured nothing."""
+    from errata_bench.cli import main
+
+    assert main(["coverage", "--sensitivity"]) == 3

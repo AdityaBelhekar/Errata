@@ -44,8 +44,42 @@ criterion is open too (decision **D-5**).
 | R0 gate | Requirement | State |
 |---|---|---|
 | 1. Equivalence suite | FR-0.1 / FR-0.2 | **PASS** — 1.30% false positives [0.44%, 3.76%] on 230 flagged records, 624 cases |
-| 2. Operating point | FR-0.3 | **MEASURED — asymmetry NOT confirmed.** 46.34% word-level grounding F1 against ExtractBench's 46.4%: a dead heat. Risk is 0.00% out to 20% coverage |
+| 2. Operating point | FR-0.3 | **MEASURED — asymmetry NOT confirmed.** 46.34% word-level grounding F1 against ExtractBench's 46.4%: a dead heat. Risk is 0.00% out to 20% coverage. **Read the note below on whose extractor that is** |
 | 3. Calibration coverage | FR-0.4 | **not measured** — harness built; needs SKU counts per ETIM class, which three independent hunts found are not publicly published |
+
+### Whose extractor is 46.34%?
+
+Not the one this repository ships, and that is worth a paragraph rather than a footnote.
+
+46.34% belongs to a **table-blind baseline**: it reads a flat sequence of words and takes the
+nearest token that looks like the value. `errata_audit.derive` — the extractor that actually runs —
+had never been scored on the grounding metric at all. It now can be:
+
+```bash
+errata-r3 corpus score --extractor tableblind      # 46.34%, the published number
+errata-r3 corpus score --extractor r1              # 100.00%  <- a tautology, not a result
+errata-r3 corpus score --extractor r1-textwindow   # R1's real, comparable number
+```
+
+**R1 scores 100% and the report refuses to let you quote it.** Gold is the cell under a named
+column in the row whose identity is the type designation; `derive` prefers exactly that cell. The
+two are the same act performed twice. Withhold the table structure and R1 falls back to reading by
+proximity — the same job the baseline does, on the same documents, with the same eight-word window
+— and the comparison is this:
+
+| | coverage | grounding F1 (whole corpus) | grounding F1 (records it answered) |
+|---|---|---|---|
+| table-blind baseline | 93.4% | **46.34%** | 47.97% |
+| R1, table structure withheld | **9.5%** | 2.05% | 11.76% |
+
+The gap is not a defect. It is finding N12: where the window offers competing values, the baseline
+takes the nearest one and R1 **declines**, because a value picked by tie-break becomes a confident
+accusation two steps later. R1 abstains on 1,196 of 1,426 records for that reason.
+
+So the honest statement of gate 2 is not "we tie ExtractBench". It is:
+
+> 46.34% is the score of a system that guesses when the evidence is ambiguous. The system this
+> repository ships declines those records instead, and publishes the coverage it gave up to do it.
 
 Full numbers and their caveats: [docs/R0-report.md](docs/R0-report.md).
 
@@ -77,7 +111,7 @@ are counted is 17.36%, not 4.91%.
 | **R2** | Catalog-scale audit, groundable fraction, triage router, batch reversal (`errata-scale run`) | **built** — [docs/R2-report.md](docs/R2-report.md) |
 | **R3** | Public benchmark, gold set, frozen hard tail, ETIM↔UNSPSC bridge, ECLASS BYO adapter, leaderboard (`errata-r3 reproduce`) | **built** — [docs/R3-report.md](docs/R3-report.md) |
 
-Built and tested (**1,199 tests**): the value-semantics library, the claim schema, the
+Built and tested (**1,307 tests**): the value-semantics library, the claim schema, the
 resolution-policy DSL, the disagreement taxonomy, the comparator, the R0 harness, and the R1 audit —
 ingest, document register, layout with word boxes, table structure, three-stage ETIM class
 resolution, blind re-derivation, the declined bucket, the ledger and the reviewer console — and the R2
@@ -90,6 +124,31 @@ the ECLASS content scanner and the leaderboard.
 cross-encoder of FR-2.2 (interfaces only), an LLM selector (an interface, capped at five candidates
 by construction), a calibration set (none exists — calibration needs reviewer decisions and nobody
 has made any), and OCR (born-digital documents only).
+
+### The non-functional requirements, and which of them are now checked by the build
+
+| | Requirement | State |
+|---|---|---|
+| NFR-1 | Byte-identical re-runs | **tested** — a full audit run twice and diffed field by field, and once more in a second interpreter under a different `PYTHONHASHSEED` |
+| NFR-2 | Extractor fingerprinting | **enforced** — the three hashes are legitimately empty for a rule-based extractor, and `ExtractorFingerprint` now *rejects* a `model_id` without them, so the day a model is wired in the omission fails the build |
+| NFR-3 | Evidence durability | built (ADR-002) |
+| NFR-4 | Calibration drift alarm | **built** — `errata-audit drift`. Fires on the drift fixture; **stays silent when accuracy collapses to a coin flip and every promise stays true**, which is the clause the requirement spends half its words on. Nothing real to watch until a calibration set exists (FR-7.6) |
+| NFR-5 | Cost observability | **measured** — seconds are real, money is modelled from a sourced rate card. 18.9s and 0.0259¢ over 10,001 records. See the caveat below |
+| NFR-6 | Data residency | **built** — `errata-scale run --residency tenant_local`. Record-level artifacts cannot leave the tenant root; an egress payload carrying a record identifier is *refused*, not filtered |
+| NFR-7 | Licence hygiene | **checked on every build** — and it found one. See *Licensing* |
+| NFR-8 | Value layer determinism | tested |
+
+> **On NFR-5's numbers.** Errata's modelled cost per page processed is roughly three orders of
+> magnitude below ExtractBench's 8.1¢. That is not an efficiency claim and the report refuses to
+> print it as one: Errata **calls no model**, and it is not doing the same job — born-digital
+> tables only, no OCR, and a fallback path that abstains rather than guessing. Both facts are
+> caveats on every priced report, next to the number.
+
+Run the whole build the way CI does:
+
+```bash
+bash scripts/ci.sh
+```
 
 ---
 
@@ -231,6 +290,19 @@ per verified attribute (FR-9.3) and the evidence-acceptance rate (FR-9.4).
 `valuesem` is installable on its own and depends on nothing else in this repo (FR-4.6).
 
 ## Licensing
+
+```bash
+errata-r3 licences        # NFR-7's "CI licence check on every build". It is now a build step.
+```
+
+> **⚠️ One open licence risk, and it is not small.** PyMuPDF — the library that produces the word
+> list every stored `char_span` is an offset into — is **AGPL-3.0-or-later OR Artifex Commercial**.
+> `errata-audit serve` is a network service, so AGPL §13 applies squarely to a product every
+> `pyproject.toml` here declares as Apache-2.0. Nothing has been distributed and no service has
+> been offered to a third party, so the exposure is real and not yet realised; the decision is
+> recorded in [`data/licences/third-party-decisions.yaml`](data/licences/third-party-decisions.yaml)
+> with the three options, printed in full on every build, and **owned by nobody yet**. It flips to
+> blocking the day a wheel is published. Found by writing the check, on its first run.
 
 Apache-2.0 for all code in this repository. ETIM class and attribute references are used under the
 Open Data Commons Attribution Licence; see [NOTICE](NOTICE). No ECLASS content ships in this repo,

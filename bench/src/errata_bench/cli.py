@@ -77,6 +77,16 @@ def main(argv: list[str] | None = None) -> int:
              "to run against the synthetic stand-in, which is always NOT_MEASURED",
     )
     coverage.add_argument("--json", action="store_true", help="machine-readable report")
+    coverage.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help=(
+            "sweep the one assumption a synthetic distribution makes -- how concentrated the "
+            "catalog is -- and report whether gate 3's finding depends on it. Answers 'how much "
+            "does the missing histogram matter', which IS answerable, instead of answering "
+            "'what is the histogram', which is not"
+        ),
+    )
 
     labelling = sub.add_parser(
         "labelling",
@@ -105,6 +115,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "operating-point":
         return _run_operating_point(args)
     if args.command == "coverage":
+        if getattr(args, "sensitivity", False):
+            print(_coverage_module.sensitivity().text())
+            # Always 3 (inconclusive). A sensitivity sweep is not a verdict, and returning 0
+            # would let a CI job record gate 3 as passed by a command that measured nothing.
+            return EXIT_INCONCLUSIVE
         return _run_coverage(args)
     if args.command == "labelling":
         return _run_labelling(args)
