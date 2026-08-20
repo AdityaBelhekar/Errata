@@ -41,6 +41,7 @@ from .chains import claim_chains, scan_for_mutation
 from .groundable import GroundingStatus, inventory
 from .queue import ReviewQueue, SecondAdjudicatorRequired
 from .report import render_html, render_json, render_text
+from .residency import EgressRefused, ResidencyMode, ResidencyPolicy, aggregate_payload
 from .reversal import accepted_in_batch, reverse_batch
 from .run import SCALE_VERSION, run_catalog
 from .triage import QueueEntry
@@ -85,6 +86,30 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--ledger", type=Path, default=None, help="record the batch here (FR-8.8)")
     run.add_argument("--label", default="", help="name a second batch over the same inputs")
     run.add_argument("--no-documents", action="store_true", help="T0 only; skip ETIM and T1")
+    run.add_argument(
+        "--residency",
+        choices=[m.value for m in ResidencyMode],
+        default=ResidencyMode.OPEN.value,
+        help=(
+            "NFR-6. `tenant_local` writes every record-level artifact under --tenant-root and "
+            "refuses to hand anything carrying a record identifier to a channel that egresses"
+        ),
+    )
+    run.add_argument(
+        "--tenant-root",
+        type=Path,
+        default=None,
+        help="the customer's own storage. Required by --residency tenant_local",
+    )
+    run.add_argument(
+        "--egress",
+        type=Path,
+        default=None,
+        help=(
+            "write the aggregate-only payload here -- counts, rates and versions, no record "
+            "identifier of any kind. The only artifact a tenant_local deployment will part with"
+        ),
+    )
     _common(run)
 
     ground = sub.add_parser("groundable", help="FR-8.1 -- the inventory alone, before any audit")
@@ -165,6 +190,12 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError as error:
         print(f"error: {error}", file=sys.stderr)
         return EXIT_NOT_RUN
+    except EgressRefused as error:
+        # NFR-6. A refusal is an outcome the operator has to read, not a crash: a traceback buries
+        # the reason under a stack, and the reason -- which field, and where it was going -- is the
+        # entire content of the event.
+        print(f"\nREFUSED (NFR-6 data residency):\n{error}", file=sys.stderr)
+        return EXIT_ERROR
 
 
 def _dispatch(args: argparse.Namespace) -> int:
@@ -289,21 +320,50 @@ def _load_run(args: argparse.Namespace, *, ledger: Ledger | None = None):
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
+    # NFR-6. Built before anything is read, so a deployment that asked for tenant_local without
+    # saying where the tenant is fails before it has produced a record-level artifact to misplace.
+    try:
+        residency = ResidencyPolicy(
+            mode=ResidencyMode(args.residency), tenant_root=args.tenant_root
+        )
+    except ValueError as exc:
+        print(f"residency: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
     ledger = Ledger(args.ledger) if args.ledger else None
     run = _load_run(args, ledger=ledger)
 
     if args.json:
+        # Deliberately NOT printed before the JSON. `--json` output exists to be parsed, and a
+        # banner on stdout ahead of the document makes it unparseable. Found by the test that
+        # reads this command's own output back -- which is why that test is worth having.
         print(render_json(run, top=args.top))
     else:
+        print(f"  {residency.describe()}\n")
         print(render_text(run, top=args.top, banner=BANNER if _is_demo(args) else ""))
 
     if args.html:
-        args.html.parent.mkdir(parents=True, exist_ok=True)
-        args.html.write_text(
+        # The HTML report IS the record-level artifact -- it is the ranked queue with the evidence
+        # attached -- so under tenant_local it has exactly one legal home, and a path that tries
+        # to leave that home raises rather than being quietly clamped into it.
+        destination = residency.resolve_sink(str(args.html))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(
             render_html(run, top=max(args.top, 25), banner=BANNER if _is_demo(args) else ""),
             encoding="utf-8",
         )
-        print(f"\nwrote {args.html}")
+        print(f"\nwrote {destination}")
+
+    if args.egress:
+        # Built by construction and then put through the guard, so a mistake in what counts as
+        # aggregate fails here rather than in somebody's telemetry pipeline.
+        payload = aggregate_payload(run, residency)
+        args.egress.parent.mkdir(parents=True, exist_ok=True)
+        args.egress.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(
+            f"wrote {args.egress}  (aggregate only: {len(payload)} field(s), "
+            "no record identifier)"
+        )
 
     if ledger is not None:
         print(f"batch {run.batch_id} recorded in {args.ledger}")
