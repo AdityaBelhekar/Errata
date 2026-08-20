@@ -57,6 +57,8 @@ from .console import render_html, render_text
 from .counterevidence import find_counter_evidence
 from .derive import Derivation, derive
 from .documents import BlobStore, DocumentSource, NetworkNotPermittedError, ingest_document
+from .drift import DriftReport, DriftVerdict
+from .drift import monitor as drift_monitor
 from .etim import EtimClass, EtimFeature, EtimModel, load_etim
 from .ingest import CatalogRecord, load_catalog, record_from_mapping
 from .layout import LAYOUT_VERSION, TextLayer, Word, extract_layer
@@ -83,6 +85,8 @@ __all__ = [
     "ClassScope",
     "Derivation",
     "DocumentSource",
+    "DriftReport",
+    "DriftVerdict",
     "EtimClass",
     "EtimFeature",
     "EtimModel",
@@ -99,6 +103,7 @@ __all__ = [
     "calibrate",
     "calibration_examples",
     "derive",
+    "drift_monitor",
     "extract_layer",
     "extract_tables",
     "find_counter_evidence",

@@ -107,6 +107,30 @@ def main(argv: list[str] | None = None) -> int:
     calibrate.add_argument("--ledger", type=Path, default=DEFAULT_LEDGER)
     calibrate.add_argument("--out", type=Path, default=None)
 
+    drift = sub.add_parser(
+        "drift", help="NFR-4 -- the calibration drift alarm, and the fixtures that prove it fires"
+    )
+    drift.add_argument(
+        "--fixture",
+        choices=("stable", "drifted", "degraded"),
+        default="drifted",
+        help=(
+            "which synthetic fixture to run the alarm against. `drifted` is NFR-4's acceptance "
+            "criterion; `degraded` is the one that must NOT fire -- accuracy collapses while every "
+            "promise stays true, which is how a calibration alarm is told from an accuracy alarm"
+        ),
+    )
+    drift.add_argument("--n", type=int, default=400, help="observations in the window")
+    drift.add_argument(
+        "--ledger",
+        type=Path,
+        default=None,
+        help=(
+            "watch REAL decisions instead of a fixture. Produces INSUFFICIENT_DATA today: "
+            "calibration needs reviewer decisions and nobody has made any (FR-7.6)"
+        ),
+    )
+
     web = sub.add_parser(
         "serve", help="FR-7.1/7.6 -- the reviewer console as a local web app, with adjudication"
     )
@@ -141,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_classes(args)
         if args.command == "adjudicate":
             return _cmd_adjudicate(args)
+        if args.command == "drift":
+            return _cmd_drift(args)
         if args.command == "calibrate":
             return _cmd_calibrate(args)
         if args.command == "serve":
@@ -516,6 +542,52 @@ def _cmd_adjudicate(args: argparse.Namespace) -> int:
             "corpus does not, and it is both a document-recovery lead and a false-positive signal."
         )
     return EXIT_CLEAN
+
+
+def _cmd_drift(args) -> int:
+    """NFR-4. Run the alarm against a fixture, or against a real ledger.
+
+    The exit code carries the verdict, matching every other command here: 0 stable, 1 drifted (a
+    finding somebody must act on), 2 insufficient data -- which is deliberately not 0, because
+    "nothing has been checked" and "everything is fine" are different statements.
+    """
+    from .drift import (
+        DriftVerdict,
+        degraded_but_calibrated,
+        drifted_overconfident,
+        monitor,
+        stable,
+    )
+
+    if args.ledger:
+        observations = [
+            (float(p), bool(y)) for p, y in calibration_examples(Ledger(args.ledger))
+        ]
+        print(
+            f"  watching {len(observations)} real adjudication(s) from {args.ledger}\n"
+            "  This is the mode that matters and it has nothing to watch yet: calibration needs\n"
+            "  reviewer decisions and none exist (FR-7.6, errata_audit.confidence).\n"
+        )
+    else:
+        observations = {
+            "stable": stable,
+            "drifted": drifted_overconfident,
+            "degraded": degraded_but_calibrated,
+        }[args.fixture](args.n)
+        print(
+            f"  SYNTHETIC FIXTURE {args.fixture!r}. Nothing here measures calibration quality --\n"
+            "  the thing under test is the ALARM, and the only way to test an alarm is to cause\n"
+            "  the condition it watches for. NFR-4's own acceptance criterion asks for exactly\n"
+            "  this. Ground rule 5 governs gates; this is not one.\n"
+        )
+
+    report = monitor(observations)
+    print(report.text())
+    return {
+        DriftVerdict.STABLE: EXIT_CLEAN,
+        DriftVerdict.DRIFTED: EXIT_FINDINGS,
+        DriftVerdict.INSUFFICIENT_DATA: EXIT_NOT_AUDITED,
+    }[report.verdict]
 
 
 def _cmd_calibrate(args: argparse.Namespace) -> int:
