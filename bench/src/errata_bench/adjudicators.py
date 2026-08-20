@@ -23,9 +23,22 @@ import enum
 import re
 from decimal import Decimal, InvalidOperation
 
-from .standards import UNIFIED_SERIES, etim_ip_codes, iso_261_coarse_pitch
+from .standards import (
+    UNIFIED_SERIES,
+    etim_feature_values,
+    etim_ip_codes,
+    iso_261_coarse_pitch,
+    rec21_code_for_noun,
+)
 
-__all__ = ["Verdict", "ingress_verdict", "thread_verdict", "unified_thread_verdict"]
+__all__ = [
+    "Verdict",
+    "container_noun_verdict",
+    "ingress_verdict",
+    "release_characteristic_verdict",
+    "thread_verdict",
+    "unified_thread_verdict",
+]
 
 
 class Verdict(str, enum.Enum):
@@ -266,4 +279,129 @@ def unified_thread_verdict(a: str, b: str) -> tuple[Verdict, str]:
         return Verdict.EQUAL, f"both are {a_size} at {a_tpi} TPI ({a_how} / {b_how})"
     return Verdict.UNEQUAL, (
         f"{a_size} at {a_tpi} TPI ({a_how}) against {b_tpi} TPI ({b_how})"
+    )
+
+
+# ================================================================================================
+# ETIM 10.0 -- release characteristic (EF000889 on EC000042), the trip curve
+#
+# The corroboration report has said for some time that the terms family needs IEC 60947-2 and that
+# "ETIM's class synonyms were tried and are too thin". Both halves were true and the conclusion was
+# too broad: what was tried was ETIMARTCLASSSYNONYMMAP, an index of alternative names for a
+# *class*. The trip curve is not a class, it is a FEATURE with a closed value list, and ETIM
+# publishes it:
+#
+#     EF000889 "Release characteristic" on EC000042 -> A, B, C, Cs, D, E, F, G, K, KM, MA, S, Z
+#
+# That is a curated list maintained by ETIM's technical committees, free under ODC-By, already
+# fetched, and completely unconnected to this project. It settles exactly one question -- are these
+# two designations the same entry in that list -- which is the question most of the trip-curve
+# cases ask.
+# ================================================================================================
+
+#: The class the release characteristic is read from. R1 audits miniature circuit breakers and
+#: EC000042 is ETIM's class for them; the value list is a property of the (class, feature) pair,
+#: not of the feature alone, so the class is named rather than searched for.
+MCB_CLASS = "EC000042"
+RELEASE_CHARACTERISTIC = "EF000889"
+
+#: `C`, `Type C`, `type  c`, `C curve`, `curve B`, `Char. B`, `Characteristic C`,
+#: `tripping characteristic B`, `K characteristic`, `MA curve`.
+_RELEASE = re.compile(
+    r"""^\s*
+    (?:(?:tripping\s+|trip\s+)?(?:characteristic|char\.?|curve|type)\s*)?
+    (?P<code>[A-Za-z]{1,2})
+    (?:\s*[-\s]\s*(?:characteristic|char\.?|curve|type))?
+    \s*$""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def release_characteristic_verdict(a: str, b: str) -> tuple[Verdict, str]:
+    """Adjudicate two trip-curve designations against ETIM's published value list.
+
+    **Case is significant and that is a fact about the list, not a convenience.** ETIM publishes
+    both ``C`` and ``Cs`` as distinct values, so a case-insensitive match would silently fold two
+    entries into one. The parse is case-insensitive because ``type c`` and ``TYPE C`` are the same
+    designation typed differently; the *resolution* to a list entry is then done by matching
+    case-insensitively against the published entries and rejecting anything that matches more than
+    one -- so ``cs`` resolves to ``Cs``, and a designation that could be either of two entries is
+    declined rather than assigned to the first.
+
+    **What this does not rule on.** Whether a curve designation and a *current range* say the same
+    thing -- ``C`` against ``5-10x In`` -- is a question about IEC 60947-2's definitions, which are
+    paywalled and which a value list does not contain. Declined.
+    """
+    known = etim_feature_values(MCB_CLASS, RELEASE_CHARACTERISTIC)
+    if not known:
+        return Verdict.CANNOT_JUDGE, "ETIM release-characteristic value list not fetched"
+
+    left, right = _RELEASE.match(a.strip()), _RELEASE.match(b.strip())
+    if left is None or right is None:
+        return Verdict.CANNOT_JUDGE, "not a plain trip-curve designation"
+
+    resolved: list[str] = []
+    for match in (left, right):
+        code = match.group("code")
+        hits = [entry for entry in known if entry.lower() == code.lower()]
+        if len(hits) != 1:
+            return Verdict.CANNOT_JUDGE, (
+                f"{code!r} matches {len(hits)} entries in ETIM's release-characteristic list; "
+                "a designation that could be more than one value is not one this list settles"
+            )
+        resolved.append(hits[0])
+
+    if resolved[0] == resolved[1]:
+        return Verdict.EQUAL, (
+            f"both designate {resolved[0]!r}, a single entry in ETIM's release-characteristic "
+            f"value list for {MCB_CLASS}/{RELEASE_CHARACTERISTIC}"
+        )
+    return Verdict.UNEQUAL, (
+        f"{resolved[0]!r} and {resolved[1]!r} are separate entries in ETIM's "
+        "release-characteristic value list"
+    )
+
+
+# ================================================================================================
+# UN/CEFACT Recommendation 21 -- package type codes
+#
+# Narrow on purpose. Rec 21 assigns a code to a container noun and has NO opinion about whether
+# "Box of 10" and "Pack of 10" describe the same commercial fact -- which is what most of the
+# packaging family is actually about. So this adjudicator answers one question and declines
+# everything else: are these two bare container nouns separate entries in Rec 21.
+#
+# It is worth having for one reason. The value layer's packaging ontology deliberately merges
+# several nouns into a single frame, with a comment explaining why for reel and roll ("for cable
+# and tape the noun varies by vendor while the commercial fact does not"). That merge is a
+# judgment, and a judgment is exactly the kind of thing an external list should be allowed to
+# disagree with in public.
+# ================================================================================================
+
+_BARE_NOUN = re.compile(r"^\s*(?P<noun>[A-Za-z]+)\s*$")
+
+
+def container_noun_verdict(a: str, b: str) -> tuple[Verdict, str]:
+    """Adjudicate two bare container nouns against UN/CEFACT Rec 21.
+
+    Declines anything carrying a quantity. ``Box of 10`` is not a container noun, it is a container
+    noun and a multiplier, and the multiplier is the part the packaging family is testing.
+    """
+    index = rec21_code_for_noun()
+    if not index:
+        return Verdict.CANNOT_JUDGE, "UN/CEFACT Rec 21 not fetched"
+
+    left, right = _BARE_NOUN.match(a), _BARE_NOUN.match(b)
+    if left is None or right is None:
+        return Verdict.CANNOT_JUDGE, "not a bare container noun (a quantity is not Rec 21's question)"
+
+    a_noun, b_noun = left.group("noun").lower(), right.group("noun").lower()
+    a_code, b_code = index.get(a_noun), index.get(b_noun)
+    missing = [n for n, c in ((a_noun, a_code), (b_noun, b_code)) if c is None]
+    if missing:
+        return Verdict.CANNOT_JUDGE, f"not a bare Rec 21 package name: {', '.join(missing)}"
+
+    if a_code == b_code:
+        return Verdict.EQUAL, f"both are Rec 21 {a_code} ({a_noun})"
+    return Verdict.UNEQUAL, (
+        f"Rec 21 assigns {a_noun} = {a_code} and {b_noun} = {b_code}, two separate entries"
     )

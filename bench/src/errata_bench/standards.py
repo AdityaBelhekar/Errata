@@ -122,6 +122,123 @@ def etim_ip_codes() -> frozenset[str]:
     )
 
 
+def _etim_rows_with_header(name: str) -> tuple[list[str], list[list[str]]]:
+    text = (ETIM_EXTRACTED / name).read_text(encoding=_ETIM_ENCODING)
+    rows = list(csv.reader(io.StringIO(text), delimiter=_ETIM_DELIMITER))
+    return rows[0], rows[1:]
+
+
+@lru_cache(maxsize=16)
+def etim_feature_values(class_id: str, feature_id: str) -> frozenset[str]:
+    """The values ETIM's committees declare for one feature of one class.
+
+    ``etim_ip_codes`` reads ETIMVALUE.csv and filters by *shape*, which works for IP codes because
+    ``IP44`` is unmistakable. It does not generalise: the release-characteristic values are ``B``,
+    ``C``, ``K``, ``Z`` -- single letters that appear all over a 60,000-row value table meaning
+    entirely different things. So this reads the actual mapping, through the join ETIM publishes:
+
+        ETIMARTCLASSFEATUREMAP   (class, feature) -> ARTCLASSFEATURENR
+        ETIMARTCLASSFEATUREVALUEMAP  ARTCLASSFEATURENR -> VALUEID
+        ETIMVALUE                    VALUEID -> VALUEDESC
+
+    That join is what makes the result an authority: it is not "letters that look like curves", it
+    is "the values ETIM says this feature of this class may take".
+
+    Returns an empty set when the release is not fetched, and callers decline on empty rather than
+    treating an unfetched authority as an authority with nothing to say.
+    """
+    if not etim_available():
+        return frozenset()
+
+    map_header, map_rows = _etim_rows_with_header("ETIMARTCLASSFEATUREMAP.csv")
+    i_nr = map_header.index("ARTCLASSFEATURENR")
+    i_class = map_header.index("ARTCLASSID")
+    i_feature = map_header.index("FEATUREID")
+    numbers = {
+        row[i_nr]
+        for row in map_rows
+        if len(row) > max(i_nr, i_class, i_feature)
+        and row[i_class] == class_id
+        and row[i_feature] == feature_id
+    }
+    if not numbers:
+        return frozenset()
+
+    value_header, value_rows = _etim_rows_with_header("ETIMARTCLASSFEATUREVALUEMAP.csv")
+    j_nr = value_header.index("ARTCLASSFEATURENR")
+    j_value = value_header.index("VALUEID")
+    value_ids = {
+        row[j_value]
+        for row in value_rows
+        if len(row) > max(j_nr, j_value) and row[j_nr] in numbers
+    }
+
+    descriptions = {row[0]: row[1] for row in _read_etim("ETIMVALUE.csv") if len(row) > 1}
+    return frozenset(
+        descriptions[value_id].strip() for value_id in value_ids if value_id in descriptions
+    )
+
+
+# ================================================================================================
+# UN/CEFACT Recommendations 20 and 21 -- unit and package-type codes
+#
+# Both are UNECE code lists, freely published, and both are already fetched. Rec 20 lists units of
+# measure; Rec 21 lists the codes for the package types goods are shipped in.
+#
+# **What they are an authority on, narrowly.** Whether two container NOUNS are separate entries in
+# an internationally maintained list. That is a smaller question than "are these the same
+# packaging" and it is deliberately the only one asked here -- Rec 21 assigns BX to a box and PK
+# to a package, and it has no opinion whatsoever about whether "Box of 10" and "Pack of 10"
+# describe the same commercial fact. That second question is the one the suite is mostly about,
+# and it belongs to a human.
+# ================================================================================================
+
+UNCEFACT_DIR = Path("var/reference/uncefact")
+
+
+def uncefact_available() -> bool:
+    return (UNCEFACT_DIR / "rec21-package-codes.csv").is_file()
+
+
+@lru_cache(maxsize=1)
+def rec21_package_types() -> dict[str, str]:
+    """``{"BX": "Box", "DR": "Drum", "RO": "Roll", "RL": "Reel", ...}``.
+
+    Keyed by code, so two nouns resolving to two different codes is the finding. Names are
+    lowercased on lookup rather than here, because the file's own capitalisation is the published
+    form and rewriting it would put a second spelling of an external standard in this repository.
+    """
+    if not uncefact_available():
+        return {}
+    text = (UNCEFACT_DIR / "rec21-package-codes.csv").read_text(encoding="utf-8-sig")
+    out: dict[str, str] = {}
+    for row in csv.DictReader(io.StringIO(text)):
+        code = (row.get("Code") or "").strip()
+        name = (row.get("Name") or "").strip()
+        if code and name:
+            out[code] = name
+    return out
+
+
+@lru_cache(maxsize=1)
+def rec21_code_for_noun() -> dict[str, str]:
+    """The reverse index: a bare container noun to its Rec 21 code.
+
+    Only entries whose published name is a **single bare noun** are indexed. Rec 21 is full of
+    qualified forms -- "Drum, steel", "Box, fibreboard" -- and mapping the noun "drum" to whichever
+    qualified entry happened to be read last would be inventing a canonical form the standard does
+    not declare. A qualified entry still identifies its family; it just is not what this index is
+    for.
+    """
+    index: dict[str, str] = {}
+    for code, name in rec21_package_types().items():
+        cleaned = name.strip()
+        if "," in cleaned or " " in cleaned:
+            continue
+        index.setdefault(cleaned.lower(), code)
+    return index
+
+
 # ================================================================================================
 # NBS Handbook H28 (1957) Part I -- Unified inch screw threads
 #

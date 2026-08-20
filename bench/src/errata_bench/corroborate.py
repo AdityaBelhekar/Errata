@@ -32,7 +32,14 @@ import re
 from dataclasses import dataclass
 from fractions import Fraction
 
-from .adjudicators import Verdict, ingress_verdict, thread_verdict, unified_thread_verdict
+from .adjudicators import (
+    Verdict,
+    container_noun_verdict,
+    ingress_verdict,
+    release_characteristic_verdict,
+    thread_verdict,
+    unified_thread_verdict,
+)
 from .equivalence import Case, Label, load_cases
 from .standards import etim_available
 from .ucum import UcumNotAvailable, convert, resolve, ucum_available
@@ -270,6 +277,8 @@ ADJUDICATORS: tuple[tuple[str, object], ...] = (
     ("ISO 261:1998 Table 2", thread_verdict),
     ("NBS Handbook H28 (1957)", unified_thread_verdict),
     ("ETIM 10.0 value list", ingress_verdict),
+    ("ETIM 10.0 EF000889 value list", release_characteristic_verdict),
+    ("UN/CEFACT Rec 21", container_noun_verdict),
 )
 
 
@@ -414,15 +423,25 @@ def render_corroboration(report: CorroborationReport) -> str:
 #: route and it is cheap next to the 112 cases it would unlock.
 UNLOCKS: dict[str, str] = {
     "materials": (
-        "EN 10088-1 or ASTM A959 (paywalled). 112 cases. Vendor cross-reference tables are "
-        "NOT an acceptable substitute -- uncited, and they copy each other"
+        "EN 10088-1 or ASTM A959 (paywalled). 112 cases. Vendor cross-reference tables are NOT "
+        "an acceptable substitute -- uncited, and they copy each other. RE-CHECKED 2026-08-21 by "
+        "searching for a free authority: every result was a distributor or mill cross-reference "
+        "page, and one of them stated that EN 1.4301 corresponds to UNS S31600. It does not -- "
+        "1.4301 is type 304 / S30400, and S31600 is 316. A source that gets the flagship "
+        "equivalence backwards is not a second opinion, it is a coin toss with a logo. Buying the "
+        "primary standard remains the honest route and is cheap next to 112 cases"
     ),
     "terms": (
-        "IEC 60947-2 for trip curves and pole notation (paywalled). 119 cases. ETIM's class "
-        "synonyms were tried and are too thin -- rccb, elcb and fuse return nothing"
+        "IEC 60947-2 for pole notation and for what a curve MEANS in multiples of In "
+        "(paywalled). ETIM's EF000889 value list now settles which trip-curve designations are "
+        "the same entry, which was previously written off because ETIM's CLASS synonym map was "
+        "too thin -- a different artifact, and the wrong one to have generalised from"
     ),
     "ingress": "IEC 60529 (paywalled) would reach beyond the 57 codes ETIM publishes",
-    "packaging": "UN/CEFACT Rec 20/21 are already fetched; a quantity-word adjudicator would fit",
+    "packaging": (
+        "Rec 21 now settles bare container nouns. What is left is the quantity frame -- whether "
+        "'Box of 10' and 'Pack of 10' are the same commercial fact -- which no code list rules on"
+    ),
     "threads": (
         "ISO 965-1 (tolerance classes) and ASME B1.1 (unified threads), both paywalled -- "
         "they would reach the 106 cases ISO 261 alone cannot"

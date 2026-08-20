@@ -15,7 +15,9 @@ import pytest
 
 from errata_bench.adjudicators import (
     Verdict,
+    container_noun_verdict,
     ingress_verdict,
+    release_characteristic_verdict,
     thread_verdict,
     unified_thread_verdict,
 )
@@ -271,3 +273,104 @@ def test_the_unf_and_unef_tables_differ_where_the_earlier_session_confused_them(
     assert UNF_TPI["1 1/8"] == "12"
     assert UNEF_TPI["1 1/16"] == "18"
     assert UNEF_TPI["1 1/8"] == "18"
+
+
+# ================================================================================================
+# ETIM EF000889 -- release characteristic (the trip curve)
+#
+# This family was previously written off with "ETIM's class synonyms are too thin". That was true
+# of ETIMARTCLASSSYNONYMMAP and it was the wrong artifact to generalise from: the trip curve is a
+# FEATURE with a closed value list, and ETIM publishes it.
+# ================================================================================================
+
+
+@needs_etim
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ("C", "Type C"),
+        ("curve B", "Char. B"),
+        ("type K", "K characteristic"),
+        ("MA curve", "type MA"),
+        ("tripping characteristic B", "B"),
+        ("TYPE C", "c curve"),
+    ],
+)
+def test_the_same_curve_written_differently_is_one_etim_value(a: str, b: str) -> None:
+    verdict, why = release_characteristic_verdict(a, b)
+    assert verdict is Verdict.EQUAL, why
+    assert "ETIM" in why
+
+
+@needs_etim
+@pytest.mark.parametrize("a,b", [("B", "C"), ("Type C", "Type D"), ("K", "Z"), ("MA", "C")])
+def test_different_curves_are_separate_etim_values(a: str, b: str) -> None:
+    verdict, why = release_characteristic_verdict(a, b)
+    assert verdict is Verdict.UNEQUAL, why
+
+
+@needs_etim
+def test_cs_is_not_c() -> None:
+    """ETIM publishes `C` and `Cs` as distinct values, so the resolution cannot fold case.
+
+    A case-insensitive equality on the raw designation would make these one value. The parse is
+    case-insensitive -- `type c` and `TYPE C` are the same thing typed differently -- but the
+    resolution matches against the published entries and keeps them apart.
+    """
+    assert release_characteristic_verdict("Cs", "C")[0] is Verdict.UNEQUAL
+
+
+@needs_etim
+def test_a_curve_against_a_current_multiple_is_declined() -> None:
+    """What a curve MEANS in multiples of In is IEC 60947-2, which a value list does not contain."""
+    verdict, why = release_characteristic_verdict("C", "5-10x In")
+    assert verdict is Verdict.CANNOT_JUDGE
+    assert "not a plain trip-curve designation" in why
+
+
+# ================================================================================================
+# UN/CEFACT Rec 21 -- container nouns
+# ================================================================================================
+
+
+def test_rec21_settles_that_a_drum_is_not_a_roll() -> None:
+    """Finding N4, ruled on by somebody other than us.
+
+    `valuesem`'s packaging ontology folds `drum` into the `RO` (Roll) frame along with reel, spool
+    and coil, with a comment defending the reel/roll merge: for cable and tape the noun varies by
+    vendor while the commercial fact does not. That argument is a good one and it does not reach
+    `drum`. UN/CEFACT Rec 21 assigns DR to a drum and RO to a roll, and it files them in different
+    packing groups -- 34 (drums and jerricans, closed cylindrical containers) against 13 (rolls).
+
+    The ontology is entitled to disagree with Rec 21; what it is not entitled to is to disagree
+    without anyone noticing, which is what this test changes.
+    """
+    verdict, why = container_noun_verdict("Drum", "Roll")
+    assert verdict is Verdict.UNEQUAL
+    assert "DR" in why and "RO" in why
+
+
+def test_rec21_also_separates_reel_from_roll() -> None:
+    """The merge the ontology defends explicitly. Recorded, not silently accepted.
+
+    Unlike `drum`, this one has a written rationale in packaging.yaml. The disagreement stands as
+    a documented divergence between our frame and Rec 21's codes rather than as a defect.
+    """
+    assert container_noun_verdict("Roll", "Reel")[0] is Verdict.UNEQUAL
+
+
+def test_the_same_noun_is_one_rec21_code() -> None:
+    assert container_noun_verdict("Box", "box")[0] is Verdict.EQUAL
+
+
+@pytest.mark.parametrize("a,b", [("Box of 10", "Pack of 10"), ("10/PK", "Pack of 10")])
+def test_a_quantity_frame_is_not_rec21s_question(a: str, b: str) -> None:
+    """Rec 21 codes a container noun. Whether two packs of ten are the same commercial fact is
+    the question the packaging family is actually about, and no code list rules on it."""
+    verdict, why = container_noun_verdict(a, b)
+    assert verdict is Verdict.CANNOT_JUDGE
+    assert "not a bare container noun" in why
+
+
+def test_a_noun_rec21_does_not_list_is_declined() -> None:
+    assert container_noun_verdict("Blister", "Clamshell")[0] is Verdict.CANNOT_JUDGE

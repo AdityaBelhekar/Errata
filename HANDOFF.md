@@ -271,8 +271,11 @@ are in `PROGRESS.md`. Gate 1 moved 1.38% → **1.30%** with coverage 76.9% → *
 
 Four **new** findings were raised in the process (N1–N4 in `PROGRESS.md`). Two want your ruling:
 
-- **N2** — HANDOFF §7 below overstates one of its four fabrication exhibits. IEC 60947-1 **does**
-  have an Annex A. Left uncorrected in §7 on purpose; it is your call how to restate it.
+- **N2** — ~~HANDOFF §7 below overstates one of its four fabrication exhibits.~~ **RESOLVED
+  2026-08-21.** IEC 60947-1 does have an Annex A, and it is *about utilization categories*, so the
+  exhibit did not merely overstate — it convicted a plausibly correct citation on a false charge.
+  The exhibit is withdrawn and the verified text is quoted in §7, from a primary source that was
+  actually opened.
 - **N1** — the Rec 20 mis-citation is systemic. Several suite `source:` fields still say "Rec 20"
   for what are Rec 21 package-type codes.
 
@@ -295,9 +298,38 @@ An audit of the adversarial suites found that **three of five authoring agents f
 | Fabrication | Reality |
 |---|---|
 | "IEC 60529 **5.2**: X means not tested" — cited 15× | The X rule is clause **4.1** |
-| "IEC 60947-1 **Annex A**" — cited 4× | **No such annex.** AC-1/AC-3 are IEC 60947-4-1 Table 1 |
+| "IEC 60947-1 **Annex A**" — cited 4× | ⚠️ **This exhibit was itself wrong. Withdrawn 2026-08-21 — see below.** |
 | "ISO 898-1 **Table 3** = chemical composition" | Table 3 is *mechanical properties* — the opposite |
 | 13 cases citing IEC 60947-1 for **SP/DP/TP** | Trade conventions the standard never defines |
+
+**Exhibit 2 is withdrawn, and the correction is the point (finding N2).**
+
+The row above used to read "**No such annex.** AC-1/AC-3 are IEC 60947-4-1 Table 1". IEC 60947-1
+**does** have an Annex A. Verified 21 August 2026 against the full text of IS/IEC 60947-1:2007 —
+the Indian Standard adoption, a verbatim reproduction, freely readable at
+`archive.org/stream/gov.in.is.iec.60947.1.2007` — which prints:
+
+> Annex A (informative) — Examples of utilization categories for low-voltage switchgear and
+> controlgear
+
+and defines *utilization category* generally at 2.1.18, with clause 4.4 titled "Utilization
+category".
+
+So the finding is worse than "overstated". The annex exists, it is *about utilization categories*,
+and an agent citing it for AC-1/AC-3 was **plausibly right** — what is true is narrower: the
+*normative* AC-1/AC-3 requirements for contactors are in IEC 60947-4-1 Table 1, and 60947-1
+Annex A is an informative list across the series. Cited as "where AC-3 is defined normatively",
+the original citation is wrong. Cited as "where utilization categories are listed", it is correct.
+The audit convicted it on a charge — "no such annex" — that was not true.
+
+That charge was written the same way the fabrications were: confidently, about a locator nobody
+had opened. The audit that caught three agents inventing citations invented one of its own, in the
+table where it announced the finding. It stayed uncorrected for a while because it was persuasive
+and on-message, which is exactly the property the other three had.
+
+The three remaining exhibits stand and were re-read on the same date. The lesson does not move; if
+anything it lands harder, and it is the reason ground rule 1 says "cite a source you actually
+opened" rather than "cite a source".
 
 47 source fields were corrected; zero labels were changed. The signature: each agent was **disciplined about facts it knew were shaky and careless about locators it assumed nobody would open.** The two files that scored best were the two that *admitted* uncertainty.
 

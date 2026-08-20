@@ -307,16 +307,47 @@ def test_every_ruling_records_which_standard_made_it() -> None:
 
 
 @needs_ucum
-def test_materials_and_terms_remain_uncovered_and_say_so() -> None:
-    """The honest half of the result. 112 materials cases and 119 terms cases have no external
-    source: steel-grade cross-references are paywalled, and ETIM's class synonyms are too thin
-    for the trip-curve and pole-count vocabulary. Asserted so that a future reader does not
-    mistake the improved headline for full coverage.
+def test_materials_remains_uncovered_and_says_so() -> None:
+    """The honest half of the result, and it is still mostly honest.
+
+    All 112 materials cases have no external source. Steel-grade cross-references live in EN
+    10088-1 and ASTM A959, both paywalled, and the free web pages that carry them are distributor
+    tables that copy each other -- one found on 2026-08-21 states that EN 1.4301 corresponds to
+    UNS S31600, which is wrong in the most basic way available (1.4301 is 304 / S30400). A source
+    that inverts the flagship equivalence is not a second opinion.
+
+    Asserted so that a future reader does not mistake an improved headline for full coverage.
     """
     from errata_bench.corroborate import corroborate, render_corroboration
 
     report = corroborate()
     covered = {r.family for r in report.scoreable}
     assert "materials" not in covered
-    assert "terms" not in covered
     assert "no external standard applies" in render_corroboration(report)
+
+
+@needs_ucum
+def test_terms_is_partially_covered_and_the_gap_is_still_named() -> None:
+    """ETIM's EF000889 value list settles WHICH trip curve, and nothing else.
+
+    This family was previously written off entirely, on the grounds that "ETIM's class synonyms
+    are too thin". That was true of ETIMARTCLASSSYNONYMMAP -- an index of alternative names for a
+    *class* -- and it was the wrong artifact to generalise from. The trip curve is a FEATURE with
+    a closed, committee-maintained value list, and ETIM publishes it free under ODC-By.
+
+    What it does NOT settle stays named: pole notation (2P vs 1P+N), RCD types, and what a curve
+    means in multiples of In. Those are IEC 60947-2, which is paywalled.
+    """
+    from errata_bench.corroborate import UNLOCKS, corroborate
+
+    report = corroborate()
+    judged = [r for r in report.scoreable if r.family == "terms"]
+    assert judged, "the release-characteristic adjudicator has stopped reaching the terms family"
+
+    families = {r.family for r in report.results}
+    assert len(judged) < sum(1 for r in report.results if r.family == "terms"), (
+        "every terms case is now externally judged, which would mean the value list had grown an "
+        "opinion about pole notation. Read it before believing it."
+    )
+    assert "terms" in families
+    assert "IEC 60947-2" in UNLOCKS["terms"], "the remaining gap stopped being named"

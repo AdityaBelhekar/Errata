@@ -92,11 +92,28 @@ uoms:
   # container noun mostly is not. The merge is a decision, not an oversight -- if a customer ever
   # needs reel and roll to disagree, split this entry and put {RO, RL} in interchangeable_containers
   # so the split does not manufacture contradictions.
+  #
+  # FINDING N4, RESOLVED 2026-08-21: `drum` was in this alias list and no longer is.
+  #
+  # The argument above is a good one and it does not reach `drum`. It rests on the nouns naming the
+  # same physical arrangement -- material wound on a core -- which is true of reel, spool and coil
+  # and is not true of a drum. UN/CEFACT Rec 21 files them in different packing groups: RO "Roll"
+  # in group 13, DR "Drum" in group 34, the closed cylindrical containers alongside jerricans.
+  # `errata_bench.adjudicators.container_noun_verdict` now asks Rec 21 this question directly and
+  # `test_rec21_settles_that_a_drum_is_not_a_roll` pins the answer.
+  #
+  # The failure this prevents is one-directional and unpleasant: a catalog row reading "Drum"
+  # -- of lubricant, of cable compound, of anything sold in a closed container -- silently
+  # agreeing with a datasheet reading "Roll". Cable drums exist and are genuinely roll-like, which
+  # is exactly why the word is dangerous: it is one noun covering two frames, and an ontology that
+  # picks one of them is guessing on every row where the other was meant. `drum` now falls through
+  # to no grammar match and is DECLINED, which is the honest outcome for a genuinely ambiguous
+  # container noun -- see FR-6.2: the decline is visible, and a reviewer can see it was looked at.
   - code: RO
     canonical: "Roll"
     default_quantity: null
     bulk: true
-    aliases: ["roll", "ro", "rl", "reel", "spool", "coil", "drum"]
+    aliases: ["roll", "ro", "rl", "reel", "spool", "coil"]
 
   - code: SET
     canonical: "Set"
