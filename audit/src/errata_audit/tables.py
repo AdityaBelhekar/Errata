@@ -9,7 +9,8 @@ is *S201M-B10UC*, is a fact. A system that boxes the ``10`` and not the header h
 nothing, and a reviewer who accepts it has accepted a number on trust -- which is the habit this
 product exists to break.
 
-**The merged-cell trap, which is real in these documents and was found by the spike.** In the ABB
+**The merged-cell trap, which is real in these documents and was found while building the
+annotation engine.** In the ABB
 S200 ordering tables the *Number of poles* column states ``1`` once and leaves the next twenty rows
 blank: the cell is merged down the block. Read naively, twenty SKUs have no pole count. Resolved by
 the cell rectangle they all correctly have one, because the merged cell's box spans them.

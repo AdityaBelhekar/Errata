@@ -1,83 +1,55 @@
-"""Tests for the grounding spike.
+"""The benchmark's annotation engine -- the properties that make the gold set mean something.
 
-The spike is throwaway (see `spike/README.md`), but the corpus it produces carries R0 gate 2, so
-the properties that make that corpus *mean* something are tested as carefully as production code.
-Three of them matter:
+These were ``spike/test_spike.py``. The spike is gone: :mod:`errata_ecosystem.corpusbuild` rebuilds
+the gate-2 corpus from production code, byte for byte, so the one reason the directory was frozen
+rather than deleted no longer holds. What was left in it was never scaffolding -- it is the code
+that writes the gold set, and a benchmark needs one of those permanently. It now lives in
+:mod:`errata_ecosystem.goldbuild` and these are its tests.
 
-1. **FR-3.4 — the predictor cannot see the answer.** Asserted on the function signature, not on
-   behaviour, because behaviour can be correct today and wrong after one helpful refactor.
-2. **Gold and prediction are produced by different mechanisms.** If that ever stops being true the
-   grounding number becomes a tautology, and it would stop being true silently.
-3. **Determinism.** The corpus must be reproducible, or a change in the gate's number cannot be
-   attributed to a change in the code.
+Three properties matter and each is load-bearing for a published number:
 
-These run only when the ABB datasheets are present under `var/spike/datasheets/` -- they are
-fetched by `scripts/fetch_reference_data.sh` and gitignored (FR-9.5), so a clean clone has the
-URLs and hashes but not the payload. Where a test can assert something without the PDFs, it does,
-so a clean clone still checks the parts that matter most.
+1. **Gold and prediction are produced by different mechanisms.** Gold reads table structure; the
+   systems being scored do not have to. If that ever stops being true the grounding number becomes
+   a tautology, and it would stop being true silently while looking like an enormous improvement.
+2. **Determinism.** ``data/gold/manifest.json`` carries a hash of every annotation file. A layout
+   that shifts between runs invalidates the published gold set while every other test passes.
+3. **The version strings are the ones in the published manifest.** ``spike-layout/1.0.0`` and
+   ``spike-gold/1.0.0`` look wrong in a package no longer called spike, and renaming them would
+   silently invalidate a hashed artifact to make a module look tidy. A version identifies the
+   algorithm that produced a hash, not the directory it sat in.
+
+The FR-3.4 blindness tests that used to live here moved with the code they guarded: the spike's
+predictor is now ``errata_ecosystem.extractors.TableBlindExtractor``, and
+``test_corpus_and_extractors.py`` asserts its blindness on a live object rather than on a source
+string.
+
+These run only when the ABB datasheets are present under ``var/spike/datasheets/`` -- fetched by
+``scripts/fetch_reference_data.sh`` and gitignored (FR-9.5). Where a test can assert something
+without the PDFs it does, so a clean clone still checks the parts that matter most.
 """
+
 
 from __future__ import annotations
 
-import inspect
 from pathlib import Path
 
 import pytest
 
-from spike import predict as predict_module
-from spike.attributes import ATTRIBUTES, BY_KEY
-from spike.catalog import build_catalog
-from spike.gold import build_gold
-from spike.layout import extract_layer
-from spike.predict import predict
-from spike.tables import extract_tables, value_for_row
+from errata_ecosystem.corpusbuild import _build_catalog as build_catalog
+from errata_ecosystem.goldbuild import (
+    ATTRIBUTES,
+    build_gold,
+    extract_layer,
+    extract_tables,
+    value_for_row,
+)
 
-DATASHEETS = sorted(Path("var/spike/datasheets").glob("*.pdf"))
+DATASHEET_DIR = Path(__file__).resolve().parents[2] / "var" / "spike" / "datasheets"
+DATASHEETS = sorted(DATASHEET_DIR.glob("*.pdf"))
 needs_pdfs = pytest.mark.skipif(not DATASHEETS, reason="datasheets not fetched")
 
 
 # -- FR-3.4: no path exists through which the answer could reach the predictor ----------------
-
-
-def test_predict_cannot_receive_a_catalog_or_gold_value() -> None:
-    """The PRD calls FR-3.4 "the requirement most likely to be quietly broken during
-    optimisation", because passing the catalog value in as a hint measurably improves grounding
-    and makes every subsequent agreement meaningless.
-
-    So it is asserted structurally. `predict` takes a text layer, a SKU and an attribute. If a
-    parameter is ever added that could carry a value -- even optional, even defaulted, even
-    called something innocuous -- this fails before anyone has to notice the score improved.
-    """
-    parameters = list(inspect.signature(predict).parameters)
-    assert parameters == ["layer", "sku", "attribute"], (
-        f"predict() signature changed to {parameters}. FR-3.4 requires that the re-derivation "
-        "cannot see the catalog's value; a new parameter is how that stops being true."
-    )
-
-
-def test_the_predictor_module_never_imports_gold_or_catalog() -> None:
-    """The second door into the same room. A signature stays clean while a module-level import
-    quietly gives the predictor access to the answer key."""
-    source = inspect.getsource(predict_module)
-    for forbidden in ("from spike.gold", "from spike.catalog", "import spike.gold"):
-        assert forbidden not in source, f"predict.py imports the answer: {forbidden}"
-
-
-def test_gold_and_prediction_use_different_mechanisms() -> None:
-    """The property the whole measurement rests on.
-
-    Gold reads table structure; the predictor reads the flat layer. If the predictor ever gained
-    table access the two would agree by construction, grounding F1 would approach 100%, and the
-    number would say nothing about grounding at all -- while looking like an enormous improvement.
-    """
-    predictor = inspect.getsource(predict_module)
-    assert "spike.tables" not in predictor
-    assert "extract_tables" not in predictor
-    assert "column_header" not in predictor
-
-    from spike import gold as gold_module
-
-    assert "spike.tables" in inspect.getsource(gold_module), "gold must be table-aware"
 
 
 # -- layout (FR-1.4) ---------------------------------------------------------------------------
@@ -171,32 +143,12 @@ def test_gold_is_read_from_the_document_and_carries_word_boxes() -> None:
         assert box_area <= cell_area
 
 
-@needs_pdfs
-def test_the_predictor_gets_easy_attributes_right_and_hard_ones_wrong() -> None:
-    """A sanity check on the difficulty spread, not on the score.
-
-    If every attribute grounded perfectly the corpus would be measuring nothing; if none did, the
-    extractor would be broken rather than limited. Order codes are distinctive and should land;
-    the three mutually-ambiguous bare integers should not always.
-    """
-    gold, layer = build_gold(DATASHEETS[0])
-    by_attribute: dict[str, list[bool]] = {}
-    for record in gold:
-        prediction = predict(layer, record.sku, BY_KEY[record.attribute])
-        by_attribute.setdefault(record.attribute, []).append(
-            prediction is not None and prediction.value == record.value
-        )
-
-    order = by_attribute["order_code"]
-    assert sum(order) / len(order) > 0.95, "the distinctive pattern should be easy"
-
-    ambiguous = by_attribute["packing_unit"]
-    assert sum(ambiguous) / len(ambiguous) < 0.9, (
-        "a table-blind extractor should NOT reliably tell packing unit from the bare integers "
-        "in the adjacent columns -- if it does, it has gained table access"
-    )
-
-
+# The spike's `test_the_predictor_gets_easy_attributes_right_and_hard_ones_wrong` lived here. It
+# asserted that a table-blind extractor grounds `order_code` easily and confuses the three bare
+# small integers in adjacent columns. That claim is now measured rather than asserted:
+# `errata-r3 corpus score --extractor tableblind` reports it per attribute over all 1,426 records,
+# and `test_corpus_and_extractors.py` pins the headline. A spot-check on two SKUs was the right
+# test when there was no corpus; keeping it beside the corpus would be a worse version of it.
 @needs_pdfs
 def test_the_catalog_is_reproducible_and_contains_all_three_kinds() -> None:
     gold, _ = build_gold(DATASHEETS[0])

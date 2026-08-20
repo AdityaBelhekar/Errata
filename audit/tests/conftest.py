@@ -26,6 +26,11 @@ from errata_audit.documents import BlobStore, DocumentSource, ingest_document
 from errata_spec import DocumentRegister
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+# `var/spike/` is a historical name and deliberately not renamed. It is gitignored working
+# data whose location is declared by `data/reference/manifest.json` and hashed into the R3
+# reproduction receipt; renaming it would force every existing checkout to re-fetch and would
+# move a published receipt, to correct a directory name nobody types. The `spike/` PACKAGE is
+# gone (see audit/tests/test_boundaries.py); this is just where its documents landed.
 DATASHEETS = REPO_ROOT / "var" / "spike" / "datasheets"
 ABB_S200 = DATASHEETS / "abb-s200-2CDC002142D0207.pdf"
 ABB_S200_MUC = DATASHEETS / "abb-s200muc-1SXP403008B0202.pdf"
@@ -148,5 +153,5 @@ requires_etim = pytest.mark.skipif(
 
 requires_datasheets = pytest.mark.skipif(
     not ABB_S200.exists(),
-    reason="the ABB datasheets are not committed (FR-9.5); run the spike's fetch step",
+    reason="the ABB datasheets are not committed (FR-9.5); run scripts/fetch_reference_data.sh",
 )

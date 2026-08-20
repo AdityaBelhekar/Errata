@@ -3,8 +3,9 @@
 Every rule here is one a comment already states somewhere. A comment is a request; an import graph
 is a fact, and these are the four facts that keep the design honest when somebody is in a hurry:
 
-1. **No distribution depends on `spike/`.** It is throwaway scaffolding, frozen now that gate 2 has
-   a number, and the P3 fence says R1 inherits its *findings* and not its code.
+1. **`spike/` is gone and nothing imports it.** It was throwaway scaffolding, frozen once gate 2
+   had a number and deleted on 21 August 2026 once `errata_ecosystem.corpusbuild` could rebuild
+   that corpus byte for byte from production code.
 2. **`derive` cannot reach the catalog.** FR-3.4 is enforced by `derive()`'s signature, but a module
    that imported `CatalogRecord` could grow a second path to it. It does not import it, and this
    test is why it stays that way.
@@ -23,7 +24,7 @@ import pytest
 
 PACKAGE = Path(__file__).resolve().parents[1] / "src" / "errata_audit"
 REPO = Path(__file__).resolve().parents[2]
-DISTRIBUTIONS = ("spec", "valuesem", "comparator", "bench", "audit", "scale")
+DISTRIBUTIONS = ("spec", "valuesem", "comparator", "bench", "audit", "scale", "ecosystem")
 
 
 def _imports(path: Path) -> set[str]:
@@ -43,13 +44,31 @@ def _sources(distribution: str) -> list[Path]:
     return sorted(root.rglob("*.py")) if root.exists() else []
 
 
+def test_the_spike_is_gone() -> None:
+    """It was frozen for one stated reason, and the reason expired.
+
+    ``spike/README.md`` kept the directory because ``build_corpus.py`` was "the only thing that can
+    regenerate ``var/spike/corpus.yaml``, and a measured gate whose corpus cannot be rebuilt is a
+    measurement nobody can check". ``errata_ecosystem.corpusbuild`` rebuilds that corpus from
+    production code and reproduces the frozen file byte for byte across all 1,426 records, which is
+    what made deletion safe rather than merely tidy.
+
+    Asserted rather than assumed, because the failure mode is somebody restoring it from history to
+    "just check something" and it quietly becoming load-bearing again.
+    """
+    assert not (REPO / "spike").exists(), (
+        "spike/ is back. If it was restored to reproduce something, use "
+        "errata_ecosystem.corpusbuild (the gate-2 corpus) or errata_ecosystem.goldbuild (the gold "
+        "annotations) -- both are production code with tests, and both reproduce the published "
+        "artifacts exactly."
+    )
+
+
 @pytest.mark.parametrize("distribution", DISTRIBUTIONS)
 def test_no_distribution_imports_the_spike(distribution: str) -> None:
-    """`spike/README.md` rule 1: it is not `pip install`-able and nothing depends on it.
-
-    The spike is frozen rather than deleted, so it can still reproduce the gate-2 corpus. A frozen
-    directory that something imports is not frozen, it is load-bearing.
-    """
+    """Nothing may import it, and now nothing can. Kept after the deletion because an import of a
+    module that does not exist is a clearer failure here than an ImportError at runtime, and
+    because a restored spike with an importer is the exact regression this pair guards."""
     for path in _sources(distribution):
         offenders = {name for name in _imports(path) if name == "spike" or name.startswith("spike.")}
         assert not offenders, f"{path} imports {sorted(offenders)}"

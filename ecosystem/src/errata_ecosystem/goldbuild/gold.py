@@ -24,9 +24,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from spike.attributes import ATTRIBUTES, TYPE_COLUMN, Attribute
-from spike.layout import TextLayer, Word, extract_layer
-from spike.tables import Table, extract_tables, value_for_row
+from .attributes import ATTRIBUTES, TYPE_COLUMN, Attribute
+from .layout import TextLayer, Word, extract_layer
+from .tables import Table, extract_tables, value_for_row
 
 GOLD_VERSION = "spike-gold/1.0.0"
 
@@ -47,6 +47,18 @@ class GoldRecord:
     @property
     def attribute_id(self) -> str:
         return f"{self.sku}-{self.attribute}"
+
+    @property
+    def attribute_key(self) -> str:
+        """The same string under the name the published annotation layer uses.
+
+        ``GoldRecord.attribute`` and ``GoldAnnotation.attribute_key`` are one field with two names
+        -- this engine writes the annotations and :mod:`errata_ecosystem.corpusbuild` reads them
+        back, and the two ends were written months apart. This alias is the seam, kept as one line
+        here rather than as a branch at every call site, which is the small version of the lesson
+        finding N15 taught at full scale.
+        """
+        return self.attribute
 
 
 def _ordering_tables(tables: tuple[Table, ...]) -> tuple[Table, ...]:

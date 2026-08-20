@@ -8,10 +8,14 @@ minversion = "8.0"
 # three-gate entry criterion -- gate 3 is deferred by decision D-1 -- and the waiver is written up
 # in PHASES.md §10 rather than implied by this line.
 #
-# spike/ is throwaway scaffolding (see spike/README.md) and is deliberately NOT a distribution --
-# but the corpus it produces carries R0 gate 2, so the properties that make that corpus mean
-# anything are tested here with the rest. Removing this entry is part of deleting the spike.
-testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests", "spike"]
+# spike/ IS GONE, 21 August 2026. It was frozen rather than deleted because `build_corpus.py` was
+# "the only thing that can regenerate var/spike/corpus.yaml", and a measured gate whose corpus
+# cannot be rebuilt is a measurement nobody can check. `errata_ecosystem.corpusbuild` now rebuilds
+# that corpus from production code and reproduces the frozen file byte for byte over all 1,426
+# records, so the reason expired. What was left in the directory was never scaffolding -- the
+# annotation engine moved to `errata_ecosystem.goldbuild` and the table-blind predictor became
+# `errata_ecosystem.extractors.TableBlindExtractor`, the benchmark's frozen baseline.
+testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests"]
 addopts = "-q --strict-markers --strict-config"
 # `--strict-markers` is on, so a marker has to be declared here to be usable. That is the
 # right setting and it means this list is the register of what a test may claim about itself.

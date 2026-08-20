@@ -12,13 +12,15 @@ releases invalidates every stored span while every test still passes. So the ver
 into the layer, the layer is cached by ``(content hash, version)`` rather than by path, and the
 ordering is whatever the extractor gave -- never "improved" in place.
 
-**What R1 inherited from the spike, and what it did not.** The spike (``spike/``, throwaway by
+**What R1 inherited from the annotation engine, and what it did not.** That engine (now
+``errata_ecosystem.goldbuild``, formerly ``spike/``, throwaway by
 decision D-2) established that PyMuPDF's ``"words"`` extraction is stable for these documents and
 that word boxes -- not cell rectangles -- are the right grounding unit. Those are *findings*, and
 the P3 fence permits inheriting findings. The code here is written fresh and carries three things
-the spike deliberately did not have:
+it deliberately did not have:
 
-* a **cache** keyed on content hash, which FR-1.4 requires and the spike had no need of;
+* a **cache** keyed on content hash, which FR-1.4 requires and a one-shot annotator had no
+  need of;
 * **column bands** (FR-1.6), so a two-column catalog page cannot bleed one product's value onto
   the product beside it;
 * **page geometry**, so evidence can be re-rendered on the page it came from (FR-7.2).
@@ -144,7 +146,8 @@ class TextLayer:
         """True when the document carries a text layer at all.
 
         Deliberately the weakest possible test -- *any* extracted word -- and it took a revision to
-        get there. The spike used "at least 20 words a page", which is a reasonable description of
+        get there. The annotation engine uses "at least 20 words a page", which is a reasonable
+        description of
         a datasheet and a bad *decision rule*: a sparse but perfectly readable page then declined
         with ``LAYOUT_UNREADABLE``, which says the layout defeated us when in fact the document is
         readable and simply does not state the value.
