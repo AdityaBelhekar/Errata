@@ -1,0 +1,213 @@
+# Equivalence suite -- screw threads (FR-0.1).
+#
+# The load-bearing case in this file is thr-001. `M8` and `M8x1.25` are the same thread because
+# ISO 261 fixes the coarse pitch for M8 at 1.25 mm. An auditor that flags the most common fastener
+# designation in the world against itself has failed before it has found anything.
+
+suite: equivalence
+family: threads
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: thread_size
+    label: Thread
+    kinds: [thread]
+
+cases:
+  # -- completion from the standard tables ------------------------------------------------------
+  - id: thr-001
+    a: "M8"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261 / ISO 262: coarse pitch for M8 is 1.25 mm"
+    rationale: >-
+      A bare M8 is not vaguer than M8x1.25 -- it is fully specified by reference to a published
+      standard. Getting this wrong is the fastest way to lose a fastener pilot.
+
+  - id: thr-002
+    a: "M8 x 1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "Whitespace and multiplication-sign variants"
+
+  - id: thr-003
+    a: "M8 × 1.25"
+    b: "M8-1.25"
+    expect: equivalent
+    source: "DIN drawings use x, the multiplication sign and a bare hyphen interchangeably"
+
+  - id: thr-004
+    a: "M10"
+    b: "M10x1.5"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M10 is 1.5 mm"
+
+  - id: thr-005
+    a: "M12x1.75"
+    b: "M12"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M12 is 1.75 mm"
+
+  - id: thr-006
+    a: "3/8-16"
+    b: "3/8-16 UNC"
+    expect: equivalent
+    source: "ASME B1.1: 3/8 at 16 TPI is the UNC series by definition"
+
+  - id: thr-007
+    a: "3/8 UNC"
+    b: "3/8-16 UNC"
+    expect: equivalent
+    source: "ASME B1.1 coarse series table supplies 16 TPI for 3/8"
+
+  - id: thr-008
+    a: "1/4-20"
+    b: "1/4-20 UNC"
+    expect: equivalent
+    source: "ASME B1.1"
+
+  - id: thr-009
+    a: "#10-24 UNC"
+    b: "No. 10-24 UNC"
+    expect: equivalent
+    source: "Gauge-size spelling variants"
+
+  - id: thr-010
+    a: "NPT 1/2-14"
+    b: "1/2-14 NPT"
+    expect: equivalent
+    source: "ASME B1.20.1; the series designator is written before or after the size"
+
+  - id: thr-011
+    a: "1/2 NPT"
+    b: "NPT 1/2-14"
+    expect: equivalent
+    source: "ASME B1.20.1: 1/2 NPT is 14 TPI"
+
+  - id: thr-012
+    a: '1/2" NPT'
+    b: "1/2 NPT"
+    expect: equivalent
+    source: "Inch mark is notation, not information"
+
+  - id: thr-013
+    a: "G1/2"
+    b: "G 1/2"
+    expect: equivalent
+    source: "ISO 228-1 whitespace variant"
+
+  - id: thr-014
+    a: "M8x1.25-6g"
+    b: "M8 x 1.25 - 6g"
+    expect: equivalent
+    source: "ISO 965 tolerance-class spacing variant"
+
+  # -- genuine contradictions ---------------------------------------------------------------------
+  - id: thr-101
+    a: "M8"
+    b: "M8x1"
+    expect: contradiction
+    source: "ISO 261: 1 mm is a fine pitch for M8; the coarse pitch is 1.25 mm"
+    rationale: >-
+      The mirror of thr-001, and why the coarse-pitch table must be a lookup rather than a
+      heuristic. These two fasteners do not mate.
+
+  - id: thr-102
+    a: "M10x1.5"
+    b: "M10x1.25"
+    expect: contradiction
+    source: "ISO 261: coarse against fine"
+
+  - id: thr-103
+    a: "M8x1.25"
+    b: "M10x1.5"
+    expect: contradiction
+    source: "Different nominal diameters"
+
+  - id: thr-104
+    a: "3/8-16 UNC"
+    b: "3/8-24 UNF"
+    expect: contradiction
+    source: "ASME B1.1: coarse against fine at the same nominal"
+
+  - id: thr-105
+    a: "3/8-16 UNC"
+    b: "M10x1.5"
+    expect: contradiction
+    source: "Unified against metric; not interchangeable"
+    rationale: "Nominal diameters are within 0.4 mm, so a numeric comparator gets this wrong."
+
+  - id: thr-106
+    a: "1/2 NPT"
+    b: "1/2 BSPT"
+    expect: contradiction
+    source: "ASME B1.20.1 (14 TPI, 60 deg) against ISO 7-1 (14 TPI, 55 deg)"
+    rationale: >-
+      Same nominal, same TPI, different thread form. A comparator that only checks size and pitch
+      calls these equal and is wrong in a way that leaks.
+
+  - id: thr-107
+    a: "G1/2"
+    b: "R1/2"
+    expect: contradiction
+    source: "ISO 228-1 parallel against ISO 7-1 taper"
+
+  - id: thr-108
+    a: "M8x1.25"
+    b: "M8x1.25 LH"
+    expect: contradiction
+    source: "Right-hand against left-hand thread"
+
+  - id: thr-109
+    a: "1/4-20 UNC"
+    b: "#10-24 UNC"
+    expect: contradiction
+    source: "Different nominal sizes"
+
+  - id: thr-110
+    a: "M6"
+    b: "M6x0.75"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M6 is 1 mm, not 0.75"
+
+  # -- granularity ---------------------------------------------------------------------------------
+  - id: thr-201
+    a: "Threaded"
+    b: "NPT 1/2-14"
+    expect: granularity
+    source: "Generic connection term against a specific designation"
+    rationale: "The §3.3 example. Under-specified, not wrong."
+
+  - id: thr-202
+    a: "Threaded"
+    b: "M8x1.25"
+    expect: granularity
+    source: "Generic connection term"
+
+  - id: thr-203
+    a: "M8x1.25"
+    b: "M8x1.25-6g"
+    expect: granularity
+    source: "ISO 965 tolerance class is a refinement, not a different thread"
+
+  - id: thr-204
+    a: "3/8-16 UNC-2A"
+    b: "3/8-16 UNC"
+    expect: agreement_specific
+    source: "Catalog carries the tolerance class the datasheet omits"
+
+  - id: thr-205
+    a: "NPT"
+    b: "M8x1.25"
+    expect: contradiction
+    source: "A restricted generic term that does not cover the specific value"
+    rationale: >-
+      'NPT' is generic about size but specific about system. Subsumption is only a defence when
+      the generic actually subsumes.
+
+  - id: thr-206
+    a: "Metric thread"
+    b: "M8x1.25"
+    expect: granularity
+    source: "Restricted generic that does cover the value"

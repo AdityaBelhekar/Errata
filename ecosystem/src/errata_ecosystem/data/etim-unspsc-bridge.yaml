@@ -1,0 +1,170 @@
+# ============================================================================================
+# The ETIM <-> UNSPSC attribute bridge  (FR-9.7)
+#
+#   Published under the Apache Licence 2.0, the same licence as the rest of this repository.
+#   ETIM content is used under the Open Data Commons Attribution Licence (ODC-By); attribution
+#   is carried in NOTICE and reproduced by every command that prints a mapping.
+#
+# ---------------------------------------------------------------------------------------------
+# WHAT THIS IS, AND WHY IT IS NOT A LOOKUP TABLE SOMEBODY TYPED
+#
+# UNSPSC gives a product an eight-digit code across four levels and stops there: there is no
+# attribute layer, and no unit anywhere in the codeset. Verified by inspection of all 71,502
+# commodity rows on 2026-08-20, not taken from the PRD's say-so. ETIM has the attribute layer --
+# features, types, units, closed value lists -- and not UNSPSC's procurement adoption. The hole is
+# the join between them, and this file is the join.
+#
+# Each mapping below is a HUMAN JUDGEMENT about two published descriptors, and it is labelled as
+# one. Nothing here is measured. What IS mechanical, and what a reader can therefore check:
+#
+#   * every `unspsc` code and `unspsc_title` is validated against the hash-registered codeset in
+#     data/reference/manifest.json -- a code that does not exist, or whose title has changed in a
+#     newer UNSPSC release, fails the load rather than resolving to something plausible;
+#   * every `etim_class` is validated against ETIM 10.0 ALL-SECTORS, likewise hash-registered;
+#   * the ATTRIBUTE LAYER IS NOT WRITTEN HERE AT ALL. It is derived at load time from the ETIM
+#     features of the mapped class, so it cannot drift from ETIM, and `errata-r3 bridge show`
+#     prints the feature ids with the release they came from.
+#
+# `relation` uses SKOS mapping relations, which is the standard vocabulary for exactly this act:
+#
+#   skos:exactMatch  - the two descriptors name the same kind of thing; interchangeable in
+#                      indexing, and an attribute set may be carried across without qualification.
+#   skos:narrowMatch - the ETIM class is NARROWER than the UNSPSC commodity.
+#   skos:broadMatch  - the ETIM class is BROADER than the UNSPSC commodity.
+#   skos:closeMatch  - similar enough to be useful, NOT interchangeable. Carrying attributes
+#                      across a closeMatch is the caller's decision, and the loader refuses to
+#                      make it for them.
+#   no_match         - searched, nothing there. Recorded because an absence found by searching is
+#                      a finding, and an absence discovered again next quarter is wasted work.
+#   declined         - a mapping we refuse to make, with the reason. See 39121614.
+#
+# Direction is always UNSPSC -> ETIM: "this ETIM class is narrower than this UNSPSC commodity".
+#
+# SCOPE. Circuit protection only -- UNSPSC class 39121600 against ETIM group EG000020 -- which is
+# the scope R1 and R2 audit (FR-2.4). A bridge covering segments nobody in this repository has
+# looked at would be longer and would mean less.
+# ============================================================================================
+
+version: "errata-bridge/1.0.0"
+released: "2026-08-20"
+licence: "Apache-2.0"
+
+attribution:
+  etim: >-
+    Contains information from the ETIM 10.0 ALL-SECTORS classification model, made available under
+    the Open Data Commons Attribution Licence (ODC-By) by ETIM International.
+  unspsc: >-
+    UNSPSC(R) is published by GS1 US. Codes and titles are cited from a public-sector
+    republication of the codeset (State of Oklahoma, OMES) recorded in data/reference/manifest.json.
+    No UNSPSC content is redistributed by this repository.
+
+sources:
+  etim:
+    release: "10.0"
+    manifest_id: etim-10.0-all-sectors-csv-metric
+  unspsc:
+    manifest_id: unspsc-codeset-ok-open-data
+    snapshot: "portal metadata_modified 2019-10-31; UNSPSC is revised roughly annually"
+
+decided_by: >-
+  The author of this bridge, reading both descriptors side by side on 2026-08-20. Single-judged,
+  with the same conflict of interest FR-0.1 names for the equivalence suite and the same remedy --
+  a second domain judge -- which has not been done. `errata-r3 bridge status` prints this sentence
+  next to every count, and no rate derived from this file is quotable outside the repository until
+  it has.
+
+mappings:
+  # ------------------------------------------------------------------------------------------
+  - unspsc: "39121603"
+    unspsc_title: "Miniature circuit breakers"
+    etim_class: EC000042
+    etim_description: "Miniature circuit breaker (MCB)"
+    relation: skos:exactMatch
+    confidence: high
+    rationale: >-
+      Both descriptors name the same device by the same trade name. This is the one mapping in the
+      file where the two dictionaries agree on a noun, and it is the mapping the whole bridge is
+      worth having for: it gives an eight-digit code an attribute layer of 27 ETIM features with
+      units and closed value lists, which is precisely what UNSPSC does not carry.
+
+  - unspsc: "39121603"
+    unspsc_title: "Miniature circuit breakers"
+    etim_class: EC000271
+    etim_description: "Miniature circuit breaker (MCB) plug model"
+    relation: skos:narrowMatch
+    confidence: high
+    rationale: >-
+      The plug model is a mounting variant of the same device. UNSPSC has no code that separates
+      it, so the ETIM class is strictly narrower. Recorded rather than folded into the exactMatch
+      above, because a bridge that flattened it would assert UNSPSC-level equivalence between a
+      DIN-rail MCB and a plug-in one -- a distinction R1's own resolver is required to abstain on
+      rather than guess (FR-2.3).
+
+  - unspsc: "39121601"
+    unspsc_title: "Circuit breakers"
+    etim_class: EC000042
+    etim_description: "Miniature circuit breaker (MCB)"
+    relation: skos:narrowMatch
+    confidence: high
+    rationale: >-
+      39121601 is the family's generic code and covers every breaker in it, miniature and
+      otherwise. An MCB is one kind. Useful in the direction catalogs actually use it -- a feed
+      coded 39121601 cannot be assumed to be an MCB, and this row is what says so.
+
+  - unspsc: "39121616"
+    unspsc_title: "Molded case circuit breakers"
+    etim_class: EC001047
+    etim_description: "Selective main line circuit breaker"
+    relation: skos:closeMatch
+    confidence: low
+    rationale: >-
+      NOT interchangeable, and the low confidence is the content of this row. A selective main
+      line breaker (SLS) and a moulded-case breaker (MCCB) are both upstream devices installed
+      ahead of final circuits, and trade descriptions swap the words freely -- but ETIM EC001047
+      is defined by selectivity behaviour and 39121616 by enclosure construction, which are
+      different properties of a device that could have either, both or neither. Attributes must
+      not be carried across this row without a human decision, and errata_ecosystem.bridge refuses
+      to derive an attribute layer from a closeMatch for that reason.
+
+  - unspsc: "39121614"
+    unspsc_title: "Earth leakage circuit breakers"
+    etim_class: null
+    relation: declined
+    confidence: none
+    rationale: >-
+      DECLINED, and this is the most load-bearing row in the file. ETIM's earth-leakage class is
+      EC000905, and this repository has already ruled on that term twice: errata_valuesem leaves
+      "ELCB" deliberately unregistered because three live readings exist and none can be picked
+      from the surface form, and audit/config/r1-classes.yaml excludes EC000905 from R1 scope for
+      the same reason. Mapping 39121614 to EC000905 here would re-introduce, inside a published
+      artifact, exactly the ambiguity two other components refuse to resolve -- and it would do it
+      where a downstream consumer could not see the refusal. A declined mapping is a usable
+      answer; a plausible one is not.
+    see_also:
+      - "audit/src/errata_audit/config/r1-classes.yaml -- the EC000905 exclusion and its reason"
+      - "valuesem/tests -- the pinned non-registration of ELCB"
+
+  - unspsc: null
+    unspsc_title: null
+    etim_class: EC000003
+    etim_description: "Residual current circuit breaker (RCCB)"
+    relation: no_match
+    confidence: none
+    rationale: >-
+      Searched all 71,502 commodity titles on 2026-08-20: no code contains "residual current".
+      The nearest candidate is 39121614 "Earth leakage circuit breakers", which is declined above.
+      So an RCCB -- an entire device category with its own IEC standard and an ETIM class carrying
+      31 features -- has no UNSPSC commodity code that names it. That is a finding about UNSPSC,
+      recorded here so that the next person does not repeat the search.
+
+  - unspsc: null
+    unspsc_title: null
+    etim_class: EC001047
+    etim_description: "Selective main line circuit breaker"
+    relation: no_match
+    confidence: none
+    rationale: >-
+      No commodity title names a selective main line breaker. The closeMatch to 39121616 above is
+      the best available and is explicitly not a match. Recorded separately from that row because
+      "we mapped it approximately" and "UNSPSC has no code for it" are different facts, and only
+      the second one tells a standards body something.

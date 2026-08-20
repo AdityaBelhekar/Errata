@@ -1,0 +1,843 @@
+# Adversarial equivalence suite -- packaging frames (FR-0.1).
+#
+# packaging.yaml (19 cases) already passes 100%; the harness itself says a suite written alongside
+# the code it grades encodes the same blind spots twice, and is only doing its job once it contains
+# cases the comparator fails. This file is that attempt for the single highest-severity family in
+# the product. Every case below was run through the real pipeline
+# (errata_comparator.compare_attribute, backed by errata_valuesem.normalize / compare against
+# valuesem/src/errata_valuesem/parsers/packaging.py and ontology/packaging.yaml) before being
+# written down -- none of these labels are guessed from the spec text alone.
+#
+# Two genuine findings came out of that process and are called out again in the run report, not
+# buried here:
+#
+#   1. ALIAS-COVERAGE GAP (recall / false-negative risk). Plain English each-designations that a
+#      human reviewer reads unambiguously as "one at a time" -- "Sold individually", "Individually"
+#      -- are not in the EA alias table (valuesem/ontology/packaging.yaml only lists each/ea/pce/
+#      pc/pcs/piece/pieces/unit/units/single/stk/...). The packaging grammar's prefilter requires at
+#      least one recognised uom word before it will even try a pattern
+#      (parsers/packaging.py:34), so these phrases refuse outright (NO_GRAMMAR_MATCH) rather than
+#      resolving to Each. Paired against a real "Pack of 10", the tenfold pricing error the whole
+#      family exists to catch is invisible to the tool: it declines instead of flagging. See
+#      pkg-h012/pkg-h013.
+#
+#   2. OVER-CONFIDENT SEV-1 ON A NESTED PACKAGING HIERARCHY (precision / false-positive-at-max-
+#      -severity risk). "Box of 10" against "Carton of 200" is read by _compare_packaging as a flat
+#      quantity mismatch (10 != 200) and raised as PACKAGING_FRAME_ERROR -- the highest severity the
+#      system has. But 200 is exactly 20 x 10: a completely ordinary real-world reading is that the
+#      catalog states the inner-pack count and the datasheet states the master-carton count of the
+#      identical physical hierarchy, not a pricing error at all. The comparator has no
+#      divisibility-aware or packaging-level-aware logic, so it cannot tell "genuinely wrong count"
+#      from "same hierarchy, different nesting level" apart, and fires the single most reviewer-
+#      trust-costing verdict the taxonomy has on a pair that a careful human would want to
+#      investigate, not alarm on. See pkg-h022/pkg-h023.
+#
+# A third, narrower and more defensible finding: "Pair" (PR) and "Dozen" (DZ) are quantity-bearing
+# UOM codes, not physical-container nouns, and are therefore absent from ontology/packaging.yaml's
+# `interchangeable_containers` allow-list ([BX, PK, CT, CS, BG, TU]). Compared against an
+# equal-quantity physical container ("Box of 2", "Case of 12"), _compare_packaging's fallback path
+# ("different packaging frames even at the same quantity") fires CONTRADICTION. The base suite's own
+# pkg-010 already hits this exact tension for Dozen/Box-of-12 and resolves it by dual-labelling
+# (`expect: equivalent`, `expect_alternatives: [contradiction]`) rather than calling it settled; the
+# cases below extend that same, already-accepted judgment call to Pair and to a second Dozen
+# instance, to confirm the tension is systemic to the ontology's container-vs-quantity-word design
+# rather than a one-off. These are graded PASS by the harness because of the dual label -- they are
+# included as documentation of a real, recurring design tension, not presented as new bugs.
+#
+# `a` is the catalog value, `b` is the evidence value throughout, matching packaging.yaml's and
+# ingress_hard.yaml's convention.
+
+suite: equivalence
+family: packaging
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: packaging_uom
+    label: Packaging unit of measure
+    kinds: [packaging]
+
+cases:
+  # ------------------------------------------------------------------------------------------
+  # Group 1 -- the canonical maximum-severity error, "Each" against "Box of N", stress-tested
+  # across as many surface spellings of the "each" side as a real catalog/datasheet feed will
+  # actually contain. Confirmed CONTRADICTION (PACKAGING_FRAME_ERROR, SEV-1) for every case in
+  # this group except pkg-h011/h012/h013, which are the group's own findings: three spellings of
+  # "each" that the grammar does NOT recognise, so the tenfold-pricing error is invisible to the
+  # tool on those inputs (it declines rather than flags).
+  - id: pkg-h001
+    a: "Each"
+    b: "Box of 10"
+    expect: contradiction
+    source: "Phase 1: catch this wrong once and you will never get another meeting."
+    rationale: >-
+      Deliberately repeated from packaging.yaml's pkg-101 so this file is a self-contained
+      regression pin on the single most important verdict in the family, per the brief's explicit
+      instruction to re-verify it rather than assume the base suite's coverage is enough. Confirmed
+      directly: PACKAGING_FRAME_ERROR / contradiction, "prices the line at 1/10 of cost."
+
+  - id: pkg-h002
+    a: "EA"
+    b: "BX10"
+    expect: contradiction
+    source: "Same core error as pkg-h001, no-space concatenated notation some CSV exports use."
+    rationale: >-
+      Confirmed: the packaging grammar's uom-then-qty pattern (`^(?P<uom>[A-Za-z\.]+)...`) greedily
+      captures letters only, so "BX10" splits cleanly into uom=BX, qty=10 with no separator needed.
+      Resolves to Box of 10 against Each of 1 -> contradiction, as it must.
+
+  - id: pkg-h003
+    a: "EA"
+    b: "Box(10)"
+    expect: contradiction
+    source: "Same core error, parenthesised quantity notation (packaging.yaml pkg-008's shape)."
+
+  - id: pkg-h004
+    a: "Each"
+    b: "10/box"
+    expect: contradiction
+    source: "Same core error, quantity-first slash notation."
+
+  - id: pkg-h005
+    a: "Stk"
+    b: "PK/20"
+    expect: contradiction
+    source: >-
+      Same core error using the German feed spelling of Each (packaging.yaml pkg-004 establishes
+      Stk = Each) against a pack of 20 rather than 10, so this is not just a copy of pkg-101/pkg-h001
+      with the noun swapped.
+
+  - id: pkg-h006
+    a: "Unit"
+    b: "CT100"
+    expect: contradiction
+    source: "Same core error, the 'unit'/'units' each-alias against a carton of 100."
+
+  - id: pkg-h007
+    a: "1 EA"
+    b: "Carton of 144"
+    expect: contradiction
+    source: >-
+      Same core error with an explicit quantity of one on the each side (packaging.yaml pkg-003's
+      shape) against a gross-count carton, a magnitude real fastener/electrical catalogs use.
+
+  - id: pkg-h008
+    a: "Piece"
+    b: "BG100"
+    expect: contradiction
+    source: "Same core error, 'Piece' against a bagged count of 100."
+
+  - id: pkg-h009
+    a: "EA"
+    b: "10 EA"
+    expect: contradiction
+    source: >-
+      A packaging-frame error does not require the container word to differ at all. Both sides say
+      "EA"; only the quantity differs (1 implied against 10 stated).
+    rationale: >-
+      The surface-similarity trap: a comparator (or a human skimming quickly) that pattern-matches
+      on the unit token alone could wave this through because both sides "say EA". Confirmed the
+      real comparator does not: it reads the quantity independently of the unit token (Each of 1
+      against Each of 10) and correctly raises PACKAGING_FRAME_ERROR. Included as a regression pin
+      on that specific discipline, and as a realistic error shape -- a catalog defaulting an "EA"
+      field to 1 when the true order multiple is 10 is exactly the kind of single-field data-entry
+      slip this family exists to catch.
+
+  - id: pkg-h010
+    a: "Piece"
+    b: "10 Pieces"
+    expect: contradiction
+    source: "Same surface-similarity trap as pkg-h009, natural-language plural instead of a code."
+
+  - id: pkg-h011
+    a: "1"
+    b: "10/box"
+    expect: undetermined
+    source: >-
+      A bare, unit-less numeral in a packaging_uom field is genuinely ambiguous: it could be
+      shorthand for "1 each" (the brief's own suggested reading), or it could be a stray minimum-
+      order-quantity or count value that has bled into the wrong column -- there is no textual
+      evidence in "1" alone that licenses "Each" specifically.
+    rationale: >-
+      Confirmed directly: normalize("1", expect=packaging) refuses (NO_GRAMMAR_MATCH). The
+      packaging prefilter (parsers/packaging.py:34) requires at least one word that resolves via
+      onto.uom(...) before it will try any pattern, and "1" contains no letters at all, so it is
+      never even offered to the grammar -- it doesn't fail a pattern, it never reaches one. The
+      pipeline therefore declines rather than guesses, which is the textbook-correct behaviour per
+      "never invent a fact." The finding worth flagging is a coverage one, not a false-positive one:
+      if a real feed puts a bare "1" in a packaging_uom column to mean "each", the tenfold error
+      against "10/box" is invisible to this tool on that exact spelling -- it abstains rather than
+      catching it. Labelled undetermined (not contradiction) because the honest ground truth really
+      is "cannot tell", not "the tool is wrong to decline".
+
+  - id: pkg-h012
+    a: "Sold individually"
+    b: "Pack of 10"
+    expect: contradiction
+    source: >-
+      Common distributor catalog phrasing for the each unit of sale (e.g. "sold individually" /
+      "sold as each"); a competent reviewer reads this as an unambiguous claim of Each = 1.
+    rationale: >-
+      GENUINE FINDING (alias-coverage gap, not a comparator-logic bug). Confirmed directly:
+      normalize("Sold individually", expect=packaging) refuses (NO_GRAMMAR_MATCH) -- "sold" and
+      "individually" both fail onto.uom() lookup because neither word is in the EA alias list
+      (valuesem/ontology/packaging.yaml only has each/ea/ea./pce/pc/pcs/piece/pieces/unit/units/
+      single/stk/stück/st/item/C62). compare_attribute therefore declines the whole pair
+      (undetermined) instead of catching what is, read honestly, the exact "Each against Box of 10"
+      class of error the family is built around -- with a phrase that shows up routinely in real
+      catalog exports. Labelled contradiction here as the honest ground truth (what a reviewer
+      would say), specifically so the actual run surfaces this as UNEXPECTED_ABSTENTION rather than
+      quietly agreeing with the tool's abstention: the gap is in alias coverage, and the fix is a
+      one-line addition to the EA aliases list, not a change to this suite's judgment.
+
+  - id: pkg-h013
+    a: "Individually"
+    b: "Pack of 10"
+    expect: contradiction
+    source: "Same alias-coverage gap as pkg-h012, single-word variant."
+    rationale: >-
+      Confirmed directly: "Individually" alone also refuses (NO_GRAMMAR_MATCH) for the same reason.
+      Included as a second, shorter instance to show the gap is not an artefact of the specific
+      three-word phrase in pkg-h012.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 2 -- genuine equivalent notational variants that must NOT be flagged. All confirmed
+  # equivalent / equivalent_vocabulary except pkg-h021, which is a deliberate near-miss: "Qty 10"
+  # looks like it should belong in this group but is excluded on purpose (see rationale).
+  - id: pkg-h014
+    a: "Box of 10"
+    b: "PK10"
+    expect: equivalent
+    source: "Interchangeable container noun (packaging.yaml pkg-007's convention) plus concatenated notation."
+
+  - id: pkg-h015
+    a: "Box of 10"
+    b: "10/pack"
+    expect: equivalent
+    source: "Interchangeable container noun, quantity-first slash notation."
+
+  - id: pkg-h016
+    a: "Box of 10"
+    b: "10 per pack"
+    expect: equivalent
+    source: "Interchangeable container noun, prepositional notation (packaging.yaml pkg-008's shape)."
+
+  - id: pkg-h017
+    a: "Box of 10"
+    b: "BX(10)"
+    expect: equivalent
+    source: "Same uom code, parenthesised notation -- not merely interchangeable but literally identical."
+
+  - id: pkg-h018
+    a: "PK/25"
+    b: "25/PK"
+    expect: equivalent
+    source: "Quantity-first and quantity-last spellings of the identical pack, extending packaging.yaml pkg-006 to a different quantity."
+
+  - id: pkg-h019
+    a: "Case of 10"
+    b: "Box of 10"
+    expect: equivalent
+    source: "Case (CS) is in the interchangeable_containers group alongside Box (BX); not yet exercised by packaging.yaml."
+
+  - id: pkg-h020
+    a: "CS"
+    b: "Case"
+    expect: equivalent
+    source: "Bare code against full spelling, neither side stating a quantity."
+
+  - id: pkg-h021
+    a: "Box of 10"
+    b: "Qty 10"
+    expect: undetermined
+    source: >-
+      "Qty" is not a packaging container word and not an alias in the ontology; per the brief's own
+      caution, a bare "Qty N" in a packaging-adjacent field is genuinely ambiguous between "pack
+      size" and "minimum/standard order quantity", two different business facts that should not be
+      silently equated.
+    rationale: >-
+      Confirmed directly: normalize("Qty 10", expect=packaging) refuses. The word "Qty" fails
+      onto.uom() lookup, so the packaging prefilter's word-check never even offers the string to a
+      pattern. This is the right outcome for two independent reasons that happen to coincide here:
+      the grammar has no alias for "Qty" (a coverage gap in the abstract), and even if it did, "Qty
+      10" is exactly the ambiguous-with-order-quantity phrasing the brief warns against treating as
+      a confident pack-size equivalence. Deliberately placed in contrast to Group 2's genuine
+      equivalents: it looks similar ("N per container") but is excluded from that group on purpose.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 3 -- inner-pack vs master-carton: the real, under-tested confusion the brief calls out
+  # by name. pkg-h022/pkg-h023 are this file's second flagged finding (see header): the comparator
+  # cannot distinguish "genuinely wrong pack count" from "same nested hierarchy, different level",
+  # and fires its highest-severity verdict on a pair a careful reviewer would want to investigate,
+  # not alarm on. pkg-h024 is the contrast case showing where a flat quantity mismatch really is
+  # just wrong. pkg-h025 shows the grammar cannot even parse the qualified vocabulary ("inner pack",
+  # "master carton") that would let it reason about levels explicitly.
+  - id: pkg-h022
+    a: "Box of 10"
+    b: "Carton of 200"
+    expect: undetermined
+    source: >-
+      200 = 20 x 10 exactly. An entirely ordinary real-world reading of this pair is that the
+      catalog states the inner-pack (box) count and the datasheet states the master-carton count of
+      the identical physical packaging hierarchy -- two true facts about different nesting levels of
+      the same product, not a pricing contradiction. Without a stated packaging level on either
+      side, a competent reviewer cannot confidently rule this reading out.
+    rationale: >-
+      MAJOR FINDING. Confirmed directly: compare_attribute returns disagreement_class
+      packaging_frame_error (SEV-1, the system's highest severity) with rationale "pack quantities
+      differ: Box of 10 against Carton of 200. A packaging-frame error prices the line at 1/20 of
+      cost." _compare_packaging (comparator/src/errata_comparator via
+      valuesem/src/errata_valuesem/compare.py::_compare_packaging) does a flat quantity equality
+      check with no awareness that one exact-multiple relationship between the two numbers is
+      strong evidence of a nested hierarchy rather than an error. Per compare.py's own stated
+      design principle ("is there any reading under which these two strings say the same thing?
+      ... only reaches CONTRADICTION when the answer is no") there manifestly IS such a reading
+      here, and the comparator reaches CONTRADICTION anyway, at the most reviewer-trust-costing
+      severity level the taxonomy has. Labelled undetermined as the honest ground truth: the right
+      answer is "I cannot tell which packaging level either source describes", not a confident
+      SEV-1 alarm. Expected to register as OVER_RESOLVED (answered where the honest reply is
+      unknown), not as a raw pass/fail, and that is exactly the right bucket for what this is.
+
+  - id: pkg-h023
+    a: "Box of 10"
+    b: "Carton of 20"
+    expect: undetermined
+    source: >-
+      Same reasoning as pkg-h022 with a smaller, still-exact multiple (20 = 2 x 10): a carton of two
+      inner boxes is at least as plausible a real packaging hierarchy as a pricing error.
+    rationale: >-
+      Confirmed directly: also packaging_frame_error / contradiction ("prices the line at 1/2 of
+      cost"). Included as a second instance at a different, smaller ratio so the finding in pkg-h022
+      is not dismissible as an artefact of one specific large multiple.
+
+  - id: pkg-h024
+    a: "Box of 10"
+    b: "Carton of 205"
+    expect: contradiction
+    source: >-
+      205 is not a multiple of 10 (205 / 10 = 20.5 boxes), so no clean nested-hierarchy reading
+      exists. This is far more likely a genuine data error than two consistent descriptions of the
+      same packaging structure at different levels.
+    rationale: >-
+      Deliberately contrasted with pkg-h022/pkg-h023 to draw the line precisely: the hierarchy
+      argument for declining only holds when the numbers are actually consistent with nesting. Off
+      that exact-multiple boundary, a flat quantity mismatch is again the right call, and the actual
+      comparator output (packaging_frame_error / contradiction) is correct here -- this is not
+      being flagged as a finding, it is the control case proving the pkg-h022 finding is about a
+      genuine gap and not about this suite disliking all Box/Carton mismatches on principle.
+
+  - id: pkg-h025
+    a: "Inner pack of 10"
+    b: "Master carton of 200"
+    expect: undetermined
+    source: >-
+      The explicit, unambiguous vocabulary a real GS1-style packaging hierarchy would use to state
+      exactly which level each number describes -- which, if the grammar understood it, is precisely
+      the information that would let a comparator resolve pkg-h022 correctly instead of guessing.
+    rationale: >-
+      Confirmed directly: neither "Inner pack of 10" nor "Master carton of 200" parses.
+      onto.uom("Inner") and onto.uom("Master") both miss, and even where a word inside the phrase
+      does resolve (onto.uom("pack") hits PK), the single-word-adjacent-to-quantity shape every
+      packaging_patterns regex requires (`^(?P<uom>[A-Za-z\.]+)...`) cannot match a multi-word
+      qualified container noun like "Inner pack" or "Master carton" as a unit -- the regex's uom
+      group is contiguous letters only, so it can capture "Inner" but then has nothing to do with
+      the literal "pack of 10" that follows, and the whole pattern fails to match the full string.
+      Both sides refuse (NO_GRAMMAR_MATCH), so the pair declines safely rather than being
+      misparsed -- but that means the grammar has no path today to recognise the exact vocabulary
+      that would resolve the pkg-h022-style ambiguity precisely. A genuine, actionable coverage gap
+      for any distributor feed that already qualifies its packaging language this way (which GS1-
+      aligned feeds routinely do), reported here rather than treated as this suite's problem to
+      route around.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 4 -- "Pair" = 2. pkg-h026 documents the third finding in the header: PR is a quantity-
+  # bearing code, not a physical-container noun, and is absent from interchangeable_containers, so
+  # it collides with Box/Case/etc. at equal quantity. Dual-labelled to match the base suite's own
+  # already-accepted judgment call on the structurally identical Dozen/Box-of-12 case (pkg-010).
+  - id: pkg-h026
+    a: "Pair"
+    b: "Box of 2"
+    expect: equivalent
+    expect_alternatives: [contradiction]
+    source: >-
+      UN/ECE Rec 20 code PR "pair", an active Rec 20 unit carrying an implicit quantity of two
+      (verified 2026-08-19; note PR in Rec 21 is "Receptacle, plastic"). packaging.yaml pkg-105 relies
+      on this). The commercial fact -- two base units per orderable line -- is identical to "Box of
+      2"; packaging.yaml pkg-007 already establishes that the container NOUN is commercially
+      immaterial once the quantity matches ("Box of 10"/"Pack of 10").
+    rationale: >-
+      Dual-labelled on purpose, exactly like packaging.yaml's pkg-010 (Dozen vs Box of 12), which
+      this case is structurally identical to with a different UOM pair. Confirmed directly:
+      PACKAGING_FRAME_ERROR / contradiction, "Pair and Box are different packaging frames even at
+      the same quantity" -- because PR is not a member of ontology/packaging.yaml's
+      interchangeable_containers list ([BX, PK, CT, CS, BG, TU]), which only contains physical-
+      shipping-container nouns, not quantity-descriptive codes like PR or DZ. A stricter reading
+      (matching packaging.yaml pkg-010's own alternative label) is that a merchandiser may treat
+      "sold as a pair" as a distinct order unit from "boxed two to a box" even at equal headcount --
+      a pair of gloves is inherently a matched set, a box of 2 identical widgets is not necessarily.
+      Recorded as a judgment call, consistent with existing precedent, rather than a hard defect:
+      included to confirm the same design tension recurs for a second UOM code, i.e. it is
+      systemic to the ontology's container-vs-quantity-word split rather than a one-off around DZ.
+
+  - id: pkg-h027
+    a: "Pair"
+    b: "2"
+    expect: undetermined
+    source: >-
+      A bare, unit-less "2" is ambiguous the same way pkg-h011's bare "1" is: it could be a
+      dimensional count of something else entirely, not a packaging_uom assertion at all.
+    rationale: >-
+      Confirmed directly: normalize("2", expect=packaging) refuses (no letters, so onto.uom() is
+      never consulted). Comparison declines. This is the honest answer -- "2" alone carries no
+      packaging semantics -- and matches actual behaviour, unlike pkg-h012/h013 where the honest
+      answer differs from what the tool does.
+
+  - id: pkg-h028
+    a: "2"
+    b: "Pair"
+    expect: undetermined
+    source: "Same reasoning as pkg-h027, sides reversed to confirm the abstention is not direction-dependent."
+
+  - id: pkg-h029
+    a: "Pair"
+    b: "PR2"
+    expect: equivalent
+    source: "Same uom code (PR), concatenated notation -- a genuine spelling variant, not the interchangeable-container question pkg-h026 raises."
+
+  - id: pkg-h030
+    a: "Pair"
+    b: "2/PR"
+    expect: equivalent
+    source: "Same uom code (PR), quantity-first slash notation."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 5 -- "Dozen" = 12, plus "Hundred" as a third instance of the same container-vs-quantity-
+  # word tension raised in Group 4 (systemic, not specific to PR or DZ).
+  - id: pkg-h031
+    a: "Dozen"
+    b: "Case of 12"
+    expect: equivalent
+    expect_alternatives: [contradiction]
+    source: >-
+      Dozen carries an implicit quantity of 12 (packaging.yaml pkg-010 already establishes this
+      against Box of 12); Case (CS) is a second physical-container noun to test the same tension
+      against, distinct from packaging.yaml's own Box pairing.
+    rationale: >-
+      Confirmed directly: PACKAGING_FRAME_ERROR / contradiction, "Dozen and Case are different
+      packaging frames even at the same quantity" -- same root cause as pkg-h026 (DZ is absent from
+      interchangeable_containers). Dual-labelled to match packaging.yaml pkg-010's own precedent.
+
+  - id: pkg-h032
+    a: "Dozen"
+    b: "12"
+    expect: undetermined
+    source: "Bare unit-less '12' is ambiguous, same reasoning as pkg-h027/pkg-h011."
+    rationale: "Confirmed: bare '12' refuses to parse (no letters); comparison declines correctly."
+
+  - id: pkg-h033
+    a: "12"
+    b: "Dozen"
+    expect: undetermined
+    source: "Same reasoning as pkg-h032, sides reversed."
+
+  - id: pkg-h034
+    a: "Dozen"
+    b: "DZ12"
+    expect: equivalent
+    source: "Same uom code (DZ), concatenated notation -- a genuine spelling variant."
+
+  - id: pkg-h035
+    a: "Hundred"
+    b: "Box of 100"
+    expect: equivalent
+    expect_alternatives: [contradiction]
+    source: >-
+      "Hundred" and "per hundred" are aliases of the Hundred frame in ontology/packaging.yaml with
+      an implicit quantity of 100, by the same logic packaging.yaml pkg-010 applies to Dozen. This
+      note previously flagged that the ontology used CQ while Rec 20's code for "hundred" is CEN;
+      that was correct (CQ is "cartridge") and the ontology has since been corrected to CEN,
+      VERIFIED 2026-08-19 against the Rec 20 Rev 17 list. The equivalence being tested is the
+      quantity-word-vs-container question, which does not depend on the code letters.
+    rationale: >-
+      Confirmed directly: PACKAGING_FRAME_ERROR / contradiction, "Hundred and Box are different
+      packaging frames even at the same quantity" -- CQ is likewise absent from
+      interchangeable_containers. Third instance of the Group 4/5 pattern (after PR and DZ),
+      included specifically to demonstrate the tension is a property of the ontology's design (any
+      quantity-word code against any physical-container noun at matching quantity) rather than
+      something specific to Pair or Dozen individually. Dual-labelled for the same reason as
+      pkg-h026/pkg-h031.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 6 -- the "C" = 100 trade convention. The convention itself is a genuine but non-universal
+  # one (Roman numeral C, "priced per C" in some US/A-industry fastener and paper catalogs) and is
+  # easily confused with "C" meaning something else entirely (Celsius, an ERP case-count code, a
+  # column header abbreviation). Every source line below is marked [UNVERIFIED - needs checking] on
+  # the convention itself; what IS independently confirmed against the running code is the safe,
+  # correct behaviour being tested for -- decline, don't guess.
+  - id: pkg-h036
+    a: "C"
+    b: "Box of 100"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] "C" as a trade abbreviation for "hundred" (Roman numeral C) is a
+      genuine but non-universal US/A-industry convention (e.g. "price per C" for fasteners); not
+      confirmed against a primary standards source here, and deliberately not assumed true.
+    rationale: >-
+      Confirmed directly: ontology/packaging.yaml's own comment explains why -- the CQ (Hundred)
+      code's aliases are deliberately restricted to "hundred" / "per hundred" / "cq", NOT the bare
+      letter "C", specifically because "C" is overloaded (Celsius, an ERP case-count abbreviation,
+      etc.) and guessing it means "hundred" would be inventing a fact. normalize("C",
+      expect=packaging) refuses (NO_GRAMMAR_MATCH) as designed. This case is not testing whether the
+      comparator resolves C=100 -- it deliberately cannot, by design -- it is testing and confirming
+      that faced with an unresolvable, overloaded single letter, the pipeline declines rather than
+      picking a guess. That refusal is the behaviour being verified, not a specific numeric
+      resolution.
+
+  - id: pkg-h037
+    a: "C"
+    b: "100"
+    expect: undetermined
+    source: "[UNVERIFIED - needs checking] Same convention as pkg-h036; bare '100' is also unparseable (no unit word) for the same reason as pkg-h011's bare '1'."
+    rationale: "Confirmed: both sides independently refuse; the pair declines, doubly safely."
+
+  - id: pkg-h038
+    a: "Priced per C"
+    b: "Box of 100"
+    expect: undetermined
+    source: "[UNVERIFIED - needs checking] The fuller natural-language form of the same convention."
+    rationale: >-
+      Confirmed directly: "Priced per C" does not parse ("per" and "C" are not uom words the
+      ontology recognises even though "per hundred" as a complete alias would be -- the tokenizer
+      requires the recognised phrase, not just a plausible paraphrase of it). Declines correctly.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 7 -- Roll-of-length packaging against a bare length. "Roll of 50 m" is a PACKAGING claim
+  # (one saleable roll contains 50 metres); a bare "50 m" is, depending on the attribute, a LENGTH
+  # claim about the product itself, not a statement about how it is packaged. These live on
+  # different attributes in a real catalog and the grammar should never conflate them.
+  - id: pkg-h039
+    a: "Roll of 50 m"
+    b: "50 m"
+    expect: undetermined
+    source: >-
+      A packaging_uom field should describe the saleable-unit multiplier; a bare length is a
+      dimensional attribute of the product, not a packaging fact, and the two must not be silently
+      equated just because both mention "50".
+    rationale: >-
+      Confirmed directly: BOTH sides refuse to parse under the packaging-typed attribute
+      (NO_GRAMMAR_MATCH). "Roll of 50 m" fails because every packaging_patterns regex ends its
+      quantity group at `\d+(?:\.\d+)?$` with nothing after it -- the trailing unit letter "m" has
+      nowhere to go, so the whole pattern fails to match (this is a real, if safely-failing,
+      coverage gap: continuous-length goods sold by the roll -- cable, wire, tubing, hose, rope --
+      are a large and common category in industrial distribution, and this notation for them is
+      entirely unsupported). Bare "50 m" fails packaging's word-check because "m" is not a
+      registered packaging uom alias. Both failures are safe (decline, not guess) and neither side
+      is coerced into the other's reading -- confirming the no-conflation property this case exists
+      to test, even though it also surfaces the "Roll of <n> <unit>" notation as unsupported.
+
+  - id: pkg-h040
+    a: "Roll of 50 m"
+    b: "Roll of 50m"
+    expect: undetermined
+    source: "Same gap as pkg-h039, spacing variant, to confirm this is a structural grammar limitation and not a whitespace-formatting artefact."
+    rationale: "Confirmed: both spellings refuse identically; the gap is in the pattern shape, not tokenisation of whitespace."
+
+  - id: pkg-h041
+    a: "Roll of 50 m"
+    b: "50 m"
+    attribute:
+      key: cable_length
+      label: Cable length
+      kinds: [quantity]
+    expect: undetermined
+    source: >-
+      Repeats pkg-h039 under an attribute explicitly typed as a QUANTITY (a real length field),
+      using the per-case attribute override, to check whether the gap in pkg-h039 is really about
+      packaging-vs-length disambiguation or just about "Roll of ..." not being understood at all.
+    rationale: >-
+      Confirmed directly: even typed as a length attribute (so the dimension/Pint grammar is in the
+      parser chain instead of packaging's), "Roll of 50 m" still refuses -- the dimension grammar
+      has no rule for a leading "Roll of" qualifier either. This isolates the finding precisely: the
+      unsupported shape is the two-part "container word + quantified unit" combination itself, not a
+      packaging/length attribute-typing confusion. See pkg-h042 for the contrasting case that proves
+      the length grammar is otherwise fine.
+
+  - id: pkg-h042
+    a: "50 m"
+    b: "50 m"
+    attribute:
+      key: cable_length
+      label: Cable length
+      kinds: [quantity]
+    expect: equivalent
+    source: "Sanity contrast for pkg-h041: a bare, unit-quantified length parses and compares normally once the attribute is correctly typed as a quantity."
+    rationale: >-
+      Confirmed directly: resolves to two Quantity(50, meter) values, EQUIVALENT. Proves the finding
+      in pkg-h039/h041 is specifically about the "Roll of ..." wrapper, not about length parsing
+      being broken in general.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 8 -- standard UoM codes against their full spellings. Each code below is checked directly
+  # against the ontology rather than assumed; pkg-h049 is a deliberately unresolved code, marked
+  # [UNVERIFIED], to test decline-not-guess on a code this suite does not confirm is standard.
+  - id: pkg-h043
+    a: "EA"
+    b: "Each"
+    expect: equivalent
+    source: "UN/ECE Rec 20 code EA (packaging.yaml pkg-001 already establishes this)."
+
+  - id: pkg-h044
+    a: "PCE"
+    b: "Piece"
+    expect: equivalent
+    source: >-
+      PCE is not a UN/CEFACT code: absent from Rec 20 Rev 17 and from Rec 21 (verified
+      2026-08-19 against both machine-readable lists); Rec 20's "piece" is H87. PCE is a
+      trade/EDIFACT abbreviation held as an alias of EA in ontology/packaging.yaml.
+      packaging.yaml pkg-002 establishes the same equivalence and carries the same caveat.
+
+  - id: pkg-h045
+    a: "BX"
+    b: "Box"
+    expect: equivalent
+    source: "Common distributor/EDI abbreviation for Box; matches the ontology's own alias table (ontology/packaging.yaml)."
+
+  - id: pkg-h046
+    a: "CT"
+    b: "Carton"
+    expect: equivalent
+    source: >-
+      UN/ECE Rec 21 code CT "Carton". In Rec 20 Rev 17 the same two letters carry status X
+      and the instruction "Use UN/ECE Recommendation 21" (verified 2026-08-19). packaging.yaml
+      pkg-009 already establishes this; bare-code variant with no quantity stated on either side.
+
+  - id: pkg-h047
+    a: "PK"
+    b: "Pack"
+    expect: equivalent
+    source: "Common distributor/EDI abbreviation for Pack; matches the ontology's own alias table."
+
+  - id: pkg-h048
+    a: "RL"
+    b: "Roll"
+    expect: equivalent
+    source: >-
+      Common distributor/EDI abbreviation for Roll; matches the ontology's own alias table. In
+      UN/ECE Rec 21 proper, RL is "reel" and RO is "roll" (VERIFIED 2026-08-19, Rec 20 Rev 17 list,
+      where both carry status `X` = "use Rec 21"). The ontology deliberately merges the two into
+      one RO frame, so RL still resolves to Roll -- this case is grounded in that documented merge
+      plus trade usage. The stale half of this note ("does not recognise RO at all") was true when
+      written and was fixed alongside pkg-h049.
+
+  - id: pkg-h049
+    a: "RO"
+    b: "Roll"
+    expect: equivalent
+    source: >-
+      VERIFIED 2026-08-19 against the machine-readable UN/ECE Rec 20 list (Rev 17, 2021;
+      github.com/datasets/unece-units-of-measure, 2136 entries): RO is "roll" and RL is "reel".
+      Both carry status `X` -- Rec 20 lists them only to redirect to Rec 21, which is where package
+      -type codes actually live. This case previously carried the UNVERIFIED marker below and
+      predicted a safe refusal; the research it asked for has now been done and it was, as it
+      suspected, a real coverage gap. The ontology now registers RO.
+    rationale: >-
+      Label changed undetermined -> equivalent on verified evidence, not to make the code look
+      good: the ontology gained the RO alias BECAUSE the check showed the code was real, and this
+      label follows the standard rather than the implementation. Note the ontology deliberately
+      merges reel and roll into the single RO frame (see the note in packaging.yaml), so "RO" and
+      "Roll" name the same packaging frame with no quantity on either side. The prior label was
+      correct for the ontology as it stood and is preserved in the source field above.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 9 -- ordering-rule vs pack-size conflation. "Sold in multiples of 5" is a PURCHASING RULE
+  # (you may order 5, 10, 15... units; each unit may still individually be "Each"), not the PHYSICAL
+  # PACKAGING claim "Box of 5" makes (the product ships in a sealed box containing exactly 5). Both
+  # involve the number 5; they are not the same kind of fact and must not be equated.
+  - id: pkg-h050
+    a: "Sold in multiples of 5"
+    b: "Box of 5"
+    expect: undetermined
+    source: >-
+      An ordering-multiple rule says nothing about physical packaging -- a product sold in
+      multiples of 5 could ship as 5 loose Eaches, a box of 5, or five separate boxes of 1. Treating
+      it as equivalent to "Box of 5" would fabricate a physical-packaging claim the source never
+      made; treating it as a confident contradiction would equally overclaim, since the source also
+      never denied Box of 5. The honest answer is that this sentence does not state a packaging
+      fact at all.
+    rationale: >-
+      Confirmed directly: "Sold in multiples of 5" does not parse under the packaging grammar
+      (NO_GRAMMAR_MATCH) -- none of its words resolve via onto.uom(), so the pattern loop is never
+      even entered. The comparator therefore declines rather than conflating an ordering rule with a
+      packaging fact, which is the correct, conservative outcome either way this case could have
+      been decided (contradiction was the brief's other allowed reading; undetermined is preferred
+      here because the source text is silent on physical packaging, not actively contradicting it).
+      This is confirmed-correct behaviour, not a gap: the grammar's narrow, container-noun-anchored
+      vocabulary structurally cannot mistake a purchasing-rule sentence for a packaging one.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 10 -- "1000 pcs" against "1 M", where M might mean "mille" (1000, Roman numeral
+  # convention, seen in some fastener/electrical catalogs) or might mean SI mega- or simply be a
+  # length unit (metre). All three readings are live and mutually exclusive; the correct behaviour
+  # is to decline rather than pick one.
+  - id: pkg-h051
+    a: "1000 pcs"
+    b: "1 M"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] "M" as "mille" (1000) is a genuine old trade convention (Roman
+      numeral M) reportedly still seen in some fastener/electrical catalogs, but is directly
+      ambiguous with SI "M" (mega-, or a bare metre abbreviation); not confirmed as the intended
+      reading here and deliberately not assumed.
+    rationale: >-
+      Confirmed directly: normalize("1 M", expect=packaging) refuses (NO_GRAMMAR_MATCH). This is
+      guaranteed structurally, not just empirically: a packaging-typed attribute's parser chain is
+      (packaging, generic) only (valuesem/src/errata_valuesem/normalize.py, _BY_KIND[Kind.PACKAGING])
+      -- the dimension/Pint grammar that might otherwise read "M" as a unit is never even invoked for
+      a value typed as packaging, and "M" is deliberately absent from the packaging ontology's own
+      uom aliases (ontology/packaging.yaml's own comment: "'1 M' is a metre far more often than it
+      is a thousand pieces, and a packaging parser that claims it would turn a length field into a
+      pack quantity"). So the pair declines by construction rather than by luck. This pins that
+      attribute-typing firewall down as a regression test: it is exactly the FR-3.1 property ("the
+      pipeline knows the ETIM attribute it is auditing") that prevents this specific
+      mille-vs-mega-vs-metre ambiguity from ever reaching a guess.
+
+  - id: pkg-h052
+    a: "1 M"
+    b: "1000 pcs"
+    expect: undetermined
+    source: "[UNVERIFIED - needs checking] Same convention as pkg-h051, sides reversed to confirm the abstention is not direction-dependent."
+
+  - id: pkg-h053
+    a: "1000 pcs"
+    b: "1M"
+    expect: undetermined
+    source: "[UNVERIFIED - needs checking] Same convention as pkg-h051, no-space concatenated spelling."
+    rationale: "Confirmed: '1M' refuses identically to '1 M'; the gap (by design) is not sensitive to the space."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 11 -- genuine, correct contradictions used as contrast/confirmation cases: container-type
+  # differences that ARE commercially real and that the comparator correctly does not wave through,
+  # even at matching headcount. Included so the false-positive-risk findings in Groups 3-5 read
+  # against a clear picture of what the comparator gets right, not just what it gets wrong.
+  - id: pkg-h054
+    a: "EA"
+    b: "Bag of 1"
+    expect: contradiction
+    source: >-
+      "Each" (sold loose, no container) and "Bag of 1" (individually bagged) are different physical
+      facts about the product even though both assert a quantity of one -- bagging is itself a
+      packaging step with real cost and handling implications.
+    rationale: >-
+      Confirmed directly: PACKAGING_FRAME_ERROR / contradiction, "Each and Bag are different
+      packaging frames even at the same quantity." Correct: unlike Pair/Box-of-2 (Group 4), EA is
+      not a quantity-descriptive code standing in for a container -- it specifically means NO
+      container -- so a container claim of any kind at any quantity is a genuine, different fact.
+      Confirms the comparator draws this line deliberately rather than only by omission.
+
+  - id: pkg-h055
+    a: "Box"
+    b: "Roll"
+    expect: contradiction
+    source: >-
+      A box and a roll are physically incompatible container types (discrete rigid container
+      against a continuous coiled form); neither states a quantity, but the container types
+      themselves are mutually exclusive claims about how the product ships.
+    rationale: >-
+      Confirmed directly: neither side states a pack quantity, and RL is not in
+      interchangeable_containers with BX -> PACKAGING_FRAME_ERROR / contradiction. Correctly
+      distinguished from the Box/Pack/Case/Carton/Bag/Tube group, which genuinely are interchangeable
+      shipping-container words.
+
+  - id: pkg-h056
+    a: "Roll of 50"
+    b: "Box of 50"
+    expect: contradiction
+    source: "Same physical-incompatibility reasoning as pkg-h055, with an explicit matching headcount to show the quantity agreeing does not rescue it."
+    rationale: "Confirmed: PACKAGING_FRAME_ERROR / contradiction, 'Roll and Box are different packaging frames even at the same quantity' -- correctly so."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 12 -- granularity / agreement_specific with fresh container words not already exercised
+  # by packaging.yaml's pkg-201/pkg-202/pkg-203, including the interchangeable-noun-aware branch of
+  # the bare-container-vs-stated-quantity comparison (a container is named but only one side counts
+  # it, AND the two container nouns differ).
+  - id: pkg-h057
+    a: "Box"
+    b: "Pack of 10"
+    expect: granularity
+    source: "The catalog names a container but not a count; the evidence states the count, using an interchangeable but different container noun."
+    rationale: >-
+      Confirmed directly: B_MORE_SPECIFIC / granularity_mismatch, "'PK/10' states how many are in
+      the container and 'BX' does not." Confirms the unspecified-quantity branch of
+      _compare_packaging correctly applies containers_interchangeable() even when checking
+      compatibility for this comparison, not just for the both-quantities-known branch that
+      packaging.yaml's own cases exercise.
+
+  - id: pkg-h058
+    a: "Pack of 10"
+    b: "Box"
+    expect: agreement_specific
+    source: "pkg-h057 with the sides reversed: the catalog states the count the evidence omits."
+
+  - id: pkg-h059
+    a: "Box"
+    b: "Pack"
+    expect: equivalent
+    source: "Neither side states a quantity; the container nouns are interchangeable, so this is agreement, not two unknowns colliding into a false match."
+    rationale: >-
+      Confirmed: both sides parse to a bulk container with quantity=None, and BX/PK are
+      interchangeable, so the both-unspecified branch reports EQUIVALENT rather than declining --
+      correct, since "some unspecified box count" and "some unspecified pack count" of
+      interchangeable container types really is the same (incomplete) claim.
+
+  - id: pkg-h060
+    a: "Carton"
+    b: "Carton of 500"
+    expect: granularity
+    source: "Same structural pattern as packaging.yaml pkg-201, fresh container word and a magnitude (500) not otherwise used in this file's granularity cases."
+
+  - id: pkg-h061
+    a: "Bag"
+    b: "Bag of 25"
+    expect: granularity
+    source: "Same structural pattern, Bag rather than Box/Carton."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 13 -- malformed input. FR-4.2: a grammar either parses or refuses; a non-positive pack
+  # quantity is nonsensical and must refuse rather than be silently accepted as zero or coerced.
+  - id: pkg-h062
+    a: "Box of 0"
+    b: "Box of 10"
+    expect: undetermined
+    source: "A pack of zero is not a coherent packaging claim; FR-4.2 requires refusal, not a guess at what was meant."
+    rationale: >-
+      Confirmed directly: normalize("Box of 0", expect=packaging) returns
+      Refusal(reason=MALFORMED, detail="pack quantity '0' is not positive") -- packaging.py's own
+      explicit positivity check (parsers/packaging.py:56-62). Comparison declines. Correct: refusal
+      is the routable signal here, not a silent guess that "Box of 0" means the same as "Box" (no
+      stated quantity) or means the product does not exist.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 14 -- cross-family nonsense, defense-in-depth. A packaging-typed attribute should decline
+  # cleanly on a value that is unambiguously a different kind of fact altogether, rather than being
+  # coerced through the generic-term fallback that Kind.PACKAGING's parser chain also includes.
+  - id: pkg-h063
+    a: "Stainless steel"
+    b: "Box of 10"
+    expect: undetermined
+    source: "A material identity and a packaging frame are different semantic families with no defined relationship; there is nothing here for a packaging_uom attribute to agree or disagree about."
+    rationale: >-
+      Confirmed directly: "Stainless steel" resolves via the generic-term fallback that
+      Kind.PACKAGING's parser chain includes (packaging, generic), but its generic term subsumes
+      MATERIAL groups, not the PACKAGING kind, so _generic_subsumption finds no opinion and the
+      pipeline falls through to the plain cross-kind path -> INCOMPARABLE / undetermined, "term and
+      packaging are different semantic families; no comparison is defined, so no finding is raised."
+      Confirms the generic-term fallback (there specifically to let "Threaded"/"Stainless steel"
+      express legitimate granularity against their OWN kind) does not leak into manufacturing a
+      false relationship against an unrelated kind like packaging.
+
+  - id: pkg-h064
+    a: "Threaded"
+    b: "Box of 10"
+    expect: undetermined
+    source: "Same defense-in-depth check as pkg-h063, using the generic term that subsumes THREAD rather than MATERIAL."
+    rationale: "Confirmed: same INCOMPARABLE / undetermined outcome, for the same reason."

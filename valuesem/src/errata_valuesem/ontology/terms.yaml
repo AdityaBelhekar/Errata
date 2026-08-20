@@ -1,0 +1,282 @@
+# Controlled vocabularies and generic subsuming terms.
+#
+# Two different things live in this file:
+#
+#   1. Closed vocabularies (trip curves, pole configurations, RCD types). Two different term ids in
+#      the same vocabulary contradict each other. `1P+N` is not `2P`, and a catalog that says one
+#      where the datasheet says the other is describing a different product.
+#
+#   2. Generic terms that *subsume* structured values -- `Threaded` against `NPT 1/2-14`. These are
+#      the granularity-mismatch cases of §3.3. A generic term is under-specified, never wrong, and
+#      the distinction is the difference between a useful finding and an insulting one.
+
+version: "terms/1.2.0"
+
+vocabularies:
+  - id: trip_curve
+    label: "Tripping characteristic"
+    etim_feature: "EF000889"
+    source: >-
+      IEC 60898-1 / IEC 60947-2 for the characteristic itself. The ETIM id was corrected on
+      2026-08-20 (finding N11): this vocabulary previously cited EF000094, and **there is no
+      EF000094 in ETIM 10.0**. Read out of ETIMFEATURE.csv and ETIMARTCLASSFEATUREMAP.csv
+      (ALL-SECTORS, released 2024-12-05, ODC-By, sha256 in data/reference/manifest.json):
+      EF000889 "Release characteristic" is the feature EC000042 (MCB), EC000003 (RCCB),
+      EC000271 and EC001047 actually declare. Pinned by
+      audit/tests/test_etim.py::test_every_etim_feature_cited_by_the_value_ontology_exists.
+    terms:
+      - id: trip_curve/B
+        canonical: "B"
+        aliases: ["B", "type B", "char B", "char. B", "characteristic B", "B curve", "curve B", "B characteristic", "tripping characteristic B"]
+      - id: trip_curve/C
+        canonical: "C"
+        aliases: ["C", "type C", "char C", "char. C", "characteristic C", "C curve", "curve C", "C characteristic", "tripping characteristic C"]
+      - id: trip_curve/D
+        canonical: "D"
+        aliases: ["D", "type D", "char D", "char. D", "characteristic D", "D curve", "curve D", "D characteristic"]
+      - id: trip_curve/K
+        canonical: "K"
+        aliases: ["K", "type K", "char K", "char. K", "characteristic K", "K curve", "curve K", "K characteristic"]
+      - id: trip_curve/Z
+        canonical: "Z"
+        aliases: ["Z", "type Z", "char Z", "char. Z", "characteristic Z", "Z curve", "curve Z", "Z characteristic"]
+      - id: trip_curve/MA
+        canonical: "MA"
+        aliases: ["MA", "type MA", "MA curve"]
+
+  - id: poles
+    label: "Number of poles"
+    etim_feature: "EF008618"
+    source: >-
+      ETIM 10.0 EF008618 "Number of poles (total)" / EF005548 "Number of protected poles"
+      (ETIMFEATURE.csv, release 2024-12-05). The SP/DP/TP/TPN abbreviations below are UK trade
+      convention, NOT standard-defined -- IEC 60947-1 does not name them. They are listed because
+      catalogs use them, and the note on 1P+N carries the distinction that matters.
+    terms:
+      - id: poles/1P
+        canonical: "1P"
+        aliases: ["1P", "1 P", "1", "1-pole", "1 pole", "single pole", "SP", "unipolar"]
+      - id: poles/2P
+        canonical: "2P"
+        aliases: ["2P", "2 P", "2", "2-pole", "2 pole", "double pole", "DP", "bipolar"]
+      - id: poles/3P
+        canonical: "3P"
+        aliases: ["3P", "3 P", "3", "3-pole", "3 pole", "triple pole", "TP", "three pole"]
+      - id: poles/4P
+        canonical: "4P"
+        aliases: ["4P", "4 P", "4", "4-pole", "4 pole", "four pole", "FP"]
+      - id: poles/1P+N
+        canonical: "1P+N"
+        aliases: ["1P+N", "1P + N", "1+N", "1 + N", "1P+N pole", "SPN", "TPN 1", "single pole and neutral", "1P N"]
+        note: >-
+          A 1P+N device switches one phase and has an unswitched or switched neutral path. It is a
+          different product from a 2P device, which switches two phases. Distributors collapse the
+          two constantly; this vocabulary refuses to.
+      - id: poles/3P+N
+        canonical: "3P+N"
+        aliases: ["3P+N", "3P + N", "3+N", "3 + N", "TPN", "three pole and neutral"]
+
+  - id: current_type
+    label: "Current type"
+    source: "IEC 60050"
+    terms:
+      - id: current_type/AC
+        canonical: "AC"
+        aliases: ["AC", "a.c.", "alternating current", "~"]
+      - id: current_type/DC
+        canonical: "DC"
+        aliases: ["DC", "d.c.", "direct current", "="]
+      - id: current_type/AC_DC
+        canonical: "AC/DC"
+        aliases: ["AC/DC", "AC and DC", "universal", "AC-DC"]
+
+  - id: rcd_type
+    label: "Residual current device type"
+    source: "IEC 61008-1 / IEC 62423"
+    terms:
+      - id: rcd_type/AC
+        canonical: "Type AC"
+        aliases: ["type AC", "AC type", "RCD type AC"]
+      - id: rcd_type/A
+        canonical: "Type A"
+        aliases: ["type A", "A type", "RCD type A"]
+      - id: rcd_type/F
+        canonical: "Type F"
+        aliases: ["type F", "F type", "RCD type F"]
+      - id: rcd_type/B
+        canonical: "Type B"
+        aliases: ["type B", "B type", "RCD type B"]
+      - id: rcd_type/Bplus
+        canonical: "Type B+"
+        aliases: ["type B+", "B+ type", "B plus", "RCD type B+"]
+
+  - id: mounting
+    label: "Mounting method"
+    terms:
+      - id: mounting/din_rail
+        canonical: "DIN rail"
+        aliases: ["DIN rail", "DIN-rail", "DIN rail mount", "rail mounting", "TH35", "DIN 35", "35 mm rail", "top hat rail", "35mm DIN rail"]
+      - id: mounting/panel
+        canonical: "Panel mount"
+        aliases: ["panel mount", "panel mounting", "panel"]
+      - id: mounting/surface
+        canonical: "Surface mount"
+        aliases: ["surface mount", "surface mounting", "surface"]
+      - id: mounting/flush
+        canonical: "Flush mount"
+        aliases: ["flush mount", "flush mounting", "flush", "recessed"]
+
+  - id: connection
+    label: "Connection method"
+    terms:
+      - id: connection/screw
+        canonical: "Screw terminal"
+        aliases: ["screw terminal", "screw", "screw connection", "screw clamp"]
+      - id: connection/spring
+        canonical: "Spring terminal"
+        aliases: ["spring terminal", "spring clamp", "push-in", "push in terminal", "cage clamp"]
+      - id: connection/plug
+        canonical: "Plug-in"
+        aliases: ["plug-in", "plug in", "plugin", "pluggable"]
+
+  - id: utilisation_category
+    label: "Utilisation category"
+    source: >-
+      IEC 60947-4-1 (Contactors and motor-starters) defines the AC-1/AC-3 categories.
+      IEC 60947-1:2007+A1+A2 Annex A ("Harmonisation of utilization categories for low-voltage
+      switchgear and controlgear") is informative and edition-dependent -- it harmonises the
+      categories, it does not define them. [UNVERIFIED -- neither standard text was opened;
+      titles taken from standards-reseller catalogue entries, 2026-08-19.]
+    terms:
+      - id: utilisation_category/AC-1
+        canonical: "AC-1"
+        aliases: ["AC-1", "AC1"]
+      - id: utilisation_category/AC-3
+        canonical: "AC-3"
+        aliases: ["AC-3", "AC3"]
+      - id: utilisation_category/DC-1
+        canonical: "DC-1"
+        aliases: ["DC-1", "DC1"]
+
+  - id: device_type
+    label: "Protective device type"
+    etim_feature: ""
+    source: >-
+      Standard titles carry the distinction verbatim. IEC 60898-1 "Electrical accessories --
+      Circuit-breakers for overcurrent protection for household and similar installations"; IEC
+      61008-1 "Residual current operated circuit-breakers WITHOUT integral overcurrent protection
+      for household and similar uses (RCCBs)"; IEC 61009-1 "Residual current operated
+      circuit-breakers WITH integral overcurrent protection for household and similar uses
+      (RCBOs)"; IEC 60947-2 for moulded-case devices. Corroborated structurally by ETIM 10.0
+      (ETIMARTCLASS.csv / ETIMARTCLASSFEATUREMAP.csv, release 2024-12-05, ODC-By): EC000042 MCB
+      carries EF000889 "Release characteristic" and no EF002358 "Rated fault current"; EC000003
+      RCCB carries EF002358 and no EF000889; EC000905 carries BOTH, plus EF011981 "Rated
+      short-circuit breaking capacity Icn according to EN 61009-1". Two protection functions,
+      three devices. [Standard titles from reseller catalogue entries, 2026-08-19; the ETIM
+      release was downloaded and read directly.]
+    terms:
+      - id: device_type/MCB
+        canonical: "MCB"
+        aliases: ["MCB", "M.C.B.", "miniature circuit breaker", "miniature circuit-breaker", "miniature circuit breaker (MCB)"]
+        note: >-
+          Overcurrent protection only. An MCB does not detect residual current, so substituting one
+          for an RCCB or RCBO removes shock protection from the circuit. This is a safety-relevant
+          contradiction, not a naming preference.
+      - id: device_type/RCCB
+        canonical: "RCCB"
+        aliases: ["RCCB", "R.C.C.B.", "residual current circuit breaker", "residual current circuit-breaker", "residual current circuit breaker (RCCB)", "RCD without overcurrent protection", "residual current device without overcurrent protection", "residual current operated circuit-breaker without integral overcurrent protection"]
+        note: >-
+          Residual current protection only -- IEC 61008-1 names it "without integral overcurrent
+          protection" in the title. An RCCB does not protect the wiring against overload.
+      - id: device_type/RCBO
+        canonical: "RCBO"
+        aliases: ["RCBO", "R.C.B.O.", "residual current circuit breaker with overcurrent protection", "residual current circuit-breaker with overcurrent protection", "RCD with overcurrent protection", "residual current operated circuit-breaker with integral overcurrent protection", "combined RCD and MCB"]
+        note: >-
+          Both functions in one device (IEC 61009-1). ETIM has no class spelled "RCBO"; its
+          EC000905 "Earth leakage circuit breaker" is the RCBO-shaped class, carrying both the
+          residual-current and the release-characteristic features.
+      - id: device_type/MCCB
+        canonical: "MCCB"
+        aliases: ["MCCB", "M.C.C.B.", "moulded case circuit breaker", "molded case circuit breaker", "moulded-case circuit-breaker", "molded-case circuit-breaker"]
+        note: >-
+          IEC 60947-2 industrial device. One letter from MCB in every catalog on earth, and a
+          different product class with different breaking capacity.
+
+# "ELCB" and "earth leakage circuit breaker" are deliberately UNREGISTERED. Historically ELCB meant
+# a voltage-operated earth-leakage breaker; trade usage today applies it loosely to RCCBs, while
+# ETIM's EC000905 uses it for the RCBO-shaped class. Three readings, no way to pick one from the
+# surface form. Rule 3: refuse and route it, rather than guess and accuse.
+
+# ------------------------------------------------------------------------------------------------
+# Generic terms. These do not contradict a structured value -- they are subsumed by it.
+# ------------------------------------------------------------------------------------------------
+generics:
+  - id: generic/threaded
+    canonical: "Threaded"
+    aliases: ["threaded", "thread", "threads", "screw thread", "threaded connection", "threaded end", "male thread", "female thread"]
+    subsumes_kinds: ["thread"]
+
+  - id: generic/metric_thread
+    canonical: "Metric thread"
+    aliases: ["metric thread", "metric threaded", "ISO metric thread"]
+    subsumes_kinds: ["thread"]
+    restrict_thread_system: "metric"
+
+  - id: generic/npt_thread
+    canonical: "NPT"
+    aliases: ["NPT", "NPT thread", "national pipe taper"]
+    subsumes_kinds: ["thread"]
+    restrict_thread_system: "pipe_npt"
+
+  - id: generic/circuit_breaker
+    canonical: "Circuit breaker"
+    aliases: ["circuit breaker", "circuit-breaker", "breaker", "protective device"]
+    subsumes_terms: ["device_type/MCB", "device_type/MCCB", "device_type/RCBO", "device_type/RCCB"]
+
+  # Unqualified "galvanised" does not name a process. Registering it under hot-dip -- as an earlier
+  # draft of mat-h024 assumed ISO 1461 licensed -- would be inventing a default the standard does not
+  # state. As a generic it says the true thing instead: under-specified, not wrong.
+  - id: generic/galvanised
+    canonical: "Galvanised"
+    aliases: ["galvanised", "galvanized", "zinc coated", "zinc-coated", "zinc coating"]
+    subsumes_groups: ["steel/coating"]
+
+  - id: generic/stainless_steel
+    canonical: "Stainless steel"
+    aliases: ["stainless steel", "stainless", "inox", "CRES", "corrosion resistant steel", "SS"]
+    subsumes_groups: ["steel/stainless"]
+
+  - id: generic/steel
+    canonical: "Steel"
+    aliases: ["steel", "mild steel", "carbon steel"]
+    subsumes_groups: ["steel"]
+
+  - id: generic/aluminium
+    canonical: "Aluminium"
+    aliases: ["aluminium", "aluminum", "alu", "AL"]
+    subsumes_groups: ["aluminium"]
+
+  - id: generic/brass
+    canonical: "Brass"
+    aliases: ["brass"]
+    subsumes_groups: ["copper/brass"]
+
+  - id: generic/plastic
+    canonical: "Plastic"
+    aliases: ["plastic", "polymer", "thermoplastic"]
+    subsumes_groups: ["polymer"]
+
+  - id: generic/rubber
+    canonical: "Rubber"
+    aliases: ["rubber", "elastomer"]
+    subsumes_groups: ["elastomer"]
+
+# ------------------------------------------------------------------------------------------------
+# Booleans. Written a dozen ways in a dozen feeds.
+# ------------------------------------------------------------------------------------------------
+#
+# "x" is deliberately absent from both lists. In one feed it is a ticked checkbox and in the next
+# it is "does not apply", and there is no way to tell which from the value alone. It refuses.
+booleans:
+  "true": ["yes", "y", "true", "t", "1", "present", "included", "available", "with", "ja", "oui", "si", "✓"]
+  "false": ["no", "n", "false", "f", "0", "absent", "not included", "not available", "without", "nein", "non"]

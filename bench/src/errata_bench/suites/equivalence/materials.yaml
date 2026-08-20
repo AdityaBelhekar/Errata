@@ -1,0 +1,315 @@
+# Equivalence suite -- materials (FR-0.1).
+#
+# `expect` is the label. It says what a competent domain reviewer would call the pair, not what the
+# code currently does. When the two disagree, the code is wrong.
+#
+#   equivalent   the two name the same fact; raising a finding here is a FALSE POSITIVE
+#   contradiction  they cannot both be true; missing it is a false negative
+#   granularity  b is more specific than a -- under-specified, not wrong
+#   precision    a dropped a tolerance b carries
+#   undetermined not comparable; the honest answer is to decline
+#
+# Every case carries a `source`. An equivalence without a citation is an opinion.
+
+suite: equivalence
+family: materials
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: material_grade
+    label: Material
+    kinds: [material]
+
+cases:
+  # -- the headline equivalence, in every spelling that reaches a real feed ---------------------
+  - id: mat-001
+    a: "316 SS"
+    b: "1.4401"
+    expect: equivalent
+    source: "EN 10088-1 designates AISI 316 as material number 1.4401"
+    rationale: "Grade name and EN material number for one steel."
+
+  - id: mat-002
+    a: "316"
+    b: "A4"
+    expect: equivalent
+    source: "ISO 3506-1 property class A4 covers the 316 family"
+    rationale: >-
+      The canonical example from the spec. A4 under-specifies within the family, which is recorded
+      as a caveat on the verdict rather than as a disagreement.
+
+  - id: mat-003
+    a: "A4"
+    b: "X5CrNiMo17-12-2"
+    expect: equivalent
+    source: "EN 10088-1 name for 1.4401; ISO 3506-1 A4"
+    rationale: "EN steel name against the fastener property class."
+
+  - id: mat-004
+    a: "SS316"
+    b: "316 SS"
+    expect: equivalent
+    source: "Ordering-convention variants of one grade name"
+    rationale: "Pure spelling. If this flags, the alias index is broken."
+
+  - id: mat-005
+    a: "SUS316"
+    b: "UNS S31600"
+    expect: equivalent
+    source: "JIS G4303 SUS316; UNS S31600"
+    rationale: "Japanese and UNS designations for the same grade."
+
+  - id: mat-006
+    a: "304"
+    b: "1.4301"
+    expect: equivalent
+    source: "EN 10088-1 designates AISI 304 as 1.4301"
+
+  - id: mat-007
+    a: "A2"
+    b: "304"
+    expect: equivalent
+    source: "ISO 3506-1 property class A2 covers the 304 family"
+
+  - id: mat-008
+    a: "18/8"
+    b: "304"
+    expect: equivalent
+    source: "18/8 is the trade name for the 18Cr/8Ni austenitic family"
+    rationale: >-
+      Loose but standard usage. Recorded with a caveat: 18/8 is also used for 302 and 305.
+
+  - id: mat-009
+    a: "18-8"
+    b: "18/8"
+    expect: equivalent
+    source: "Punctuation variant of one trade name"
+
+  - id: mat-010
+    a: "6061-T6"
+    b: "AA6061-T6"
+    expect: equivalent
+    source: "Aluminum Association designation prefix"
+
+  - id: mat-011
+    a: "CuZn39Pb3"
+    b: "CW614N"
+    expect: equivalent
+    source: "EN 12164 material name and number for free-cutting brass"
+
+  - id: mat-012
+    a: "CW614N"
+    b: "C38500"
+    expect: equivalent
+    source: "ASTM B16 C38500 is the US equivalent of CW614N"
+
+  - id: mat-013
+    a: "PA66"
+    b: "nylon 66"
+    expect: equivalent
+    source: "ISO 1874-1; trade name for polyamide 66"
+
+  - id: mat-014
+    a: "PA 6.6"
+    b: "PA66"
+    expect: equivalent
+    source: "Punctuation variant"
+
+  - id: mat-015
+    a: "Viton"
+    b: "FKM"
+    expect: equivalent
+    source: "ISO 1629 FKM; Viton is a trade name for FKM grades"
+    rationale: "Recorded with a caveat -- Viton spans several fluorine contents."
+
+  - id: mat-016
+    a: "Buna-N"
+    b: "NBR"
+    expect: equivalent
+    source: "ISO 1629 NBR; Buna-N trade name"
+
+  - id: mat-017
+    a: "Teflon"
+    b: "PTFE"
+    expect: equivalent
+    source: "ISO 12086-1"
+    rationale: "Caveat: Teflon also covers FEP, PFA and ETFE."
+
+  - id: mat-018
+    a: "Cu-ETP"
+    b: "C11000"
+    expect: equivalent
+    source: "EN 13601 CW004A / ASTM B187 C11000"
+
+  - id: mat-019
+    a: "class 8.8"
+    b: "8.8"
+    expect: equivalent
+    source: "ISO 898-1 property class"
+
+  - id: mat-020
+    a: "Lexan"
+    b: "polycarbonate"
+    expect: equivalent
+    source: "Trade name for a polycarbonate family"
+
+  # -- genuine contradictions ------------------------------------------------------------------
+  - id: mat-101
+    a: "316"
+    b: "304"
+    expect: contradiction
+    source: "EN 10088-1: 1.4401 and 1.4301 differ in molybdenum content"
+    rationale: "The single most consequential material confusion in fastener catalogs."
+
+  - id: mat-102
+    a: "A2"
+    b: "A4"
+    expect: contradiction
+    source: "ISO 3506-1: A2 is the 304 family, A4 the 316 family"
+
+  - id: mat-103
+    a: "1.4301"
+    b: "1.4401"
+    expect: contradiction
+    source: "EN 10088-1"
+
+  - id: mat-104
+    a: "6061-T6"
+    b: "6082"
+    expect: contradiction
+    source: "EN 573-3: different alloy compositions"
+
+  - id: mat-105
+    a: "PA66"
+    b: "PA6"
+    expect: contradiction
+    source: "ISO 1874-1: different melting points and moisture uptake"
+
+  - id: mat-106
+    a: "NBR"
+    b: "EPDM"
+    expect: contradiction
+    source: "ISO 1629: incompatible chemical resistance"
+
+  - id: mat-107
+    a: "class 8.8"
+    b: "class 10.9"
+    expect: contradiction
+    source: "ISO 898-1: different proof and tensile strengths"
+
+  - id: mat-108
+    a: "brass"
+    b: "PA66"
+    expect: contradiction
+    source: "Generic metal against a specific polymer"
+
+  - id: mat-109
+    a: "430"
+    b: "304"
+    expect: contradiction
+    source: "EN 10088-1: ferritic 1.4016 against austenitic 1.4301"
+
+  - id: mat-110
+    a: "Cu-ETP"
+    b: "CW614N"
+    expect: contradiction
+    source: "Pure copper against leaded brass"
+
+  # -- granularity: under-specified, never wrong -------------------------------------------------
+  - id: mat-201
+    a: "Stainless steel"
+    b: "316 SS"
+    expect: granularity
+    source: "Generic family term against a grade"
+    rationale: >-
+      A catalog saying 'Stainless steel' where the datasheet says 316 is not wrong. Flagging it as
+      a contradiction is the insulting-finding failure mode.
+
+  - id: mat-202
+    a: "316"
+    b: "316L"
+    expect: agreement_specific
+    source: "316L is a low-carbon member of the 316 family"
+    rationale: >-
+      Direction matters. The evidence is more specific than the catalog, so this is granularity,
+      not a defect in the catalog -- but 316L within 316 is a family relation, and the comparator
+      reports which side is narrower.
+    expect_alternatives: [granularity]
+
+  - id: mat-203
+    a: "Steel"
+    b: "Stainless steel"
+    expect: granularity
+    source: "Family hierarchy"
+
+  - id: mat-204
+    a: "316L"
+    b: "Stainless steel"
+    expect: agreement_specific
+    source: "Catalog is more specific than the evidence; not a catalog defect"
+
+  - id: mat-205
+    a: "Aluminium"
+    b: "6061-T6"
+    expect: granularity
+    source: "Generic metal against a specific temper"
+
+  - id: mat-206
+    a: "Plastic"
+    b: "PA66"
+    expect: granularity
+    source: "Generic polymer term"
+
+  - id: mat-207
+    a: "Stainless steel"
+    b: "PA66"
+    expect: contradiction
+    source: "A generic term that demonstrably does not cover the specific value"
+    rationale: >-
+      The counterpart to mat-201. Subsumption is only a defence when the generic actually
+      subsumes -- otherwise it is a real disagreement.
+
+  # -- adversarial near-misses -------------------------------------------------------------------
+  - id: mat-301
+    a: "304L"
+    b: "316L"
+    expect: contradiction
+    source: "Both low-carbon, different families"
+    rationale: "Shared suffix, different steel. A string-similarity comparator gets this wrong."
+
+  - id: mat-302
+    a: "1.4401"
+    b: "1.4404"
+    expect: granularity
+    source: "EN 10088-1: 316 against low-carbon 316L"
+    rationale: >-
+      One digit apart in the material number and a real difference in carbon limit, but 316L is a
+      member of the 316 family, so a catalog saying 316 where the datasheet says 316L is vague
+      rather than wrong. A reviewer auditing a weldment still wants to see it, which is why it is
+      a finding and not silence.
+
+  - id: mat-305
+    a: "1.4404"
+    b: "1.4401"
+    expect: agreement_specific
+    source: "The same pair with the sides swapped"
+    rationale: >-
+      The catalog is now the narrower side. Direction decides whether a family relation is a
+      finding, and both directions are tested so the comparator cannot pass by ignoring it.
+
+  - id: mat-303
+    a: "A4-70"
+    b: "A4-80"
+    expect: equivalent
+    source: "ISO 3506-1: both are A4 material; 70/80 is the strength class, not the material"
+    rationale: >-
+      Deliberately labelled equivalent for a *material* attribute. The strength class belongs to a
+      different attribute, and conflating the two is how an audit invents a material finding out
+      of a strength field.
+
+  - id: mat-304
+    a: "6061"
+    b: "6061-T6"
+    expect: granularity
+    source: "Alloy without temper against alloy with temper"

@@ -1,0 +1,901 @@
+# Adversarial equivalence suite -- 'terms' family (FR-0.1/0.2 red-team pass).
+#
+# terms.yaml (30 cases) passes 100%. This file exists because a suite written by the same author as
+# the comparator encodes the same blind spots twice, and the harness says so out loud. Every case
+# here was chosen because it is either:
+#
+#   (a) a real trap in the ontology's own alias data -- word-order and cross-vocabulary collisions
+#       that a naive string match would get wrong, tested to confirm the comparator declines rather
+#       than guesses, or
+#   (b) a real coverage gap -- a controlled-vocabulary axis (device category: MCB/RCBO/RCCB; the
+#       reversed "Z characteristic"/"K characteristic" alias forms; the boolean-vs-nullish schema
+#       boundary) that the ontology or the suite's own 6-label taxonomy does not yet represent, so
+#       the comparator abstains where a domain reviewer would not.
+#
+# Do not read a PASS on every case here as success: several sections are deliberately built to
+# fail, and the failures are the deliverable. See the harness report for which.
+
+suite: equivalence
+family: terms
+version: "0.1.0"
+
+cases:
+  # ================================================================================================
+  # 1. Tripping characteristic -- notation variants (attribute: tripping_characteristic / trip_curve)
+  # ================================================================================================
+  - id: trm-h001
+    attribute: { key: tripping_characteristic, label: Tripping characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type C"
+    b: "C-curve"
+    expect: equivalent
+    source: "IEC 60898-1 tripping characteristic C; hyphenated spelling folds to the registered 'C curve' alias"
+
+  - id: trm-h002
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "TYPE C"
+    b: "c curve"
+    expect: equivalent
+    source: "IEC 60898-1; all-caps and lower-case fold to the same alias key"
+
+  - id: trm-h003
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Char.C"
+    b: "Characteristic C"
+    expect: equivalent
+    source: "IEC 60898-1; 'Char.C' with no space is the same alias key as the registered 'char. C'"
+
+  - id: trm-h004
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "tripping characteristic B"
+    b: "B"
+    expect: equivalent
+    source: "IEC 60898-1 tripping characteristic B"
+
+  - id: trm-h005
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type  D"
+    b: "D curve"
+    expect: equivalent
+    source: "IEC 60898-1; double internal space, a common OCR/export artefact"
+
+  - id: trm-h006
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "type K"
+    b: "K characteristic"
+    expect: equivalent
+    source: "IEC 60947-2 K curve (motor-protection characteristic)"
+    rationale: >-
+      A real ontology gap, not a notation stretch. The B/C/D terms each register both word orders
+      ("characteristic B" and "B characteristic"); K and Z register only "characteristic K" /
+      "characteristic Z" and not the reversed form. "K characteristic" and "characteristic K" mean
+      the same thing to any reader; predict the comparator declines this one on a missing alias.
+
+  - id: trm-h007
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "type Z"
+    b: "Z characteristic"
+    expect: equivalent
+    source: "IEC 60947-2 Z curve (semiconductor-protection characteristic)"
+    rationale: >-
+      The same asymmetric-alias gap as trm-h006, on the Z curve. "characteristic Z" is registered;
+      "Z characteristic" is not, even though B/C/D register both orders.
+
+  - id: trm-h008
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "MA curve"
+    b: "type MA"
+    expect: equivalent
+    source: "IEC 60947-2 MA characteristic (magnetic-only, no integral thermal element)"
+
+  # ================================================================================================
+  # 2. Tripping characteristic -- genuine contradictions (different instantaneous trip bands)
+  # ================================================================================================
+  - id: trm-h009
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type B"
+    b: "Type D"
+    expect: contradiction
+    source: "IEC 60898-1: B trips at 3-5x In, D at 10-20x In -- disjoint instantaneous bands"
+
+  - id: trm-h010
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "B curve"
+    b: "D curve"
+    expect: contradiction
+    source: "IEC 60898-1"
+
+  - id: trm-h011
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "C"
+    b: "K"
+    expect: contradiction
+    source: "IEC 60898-1 general-purpose C curve against the IEC 60947-2 motor-protection K curve"
+
+  - id: trm-h012
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "D"
+    b: "Z"
+    expect: contradiction
+    source: >-
+      IEC 60898-1 D characteristic (high-inrush, 10-20x In) against the IEC 60947-2 Z characteristic
+      (semiconductor protection, 2-3x In per manufacturer trip-curve literature). Corrected: the
+      earlier text attributed both curves to IEC 60947-2; D is an IEC 60898-1 curve.
+
+  - id: trm-h013
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "MA"
+    b: "C"
+    expect: contradiction
+    source: "IEC 60947-2: MA is magnetic-only with no integral thermal element, unlike the thermal-magnetic C curve"
+
+  - id: trm-h014
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "K"
+    b: "MA"
+    expect: contradiction
+    source: "IEC 60947-2: K retains a thermal element for motor overload duty; MA does not"
+
+  - id: trm-h015
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type B"
+    b: "Type C"
+    expect: contradiction
+    source: "IEC 60898-1: 3-5 In against 5-10 In instantaneous trip band"
+
+  # ================================================================================================
+  # 3. THE TRAP -- RCD "Type B" against trip-curve "B", unspecified attribute.
+  #
+  # "Type B" is a listed value of BOTH trip_curve and rcd_type (IEC 60898-1 curve vs IEC 62423 RCD
+  # class -- unrelated classifications sharing a letter). Without a named vocabulary the parser must
+  # refuse rather than guess. This is the single highest-value trap in this file: a comparator that
+  # silently equates these on string similarity would be manufacturing a safety-relevant fact.
+  # ================================================================================================
+  - id: trm-h016
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "Type B"
+    b: "B curve"
+    expect: undetermined
+    source: "'Type B' is claimed by both trip_curve/B (IEC 60898-1) and rcd_type/B (IEC 62423); 'B curve' is claimed only by trip_curve/B"
+    rationale: >-
+      The catalog side is genuinely ambiguous between a trip curve and an RCD classification; the
+      evidence side happens to be unambiguous. The correct behaviour is still to decline, because the
+      catalog claim was never resolved -- an evidence-side answer does not retroactively disambiguate
+      what the catalog meant. Confirms the comparator does not silently letter-match "B" to "B".
+
+  - id: trm-h017
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "B curve"
+    b: "Type B"
+    expect: undetermined
+    source: "Same trap as trm-h016, catalog and evidence sides swapped"
+    rationale: "Order should not matter to a refusal; if it does, that is itself a defect."
+
+  - id: trm-h018
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "TYPE B"
+    b: "B curve"
+    expect: undetermined
+    source: "Case folding does not remove the trip_curve/rcd_type collision on 'type B'"
+
+  - id: trm-h019
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "Type B"
+    b: "RCD type B"
+    expect: undetermined
+    source: "The catalog term is still ambiguous even though 'RCD type B' alone is not"
+    rationale: >-
+      "RCD type B" unambiguously names rcd_type/B on its own. But the catalog side, "Type B", is
+      still claimed by two vocabularies, and the comparator has no way to know the evidence phrasing
+      is meant to disambiguate it rather than merely restate it. Decline is still correct.
+
+  - id: trm-h020
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "B"
+    b: "Type B"
+    expect: undetermined
+    source: "Bare 'B' is unambiguous (trip_curve only); 'Type B' is not -- one refusal still forces abstention"
+
+  - id: trm-h021
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "B curve"
+    b: "Char. B"
+    expect: equivalent
+    source: "IEC 60898-1; neither 'B curve' nor 'Char. B' collides with the RCD vocabulary"
+    rationale: >-
+      The control case for trm-h016..020: when the surface forms are NOT the colliding "type B"
+      alias, unspecified-attribute resolution works fine and reaches the same term unambiguously.
+      This proves the refusals above are the trap being caught, not a parser that can never resolve
+      anything without a named vocabulary.
+
+  - id: trm-h022
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "type B"
+    b: "TYPE B"
+    expect: undetermined
+    source: "Case-insensitive restatement of the trip_curve/rcd_type collision on 'type B'"
+
+  - id: trm-h023
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "type B"
+    b: "B type"
+    expect: undetermined
+    source: "'type B' collides across vocabularies; 'B type' (word order swapped) is unambiguous, claimed only by rcd_type/B"
+    rationale: >-
+      A second-order version of the trap: word order changes which vocabulary would even claim the
+      string, but the catalog side is still ambiguous, so the pair as a whole must still decline.
+
+  # ================================================================================================
+  # 4. RCD type -- named vocabulary (attribute: rcd_type / rcd_type). The counterpart to section 3:
+  #    same "Type B" family of strings, but now the attribute names the vocabulary, so resolution is
+  #    available and the comparator should stop declining.
+  # ================================================================================================
+  - id: trm-h024
+    attribute: { key: rcd_type, label: RCD type, kinds: [term], vocabulary: rcd_type }
+    a: "Type B"
+    b: "Type B"
+    expect: equivalent
+    source: "IEC 62423; naming the vocabulary is what makes 'Type B' resolvable"
+
+  - id: trm-h025
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type A"
+    b: "Type F"
+    expect: contradiction
+    source: "IEC 62423: Type F additionally detects specific composite/mixed-frequency residual currents that Type A does not; distinct classifications"
+
+  - id: trm-h026
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type F"
+    b: "Type B"
+    expect: contradiction
+    source: "IEC 62423: Type B additionally detects smooth DC residual current that Type F does not"
+
+  - id: trm-h027
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type AC"
+    b: "Type F"
+    expect: contradiction
+    source: >-
+      IEC 61008-1/61009-1 define Type AC (sinusoidal AC residual current only); IEC 62423 defines
+      Type F, which detects strictly more waveforms. Different classifications.
+
+  - id: trm-h028
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "RCD type A"
+    b: "A type"
+    expect: equivalent
+    source: "IEC 62423 spelling variants of Type A"
+
+  - id: trm-h029
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "B+ type"
+    b: "Type B+"
+    expect: equivalent
+    source: >-
+      DIN VDE 0664-400 ("RCCB Type B+") spelling variants of Type B+. Corrected: the earlier text
+      also cited IEC 62423, which specifies Type F and Type B only -- B+ is a German national
+      extension beyond IEC/EN 62423, not an IEC type.
+
+  - id: trm-h030
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type B+"
+    b: "Type A"
+    expect: contradiction
+    source: >-
+      DIN VDE 0664-400 (Type B+, a German national extension) against IEC 62423 / IEC 61008-1
+      (Type A). Corrected: the earlier text attributed Type B+ jointly to IEC 62423, which does not
+      define it.
+
+  - id: trm-h031
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "AC type"
+    b: "Type F"
+    expect: contradiction
+    source: "IEC 62423"
+
+  # ================================================================================================
+  # 5. Pole count -- spelling and abbreviation equivalences (attribute: number_of_poles / poles)
+  # ================================================================================================
+  - id: trm-h032
+    attribute: { key: number_of_poles, label: Number of poles, kinds: [term], vocabulary: poles }
+    a: "1-pole"
+    b: "unipolar"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h033
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "four pole"
+    b: "FP"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h034
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "2 pole"
+    b: "double pole"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h035
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "bipolar"
+    b: "DP"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h036
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "SPN"
+    b: "single pole and neutral"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h037
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "TPN"
+    b: "three pole and neutral"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h038
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "triple pole"
+    b: "3 P"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  # ================================================================================================
+  # 6. Pole count -- contradictions, including the confusable-alias trap ("TPN 1" vs "TPN")
+  # ================================================================================================
+  - id: trm-h039
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "Double pole"
+    b: "1P+N"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact. Note also that UK consumer-unit
+      literature routinely calls a 1P+N (switched-neutral) device "double pole", so the contradiction
+      label here rests on the strict reading (DP = two protected poles) rather than on universal trade
+      usage.
+
+  - id: trm-h040
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "DP"
+    b: "SPN"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h041
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "bipolar"
+    b: "single pole and neutral"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h042
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "1P"
+    b: "1P+N"
+    expect: contradiction
+    source: "IEC 60947-1: a bare 1P device has no switched or dedicated neutral path at all; 1P+N does"
+
+  - id: trm-h043
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "SP"
+    b: "SPN"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h044
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "3P"
+    b: "4P"
+    expect: contradiction
+    source: "IEC 60947-1"
+
+  - id: trm-h045
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "TP"
+    b: "FP"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact.
+
+  - id: trm-h046
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "4P"
+    b: "1P+N"
+    expect: contradiction
+    source: "IEC 60947-1"
+
+  - id: trm-h047
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "2P"
+    b: "3P"
+    expect: contradiction
+    source: "IEC 60947-1"
+
+  - id: trm-h048
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "TPN 1"
+    b: "TPN"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-1 defines "pole", "single-pole device" and "multipole
+      device" and the neutral pole, but it does NOT define the trade abbreviations SP/DP/TP/FP/SPN/TPN
+      or the words unipolar/bipolar/triple pole/four pole. Those are UK and general electrical-trade
+      conventions, documented only in wholesaler and vendor literature. The earlier bare citation "IEC
+      60947-1" presented a trade convention as a standards fact. The "TPN 1 = 1P+N, bare TPN = 3P+N"
+      split is this repo's own ontology alias table, not an IEC designation.
+    rationale: >-
+      A one-token trap drawn from the ontology's own alias data: "TPN 1" and "TPN" differ by a
+      trailing digit that is trivially mistyped or misread on a datasheet, and they name completely
+      different pole configurations in this vocabulary. If the comparator ever starts doing
+      prefix/fuzzy matching on pole-count strings, this is the case that will silently call it
+      equivalent instead of a contradiction.
+
+  # ================================================================================================
+  # 7. Pole count -- "2P+N" is not a registered term. Refuse, do not guess a nearest neighbour.
+  # ================================================================================================
+  - id: trm-h049
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "2P+N"
+    b: "2P + N"
+    expect: undetermined
+    source: "The poles vocabulary (IEC 60947-1 designations) lists 1P/2P/3P/4P/1P+N/3P+N only; '2P+N' is not a listed term"
+    rationale: >-
+      Both sides use the identical unregistered designation. Constrained decoding must refuse rather
+      than silently coerce it to the nearest listed value (2P, or 3P+N) -- a fabricated reading here
+      would be exactly the "invent a fact" failure mode the project's own law forbids.
+
+  - id: trm-h050
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "2P+N"
+    b: "3P+N"
+    expect: undetermined
+    source: "'2P+N' is not a listed value of the poles vocabulary; the catalog side must refuse before any comparison is possible"
+
+  # ================================================================================================
+  # 8. Mounting and connection -- adversarial spelling and genuine contradictions
+  # ================================================================================================
+  - id: trm-h051
+    attribute: { key: mounting_method, label: Mounting, kinds: [term], vocabulary: mounting }
+    a: "35mm DIN rail"
+    b: "top hat rail"
+    expect: equivalent
+    source: "IEC 60715 top-hat rail, 35 mm"
+
+  - id: trm-h052
+    attribute: { key: mounting_method, kinds: [term], vocabulary: mounting }
+    a: "DIN-rail"
+    b: "DIN 35"
+    expect: equivalent
+    source: "IEC 60715"
+
+  - id: trm-h053
+    attribute: { key: mounting_method, kinds: [term], vocabulary: mounting }
+    a: "Flush mount"
+    b: "Surface mount"
+    expect: contradiction
+    source: "Mutually exclusive installation methods: recessed into the wall against applied on top of it"
+
+  - id: trm-h054
+    attribute: { key: mounting_method, kinds: [term], vocabulary: mounting }
+    a: "recessed"
+    b: "panel mount"
+    expect: contradiction
+    source: "Flush/recessed and panel-applied are different mounting provisions"
+
+  - id: trm-h055
+    attribute: { key: connection_method, label: Connection, kinds: [term], vocabulary: connection }
+    a: "Screw terminal"
+    b: "Plug-in"
+    expect: contradiction
+    source: "IEC 60947-7-1: fixed screw-clamp connection against a pluggable connector; different termination technologies"
+
+  - id: trm-h056
+    attribute: { key: connection_method, kinds: [term], vocabulary: connection }
+    a: "cage clamp"
+    b: "push in terminal"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] IEC 60947-7-1 covers terminal blocks but does not declare these
+      two trade terms interchangeable. WAGO -- who coined CAGE CLAMP -- market "Push-in CAGE CLAMP"
+      as a distinct product family from CAGE CLAMP (push-in accepts a rigid conductor with no tool;
+      a plain cage clamp must be opened with a lever or screwdriver). Both are spring-clamp family;
+      whether that makes them one connection method or two is the open question.
+    rationale: >-
+      LABEL DISPUTED AND DELIBERATELY UNCHANGED -- P1 task 1.5, 2026-08-19. Escalated to the
+      independent dual-labelling packet (FR-0.1) rather than decided here.
+      .
+      The sibling finding mat-h063 was resolved in the same pass because its evidence was decisive
+      and the repo already labelled the identical relationship elsewhere. This one is not the same
+      shape, for two reasons.
+      .
+      First, the evidence is manufacturer marketing, not a standard. IEC 60947-7-1 is silent, and a
+      vendor's product-family boundary is a commercial fact that other vendors need not share.
+      .
+      Second, and decisively: acting on it means editing the ONTOLOGY, not the label.
+      ontology/terms.yaml holds "cage clamp" and "push in terminal" as aliases of one term,
+      connection/spring. Splitting that alias changes how every spring-family pair in the suite
+      resolves, not just this case. That is a comparator change dressed as a label change, and
+      ground rule 7 wants negative controls and evidence before one of those, which this does not
+      yet have.
+      .
+      The precedent for holding is ELCB (finding 13): left unregistered because three live readings
+      existed and the surface form could not pick between them. Same situation, same answer --
+      record the ambiguity, do not resolve it to make a number move.
+
+  - id: trm-h057
+    attribute: { key: connection_method, kinds: [term], vocabulary: connection }
+    a: "screw clamp"
+    b: "pluggable"
+    expect: contradiction
+    source: "IEC 60947-7-1"
+
+  # ================================================================================================
+  # 9. Utilisation category (attribute: utilisation_category / utilisation_category)
+  # ================================================================================================
+  - id: trm-h058
+    attribute: { key: utilisation_category, label: Utilisation category, kinds: [term], vocabulary: utilisation_category }
+    a: "AC-1"
+    b: "AC1"
+    expect: equivalent
+    source: >-
+      IEC 60947-4-1 Table 1 (utilisation categories for contactors and motor-starters). Corrected: the
+      earlier text cited "IEC 60947-1 Annex A", which is not where these categories live -- IEC
+      60947-1 defines the CONCEPT of a utilisation category, and each product part lists its own set
+      (AC-1/AC-3/DC-1 in 60947-4-1 Table 1; AC-20..23 in 60947-3).
+
+  - id: trm-h059
+    attribute: { key: utilisation_category, kinds: [term], vocabulary: utilisation_category }
+    a: "AC-3"
+    b: "AC-1"
+    expect: contradiction
+    source: >-
+      IEC 60947-4-1 Table 1 (utilisation categories for contactors and motor-starters). Corrected: the
+      earlier text cited "IEC 60947-1 Annex A", which is not where these categories live -- IEC
+      60947-1 defines the CONCEPT of a utilisation category, and each product part lists its own set
+      (AC-1/AC-3/DC-1 in 60947-4-1 Table 1; AC-20..23 in 60947-3). AC-1 is
+      non-inductive/slightly-inductive duty, AC-3 is squirrel-cage motor-starting duty -- different
+      utilisation categories.
+
+  - id: trm-h060
+    attribute: { key: utilisation_category, kinds: [term], vocabulary: utilisation_category }
+    a: "DC-1"
+    b: "AC-3"
+    expect: contradiction
+    source: >-
+      IEC 60947-4-1 Table 1 (utilisation categories for contactors and motor-starters). Corrected: the
+      earlier text cited "IEC 60947-1 Annex A", which is not where these categories live -- IEC
+      60947-1 defines the CONCEPT of a utilisation category, and each product part lists its own set
+      (AC-1/AC-3/DC-1 in 60947-4-1 Table 1; AC-20..23 in 60947-3). Different current type and
+      different duty category.
+
+  - id: trm-h061
+    attribute: { key: utilisation_category, kinds: [term], vocabulary: utilisation_category }
+    a: "AC3"
+    b: "DC1"
+    expect: contradiction
+    source: >-
+      IEC 60947-4-1 Table 1 (utilisation categories for contactors and motor-starters). Corrected: the
+      earlier text cited "IEC 60947-1 Annex A", which is not where these categories live -- IEC
+      60947-1 defines the CONCEPT of a utilisation category, and each product part lists its own set
+      (AC-1/AC-3/DC-1 in 60947-4-1 Table 1; AC-20..23 in 60947-3).
+
+  # ================================================================================================
+  # 10. Device category -- MCB / RCBO / RCCB / "Circuit breaker". The ontology currently registers
+  #     NO vocabulary at all for device category. Every case below is predicted to abstain
+  #     (UNEXPECTED_ABSTENTION) rather than raise the finding a domain reviewer would raise. This is
+  #     the single largest real gap this file found: three devices with materially different
+  #     protection functions, and a catalog that mislabels one as another is exactly the "fire, a
+  #     lawsuit, a terminated contract" scenario the project exists to catch -- and today the
+  #     comparator says nothing about it at all.
+  # ================================================================================================
+  - id: trm-h062
+    attribute: { key: device_category, label: Device category, kinds: [term] }
+    a: "MCB"
+    b: "RCBO"
+    expect: contradiction
+    source: "IEC 60898-1 MCB (overcurrent protection only) against IEC 61009-1 RCBO (overcurrent + residual-current protection); not interchangeable devices"
+    rationale: >-
+      No device-category vocabulary exists in the ontology, so this is predicted to decline
+      (UNEXPECTED_ABSTENTION) rather than raise the severe, safety-relevant contradiction a reviewer
+      would. Flagged as the highest-value coverage gap found in this pass.
+
+  - id: trm-h063
+    attribute: { key: device_category, kinds: [term] }
+    a: "RCBO"
+    b: "RCCB"
+    expect: contradiction
+    source: "IEC 61009-1 RCBO adds integral overcurrent protection that IEC 61008-1 RCCB lacks"
+    rationale: "Predicted to decline for the same reason as trm-h062: no device-category vocabulary."
+
+  - id: trm-h064
+    attribute: { key: device_category, kinds: [term] }
+    a: "MCB"
+    b: "RCCB"
+    expect: contradiction
+    source: "IEC 60898-1 (overcurrent only) against IEC 61008-1 (residual current only): neither function overlaps the other"
+    rationale: "Predicted to decline; no device-category vocabulary."
+
+  - id: trm-h065
+    attribute: { key: device_category, kinds: [term] }
+    a: "RCCB"
+    b: "RCBO"
+    expect: contradiction
+    source: "IEC 61008-1 against IEC 61009-1"
+    rationale: "Order-flipped restatement of trm-h063; predicted to decline the same way."
+
+  - id: trm-h066
+    attribute: { key: device_category, kinds: [term] }
+    a: "RCBO"
+    b: "MCB"
+    expect: contradiction
+    source: "IEC 61009-1 against IEC 60898-1"
+    rationale: "Order-flipped restatement of trm-h062; predicted to decline the same way."
+
+  - id: trm-h067
+    attribute: { key: device_category, kinds: [term] }
+    a: "MCB"
+    b: "Miniature circuit breaker"
+    expect: equivalent
+    source: "IEC 60898-1: MCB is the standard abbreviation of miniature circuit-breaker"
+    rationale: >-
+      The plainest possible equivalence in this cluster -- an abbreviation and its full expansion --
+      and it is still predicted to decline, because the ontology has no device-category vocabulary
+      to resolve either string against.
+
+  - id: trm-h068
+    attribute: { key: device_category, kinds: [term] }
+    a: "RCBO"
+    b: "Residual current circuit breaker with overcurrent protection"
+    expect: equivalent
+    source: "IEC 61009-1: RCBO = Residual Current operated Circuit-Breaker with integral Overcurrent protection"
+    rationale: "Predicted to decline for the same reason as trm-h067."
+
+  - id: trm-h069
+    attribute: { key: device_category, kinds: [term] }
+    a: "RCCB"
+    b: "RCD without overcurrent protection"
+    expect: equivalent
+    source: "IEC 61008-1: RCCB = Residual Current operated Circuit-Breaker without integral overcurrent protection"
+    rationale: "Predicted to decline for the same reason as trm-h067."
+
+  - id: trm-h070
+    attribute: { key: device_category, kinds: [term] }
+    a: "Circuit breaker"
+    b: "MCB"
+    expect: granularity
+    source: "IEC 60898-1: MCB is a specific overcurrent-protection device; 'circuit breaker' is the generic category"
+    rationale: >-
+      Under-specified, not wrong -- the catalog textbook case for granularity. Predicted to decline
+      anyway, because neither string is registered anywhere in the ontology (there is no generic
+      'circuit breaker' term the way there is a generic 'Threaded' or 'Stainless steel').
+
+  - id: trm-h071
+    attribute: { key: device_category, kinds: [term] }
+    a: "Circuit breaker"
+    b: "RCBO"
+    expect: granularity
+    expect_alternatives: [undetermined]
+    source: "IEC 61009-1 defines an RCBO as a residual-current-operated circuit-breaker with integral overcurrent protection -- it IS a circuit breaker by the standard's own name"
+    rationale: >-
+      Deliberately debatable, as the brief asks for. 'Circuit breaker' genuinely subsumes RCBO by the
+      standard's own definition, which argues for granularity; but the residual-current function is
+      real added capability an RCBO carries that a bare MCB does not, which argues a strict reviewer
+      could reasonably decline rather than call it merely "less specific". expect_alternatives
+      records both readings as defensible. Note this also happens to be the label the comparator's
+      actual (abstaining) behaviour satisfies, since undetermined is included as an accepted reading.
+
+  - id: trm-h072
+    attribute: { key: device_category, kinds: [term] }
+    a: "Circuit breaker"
+    b: "RCCB"
+    expect: granularity
+    expect_alternatives: [undetermined]
+    source: "IEC 61008-1 defines an RCCB as a residual-current-operated circuit-breaker without integral overcurrent protection -- also literally a circuit breaker by the standard's own name"
+    rationale: "Same debate as trm-h071, on RCCB instead of RCBO."
+
+  # ================================================================================================
+  # 11. Boolean -- the nullish-placeholder trap. "-" / "N/A" / "TBD" must never be read as a stated
+  #     "No"; the correct behaviour is to treat the field as blank. This is caught upstream of the
+  #     boolean grammar entirely (errata_comparator._is_present / errata_valuesem NULLISH), so these
+  #     never reach RefusalReason.EMPTY inside the term/boolean parser -- they short-circuit to a
+  #     catalog-blank / evidence-unsupported finding instead of an UNDETERMINED decline. That is
+  #     arguably correct product behaviour (a blank field is informative), but it is NOT one of the
+  #     six labels this suite's taxonomy can express, so every case below is predicted to disagree
+  #     with 'undetermined' under the current scoring even though the underlying behaviour -- never
+  #     inventing a false "No" -- is exactly right.
+  # ================================================================================================
+  - id: trm-h073
+    attribute: { key: rohs_compliant, label: RoHS compliant, kinds: [boolean] }
+    a: "N/A"
+    b: "Yes"
+    expect: null_gap
+    source: "'N/A' is a NULLISH placeholder (errata_valuesem.canonical.NULLISH), not a stated boolean value, and must not be read as a false 'No'"
+    rationale: >-
+      Predicted to score as a disagreement under this suite's 6-label taxonomy: the catalog side is
+      caught by the NULLISH pre-filter before the boolean grammar ever runs, producing
+      CATALOG_NULL_EVIDENCE_PRESENT (a real, SEV2 finding) rather than UNDETERMINED. The comparator
+      does NOT invent a false "No" -- that part is correct and worth confirming -- but this suite has
+      no label for "one side is blank", so the case cannot pass as written. A taxonomy gap, not a
+      code bug.
+
+  - id: trm-h074
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "TBD"
+    b: "No"
+    expect: null_gap
+    source: "'TBD' is a NULLISH placeholder, not a stated 'No'"
+    rationale: "Same taxonomy gap as trm-h073."
+
+  - id: trm-h075
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "Yes"
+    b: "-"
+    expect: null_gap
+    source: "'-' is a NULLISH placeholder; a stated catalog claim with unsupported evidence is not the same as a contradiction"
+    rationale: >-
+      Mirror of trm-h073 with the nullish side on the evidence: predicted
+      UNSUPPORTED_VALUE (SEV2), same taxonomy gap.
+
+  # ================================================================================================
+  # 12. Boolean -- spelling and locale variants beyond the existing suite's Yes/true/x coverage
+  # ================================================================================================
+  - id: trm-h076
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "1"
+    b: "true"
+    expect: equivalent
+    source: "Boolean surface forms"
+
+  - id: trm-h077
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "0"
+    b: "false"
+    expect: equivalent
+    source: "Boolean surface forms"
+
+  - id: trm-h078
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "✓"
+    b: "Yes"
+    expect: equivalent
+    source: "Checkmark glyph as a ticked-box boolean surface form"
+
+  - id: trm-h079
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "t"
+    b: "Y"
+    expect: equivalent
+    source: "Boolean surface forms"
+
+  - id: trm-h080
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "f"
+    b: "No"
+    expect: equivalent
+    source: "Boolean surface forms"
+
+  - id: trm-h081
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "ja"
+    b: "Yes"
+    expect: equivalent
+    source: "German boolean surface form"
+
+  - id: trm-h082
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "nein"
+    b: "No"
+    expect: equivalent
+    source: "German boolean surface form"
+
+  - id: trm-h083
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "si"
+    b: "true"
+    expect: equivalent
+    source: "Spanish/Italian boolean surface form"
+
+  - id: trm-h084
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "non"
+    b: "No"
+    expect: equivalent
+    source: "French boolean surface form"
+
+  - id: trm-h085
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "ja"
+    b: "nein"
+    expect: contradiction
+    source: "German boolean surface forms, opposing values"
+
+  - id: trm-h086
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "si"
+    b: "non"
+    expect: contradiction
+    source: "Mixed-locale boolean surface forms, opposing values"
+
+  - id: trm-h087
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "with"
+    b: "without"
+    expect: contradiction
+    source: "Boolean surface forms, opposing values"
+
+  - id: trm-h088
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "included"
+    b: "not included"
+    expect: contradiction
+    source: "Boolean surface forms, opposing values"
+
+  - id: trm-h089
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "Y"
+    b: "0"
+    expect: contradiction
+    source: "Boolean surface forms, opposing values"

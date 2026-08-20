@@ -1,0 +1,582 @@
+# Adversarial equivalence suite -- IEC 60529 ingress protection (FR-0.1).
+#
+# ingress.yaml (15 cases) already passes 100%; the harness itself warns that a suite written
+# alongside the code it grades encodes the same blind spots twice. This file is an attempt to
+# break that comfort: every case below was chosen and hand-verified against the actual parser and
+# comparator (valuesem/src/errata_valuesem/parsers/ingress.py,
+# valuesem/src/errata_valuesem/compare.py::_compare_ingress) before being written down, not guessed
+# from the spec alone.
+#
+# The core structural fact this family turns on: an IP code is two *independent* characteristic
+# numerals. Nothing about IEC 60529 makes "7" a stronger version of "5" on the second digit --
+# numeral 5 (water jets) and numeral 7 (temporary immersion) are different test rigs entirely, and
+# even adjacent-looking numerals in the same family (5 vs 6, 7 vs 8) require their own separate
+# test and are not inferred from one another. "X" is a third, distinct value meaning "not tested",
+# not "zero" and not "worst case". A comparator that treats the second digit as an ordered scale,
+# or that treats X as 0, fails this family by construction. This file tries hardest exactly there.
+#
+# Direction is load-bearing throughout, matching ingress.yaml's convention: `a` is the catalog and
+# `b` is the evidence. "Catalog vaguer than evidence" (granularity, a finding) and "catalog sharper
+# than evidence" (agreement_specific, not a finding) are different verdicts for the same pair of
+# values with the sides swapped, and both directions are exercised deliberately below rather than
+# picking whichever direction is more flattering.
+
+suite: equivalence
+family: ingress
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: ingress_protection
+    label: IP rating
+    kinds: [ingress_protection]
+
+cases:
+  # ------------------------------------------------------------------------------------------
+  # Group 1 -- the headline trap: the second digit is not an ordered scale. IP67 vs IP65 is the
+  # single most important case in this file (per the brief): a comparator that reads "7 > 5" and
+  # infers coverage would call this agreement or granularity. It is neither -- immersion (7) and
+  # water jets (5) are different test rigs, and a device certified for one carries no certified
+  # claim about the other. The current comparator does not do numeric ordering at all (it checks
+  # digit *equality*, nothing more), so it already gets this right; these cases confirm that,
+  # across several digit pairs, including two pairs that are adjacent within the *same* test
+  # family (jets 5/6, immersion 7/8) where the temptation to infer coverage is strongest.
+  - id: ing-h001
+    a: "IP67"
+    b: "IP65"
+    expect: contradiction
+    source: >-
+      IEC 60529: the second characteristic numeral's tests are independent rigs (numeral 5 = water
+      jets from a 6.3mm nozzle; numeral 7 = temporary immersion to 1m for 30min). Passing one does
+      not certify the other. Industry guidance is explicit that IP ratings are not cumulative
+      across the second digit (e.g. an IP67-rated enclosure has not thereby been shown to meet
+      IP65: https://www.lianjer.com/what-ip-rating-is-waterproof/,
+      https://www.a-m-c.com/ip65-rating/).
+    rationale: >-
+      This is the trap a naive numeric-ordering comparator falls into: "7 > 5" reads as "IP67
+      subsumes IP65". It does not. The two digits test different physical hazards and IEC 60529
+      does not license inferring one from the other. The comparator here checks digit equality
+      only -- no ordering logic exists in _compare_ingress_single -- so it already reaches
+      contradiction correctly; this case exists to pin that behavior down as a regression test,
+      since it is the single easiest bug for a future "improvement" to reintroduce.
+
+  - id: ing-h002
+    a: "IP66"
+    b: "IP68"
+    expect: contradiction
+    source: >-
+      IEC 60529: numeral 6 (powerful water jets) and numeral 8 (continuous immersion beyond the
+      numeral-7 condition) are unrelated test methods; neither digit implies the other regardless
+      of which is numerically larger.
+
+  - id: ing-h003
+    a: "IP65"
+    b: "IP66"
+    expect: contradiction
+    source: >-
+      IEC 60529: numerals 5 and 6 are both jet tests but 6 uses a materially different apparatus
+      (12.5mm nozzle, ~100 L/min at ~100 kPa) than 5 (6.3mm nozzle, 12.5 L/min). Even this
+      adjacent, same-family pair is not inferred one from the other without separate testing --
+      "IP ratings are not cumulative... this principle applies to IP66... it does not
+      automatically imply IP65 compliance" (https://www.lianjer.com/what-ip-rating-is-waterproof/).
+    rationale: >-
+      Chosen deliberately because 5 and 6 look like they should be ordered (same physical
+      phenomenon, jets, just "weaker" and "stronger"). They are not treated as ordered by the
+      standard or by competent practice, and the comparator's flat equality check happens to agree
+      with that for the right reason (it does not reason about magnitude at all).
+
+  - id: ing-h004
+    a: "IP67"
+    b: "IP68"
+    expect: contradiction
+    source: >-
+      IEC 60529 defines numeral 8's test condition as manufacturer-agreed but "more severe than for
+      numeral 7" -- the standard's own text acknowledges an ordering in stringency, yet
+      certification practice still requires numeral 8 to be independently declared and tested
+      rather than inferred from a numeral-7 rating, or vice versa
+      (https://www.jjrlab.com/news/introduction-to-ip-68-testing-standards-and-methods.html).
+    rationale: >-
+      The hardest instance of the "not cumulative" rule to defend, because IEC 60529's own
+      language for numeral 8 explicitly says its condition must exceed numeral 7's. Even so, a
+      catalog stating IP68 against a datasheet stating IP67 is a genuine mismatch to flag, not a
+      pass: IP68's exact depth/duration is manufacturer-defined and not fixed by the standard, so
+      "8" does not certify a specific "7" claim by itself, and the two numerals must each be
+      declared. Treated as a defensible contradiction rather than downgraded to undetermined,
+      because the two source documents are asserting different, specific things about the same
+      product.
+
+  - id: ing-h005
+    a: "IP54"
+    b: "IP56"
+    expect: contradiction
+    source: "IEC 60529: second characteristic numeral, splashing water (4) vs powerful jets (6)."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 2 -- X means untested, not zero, not worst-case. Core structural insight, tested on
+  # both digit positions and in both catalog/evidence directions, using digit values other than
+  # the ones ingress.yaml already covers (2/0 and 6/7) so this is not a restatement of the base
+  # suite under a new id.
+  - id: ing-h006
+    a: "IPX7"
+    b: "IP67"
+    expect: granularity
+    source: >-
+      IEC 60529 4.1: X replaces a characteristic numeral that was not tested/is not claimed. IPX7
+      makes no claim at all about dust; IP67 additionally certifies dust-tightness (numeral 6) with
+      the identical numeral-7 liquids claim. The datasheet therefore states a certified fact
+      (dust-tightness) the catalog omits.
+    rationale: >-
+      The second named trap case in the brief. A comparator that read X as 0 would compute "solids
+      0 vs solids 6" and call this a contradiction over a difference that does not exist -- the
+      catalog simply never claimed anything about dust. IngressSpec.solids is None (not 0) for the
+      X case, and _compare_ingress_single treats a None digit as "unspecified" rather than
+      comparing it numerically, so this resolves to the catalog being the less-specific side:
+      granularity, not contradiction, not equivalent.
+
+  - id: ing-h007
+    a: "IP67"
+    b: "IPX7"
+    expect: agreement_specific
+    source: "IEC 60529 4.1, same fact as ing-h006 with the sides reversed."
+    rationale: >-
+      Now the catalog is the side that additionally certifies dust-tightness. The datasheet's X is
+      not evidence against that claim -- it is silence -- so this is not a finding.
+
+  - id: ing-h008
+    a: "IP6X"
+    b: "IP67"
+    expect: granularity
+    source: >-
+      IEC 60529 4.1: mirror of ing-h006 with X in the liquids position instead of solids. IP6X
+      claims dust-tightness and says nothing about water; the datasheet additionally certifies
+      temporary immersion.
+
+  - id: ing-h009
+    a: "IP4X"
+    b: "IP44"
+    expect: granularity
+    source: "IEC 60529 4.1: liquids digit unspecified on the catalog side, stated as 4 on the datasheet."
+
+  - id: ing-h010
+    a: "IP44"
+    b: "IP4X"
+    expect: agreement_specific
+    source: "IEC 60529 4.1, ing-h009 with the sides reversed."
+
+  - id: ing-h011
+    a: "IP0X"
+    b: "IP00"
+    expect: granularity
+    source: >-
+      IEC 60529 4.1: boundary case at the zero end of the scale. IP0X leaves liquids unspecified;
+      IP00 is an explicit tested-and-confirmed zero, which is a stronger and different claim than
+      "not tested" even though 0 is the smallest possible numeral.
+    rationale: >-
+      Chosen to check that the X-is-not-zero rule holds even at the boundary where "X" and "0"
+      might look interchangeable because 0 is already the weakest stated value. They are not
+      interchangeable: 0 asserts a tested fact ("no special protection, confirmed"), X asserts
+      nothing was tested. A reviewer who conflated them here would be making the same mistake as
+      conflating them at IP2X/IP20.
+
+  - id: ing-h012
+    a: "IP00"
+    b: "IP0X"
+    expect: agreement_specific
+    source: "IEC 60529 4.1, ing-h011 with the sides reversed."
+
+  - id: ing-h013
+    a: "IPX0"
+    b: "IP20"
+    expect: granularity
+    source: >-
+      IEC 60529 4.1: same zero-vs-X distinction as ing-h011, on the liquids digit instead of
+      solids, and paired against IP20 as ingress.yaml's ing-103/ing-111 already do for the mirror
+      (solids) case -- this exercises the liquids side of the identical structural point.
+
+  - id: ing-h014
+    a: "IP20"
+    b: "IPX0"
+    expect: agreement_specific
+    source: "IEC 60529 4.1, ing-h013 with the sides reversed."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 3 -- the digit-transposition trap. IP1X and IPX1 share every character IP67 and IP6X
+  # share with each other -- same digit, "1" -- but in opposite positions, so they assert nothing
+  # in common at all (one claims solids=1 only, the other claims liquids=1 only). A comparator
+  # that matched digits by value rather than by position would wrongly call these related.
+  - id: ing-h015
+    a: "IP1X"
+    b: "IPX1"
+    expect: undetermined
+    source: >-
+      IEC 60529: the first and second characteristic numerals encode different hazards (solids,
+      liquids); a numeral appearing in one position says nothing about the other position. IP1X
+      (solids=1, liquids untested) and IPX1 (solids untested, liquids=1) share no numeral in the
+      same position, so neither is more or less specific than the other -- they are simply
+      silent about different things.
+    rationale: >-
+      IngressSpec is a positional pair, not a bag of digits. IP1X and IPX1 both mention "1" but at
+      different indices, and _compare_ingress_single walks solids and liquids separately, so it
+      cannot conflate them by value. Each side specifies a digit the other leaves as X (a_more and
+      b_more both true) -> INCOMPARABLE, the honest "neither reading dominates" answer.
+
+  - id: ing-h016
+    a: "IP3X"
+    b: "IPX8"
+    expect: undetermined
+    source: >-
+      IEC 60529: same structural point as ing-h015 with non-matching digit values on top of the
+      transposition, so there is no risk the comparator is only getting it right by digit
+      coincidence -- solids=3-only against liquids=8-only leaves both digits genuinely
+      unresolved.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 4 -- dual ratings as a SET, not a range and not single-higher-subsumes-lower. Real
+  # datasheets commonly state a device meets both IP66 and IP67 (tested under both conditions).
+  # ingress.yaml's ing-108/ing-109 cover catalog-dual vs evidence-single (agreement_specific) and
+  # dual vs disjoint-dual (contradiction); these cover the directions and combinations it does not:
+  # evidence-dual vs catalog-single in both orders, a dual set against a different single member of
+  # itself, a dual set against a wholly different single rating, a comma-delimited list, a
+  # natural-language "or" list, and a dual set that mixes a plain rating with a K-suffixed one.
+  - id: ing-h017
+    a: "IP67"
+    b: "IP66/IP67"
+    expect: granularity
+    source: >-
+      IEC 60529: the datasheet certifies two independently-tested conditions (jets, numeral 6, and
+      temporary immersion, numeral 7); the catalog states only one of the two certified facts.
+    rationale: >-
+      The reverse direction of ing-108. The set-comparison branch of _compare_ingress treats the
+      catalog's single-element set as a strict subset of the evidence's two-element set
+      (keys_a < keys_b) and reports B_MORE_SPECIFIC / granularity: the catalog is missing a real,
+      independently-tested certification (IP66) that the evidence carries. This is a genuine
+      under-statement, not a false alarm -- per Group 1, IP67 does not imply IP66, so the catalog
+      cannot get away with only naming one of the two.
+
+  - id: ing-h018
+    a: "IP66/IP67"
+    b: "IP66"
+    expect: agreement_specific
+    source: "IEC 60529: catalog states every certified rating the evidence does, plus one more."
+
+  - id: ing-h019
+    a: "IP66"
+    b: "IP66/IP67"
+    expect: granularity
+    source: "IEC 60529, ing-h018 with the sides reversed."
+
+  - id: ing-h020
+    a: "IP66/IP67"
+    b: "IP68"
+    expect: contradiction
+    source: >-
+      IEC 60529: IP68 shares no certified rating with the set {IP66, IP67}; the catalog's two
+      declared conditions and the datasheet's single declared condition are entirely disjoint.
+
+  - id: ing-h021
+    a: "IP68,IP67"
+    b: "IP66/IP67"
+    expect: undetermined
+    source: >-
+      IEC 60529: the two sets share IP67 but disagree on the other member (IP68 vs IP66); neither
+      set contains the other, so no single reading of "more specific" or "contradicts" applies.
+    rationale: >-
+      A genuinely hard, realistic case: partial overlap between two dual-rating declarations. A
+      comparator that only checked "do they share anything" would wrongly call this agreement; one
+      that only checked "do they differ at all" would wrongly call it contradiction. The honest
+      answer is to decline -- one common member does not resolve whether the differing member is
+      an error or additional, unstated-elsewhere information. Also exercises the comma delimiter
+      (`IP68,IP67`) alongside the slash delimiter in the same case.
+
+  - id: ing-h022
+    a: "IP67 or IP68"
+    b: "IP67"
+    expect: agreement_specific
+    source: >-
+      IEC 60529; a catalog stating a device is rated to "IP67 or IP68" is declaring both
+      certifications (the specific one used depends on configuration/accessory), a superset of the
+      datasheet's single IP67 claim.
+    rationale: >-
+      Exercises the natural-language "or" delimiter some catalog exports use instead of a slash.
+      The grammar's _SPLIT pattern explicitly matches `\bor\b`, so this should normalize the same
+      way as `IP67/IP68` -- worth confirming directly since "or" reads more like a genuine
+      alternative/uncertainty marker in English than a slash does, and a parser that treated it
+      that way (rather than as a second certified condition) would refuse or misclassify here.
+
+  - id: ing-h023
+    a: "IP68/IP69K"
+    b: "IP68"
+    expect: agreement_specific
+    source: >-
+      IEC 60529 for the IP68 member; IEC 60529 / ISO 20653 for the IP69K member (the K suffix is
+      the ISO 20653 high-pressure steam-jet test, a real and separately-tested rating some
+      datasheets state alongside a plain IEC 60529 numeral). The catalog set contains everything
+      the evidence states, plus one more genuinely different certification.
+    rationale: >-
+      Checks that a K-suffixed rating inside a multi-value set is handled as just another distinct
+      declared rating for subset purposes, rather than being mishandled by the single-value
+      suffix-contradiction rule (which only fires when comparing exactly one rating against
+      exactly one rating, per _compare_ingress_single) or dropped/misparsed because of the suffix.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 5 -- a completely different standard wearing similar-looking clothes. IK codes (impact
+  # protection, IEC 62262) are not IP codes (ingress, IEC 60529) and share no defined relationship.
+  - id: ing-h024
+    a: "IP67"
+    b: "IK08"
+    expect: undetermined
+    source: >-
+      IEC 62262 defines the IK impact-protection scale; IEC 60529 defines the IP ingress scale.
+      They are different standards measuring different hazards (mechanical impact energy in
+      joules, vs dust/liquid ingress) and there is no defined conversion or comparison between an
+      IP code and an IK code.
+    rationale: >-
+      "IK08" does not match the ingress prefilter (`\bIP\s*-?\s*[0-9X]` requires the literal
+      letters IP) at all, so it is never even offered to the IP grammar; it should refuse cleanly
+      as no-grammar-match rather than being coerced into a malformed IP reading (e.g. by stripping
+      the K and reading "08" as two IP digits). Confirmed directly: ingress.parse("IK08", {})
+      returns None, and under Kind.INGRESS the only fallback is the generic-term parser, which
+      also does not recognise it, so the pipeline declines with NO_GRAMMAR_MATCH and the
+      comparator abstains.
+
+  - id: ing-h025
+    a: "IK08"
+    b: "IP67"
+    expect: undetermined
+    source: "IEC 62262 / IEC 60529, ing-h024 with the sides reversed."
+
+  # ------------------------------------------------------------------------------------------
+  # Group 6 -- NEMA enclosure types (UL 50 / UL 50E, a US standard) against IP codes. A widely
+  # published approximate, one-directional, vendor-literature correspondence exists (e.g. "NEMA 4X
+  # ~ IP66") but it is not an official IEC/NEMA equivalence and the underlying test methods differ
+  # (flow rate, pressure, distance, and NEMA 4X additionally requires corrosion resistance that IP
+  # ratings do not test at all). Every source below is marked UNVERIFIED per the brief's explicit
+  # instruction, regardless of how often the mapping is repeated in vendor literature.
+  - id: ing-h026
+    a: "NEMA 4X"
+    b: "IP66"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] Vendor literature commonly approximates NEMA 4X to IP66 for
+      dust/water ingress (e.g. https://www.eabel.com/ip66-vs-nema-4x/,
+      https://www.budind.com/nema-vs-ip-protection-ratings/), but this is explicitly described as
+      an approximation, not an official equivalence: NEMA 4X water testing (240 L/min at 31 kPa
+      from 3m) and IP66 testing (100 L/min at ~100 kPa from 3m) use different apparatus, and NEMA
+      4X additionally mandates corrosion resistance that IP66 does not test at all. No authoritative
+      primary source treating these as interchangeable was found; do not treat this pair as a
+      confirmed cross-standard fact.
+    rationale: >-
+      This is exactly the plausible-but-wrong equivalence the brief warns produces a silent false
+      negative in a real audit: it is tempting to mark NEMA 4X / IP66 "equivalent" because every
+      supplier catalog says so, but supplier convenience is not IEC or NEMA agreement. Confirmed
+      directly that the ingress parser refuses "NEMA 4X" outright (no "IP" substring, fails the
+      prefilter), so the pipeline abstains on this pair rather than silently applying the
+      unverified mapping -- which is the correct, conservative behavior for a value-semantics layer
+      that must never invent a fact.
+
+  - id: ing-h027
+    a: "IP66"
+    b: "NEMA 4X"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] Same approximate, non-official, directional correspondence as
+      ing-h026, sides reversed.
+
+  - id: ing-h028
+    a: "NEMA 6P"
+    b: "IP68"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] Vendor literature sometimes approximates NEMA 6P (submersible,
+      corrosion-resistant, UL 50/50E) toward IP68, but this is not an official IEC/NEMA
+      equivalence and the exact immersion depth/duration for both NEMA 6P and IP68 are
+      manufacturer-declared rather than fixed by either standard, so even the approximation is
+      only meaningful once both declared conditions are compared. Not treated as equivalent here.
+
+  - id: ing-h029
+    a: "NEMA 4"
+    b: "IP65"
+    expect: undetermined
+    source: >-
+      [UNVERIFIED - needs checking] Vendor literature approximates plain NEMA 4 (no corrosion
+      requirement, unlike 4X) toward IP65/IP66 depending on source; treated as unverified and
+      non-equivalent here rather than picking one of the disagreeing approximations.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 7 -- malformed and partial notation a real catalog/datasheet feed will actually contain.
+  # Per the grammar-either-parses-or-refuses rule, the legitimate notational variants should
+  # normalize to the same value and the genuinely malformed ones should refuse (-> undetermined),
+  # never be silently guessed at.
+  - id: ing-h030
+    a: "IP-67"
+    b: "IP 67"
+    expect: equivalent
+    source: "IEC 60529: dash and space are both non-semantic punctuation/spacing variants of IP67."
+
+  - id: ing-h031
+    a: "ip67"
+    b: "IP67"
+    expect: equivalent
+    source: "IEC 60529: case is not semantic; catalog feeds routinely lowercase the whole field."
+
+  - id: ing-h032
+    a: "Ip67"
+    b: "IP67"
+    expect: equivalent
+    source: "IEC 60529, mixed-case variant of ing-h031."
+
+  - id: ing-h033
+    a: "IP  67"
+    b: "IP67"
+    expect: equivalent
+    source: >-
+      IEC 60529: doubled internal whitespace between the letters and the digits is a formatting
+      artifact, not a different rating.
+
+  - id: ing-h034
+    a: " IP67"
+    b: "IP67"
+    expect: equivalent
+    source: "IEC 60529: leading whitespace from a padded CSV/export field is not semantic."
+
+  - id: ing-h035
+    a: "IP678"
+    b: "IP67"
+    expect: undetermined
+    source: >-
+      IEC 60529 defines the IP code as exactly two characteristic numerals (each 0-9 or X)
+      following the letters IP, plus optional supplementary/informational letters -- never three
+      bare digits. "IP678" has no defined reading (it is not "IP67" plus a stray digit, nor a
+      recognised suffix) and per FR-4.2 must refuse rather than be guessed at (e.g. by silently
+      truncating to the first two digits).
+    rationale: >-
+      Confirmed directly: the ingress grammar's _CODE pattern requires the digits group to be
+      exactly two characters (solids, then an optional single liquids digit) with only letters
+      after; "IP678" fails to match and the parser returns Refusal(MALFORMED). This is the
+      grammar working as designed -- included as a regression pin, not a bug report.
+
+  - id: ing-h036
+    a: "IP67"
+    b: "IP678"
+    expect: undetermined
+    source: "IEC 60529, ing-h035 with the sides reversed."
+
+  - id: ing-h037
+    a: "IP6X9K"
+    b: "IP69K"
+    expect: undetermined
+    source: >-
+      IEC 60529 / ISO 20653: not a defined notation (a code cannot carry two liquids-position
+      tokens, "X" then "9K"). Refuses rather than being guessed at as either IP6X or IP69K.
+    rationale: >-
+      Confirmed directly: fails the single-code grammar (too many trailing characters after the
+      solids digit) and is not a delimiter-separated list either (no /, comma, "or", "and", or +),
+      so the parser correctly returns Refusal(MALFORMED) on both sides tried. Included as a
+      regression pin on the grammar's robustness against garbled multi-token strings, alongside
+      ing-h038/ing-h039 below where the equivalent kind of garbling is *not* caught.
+
+  - id: ing-h038
+    a: "IP6/7"
+    b: "IP67"
+    expect: undetermined
+    source: >-
+      IEC 60529 defines the IP code as a single two-numeral pair; "/" between two single digits is
+      not a defined notation for anything (unlike "IP66/IP67" or "IP66/67", which are two complete
+      two-numeral codes separated by "/" and are legitimately a dual rating -- see Group 4). "6/7"
+      is far more plausibly a delimiter typo for the single rating "IP67" (solids=6, liquids=7)
+      than a genuine claim of two separate single-numeral-only ratings. Per FR-4.2 this should
+      refuse rather than be silently reinterpreted.
+    rationale: >-
+      A genuine parser gap, found by directly probing the grammar rather than assumed from the
+      spec. ingress.parse splits on "/" unconditionally and restores an elided "IP" prefix on each
+      fragment (the same logic that correctly turns "IP66/67" into "IP66/IP67"), so "IP6/7" is
+      silently reinterpreted as the *set* {IP6X, IP7X} -- two single-digit-only ratings -- rather
+      than being refused or read as the far more likely intended "IP67". Worse, "IP7X" asserts a
+      first-characteristic-numeral of 7, which IEC 60529 Table 1 does not define (the solids
+      numeral only runs 0-6); the parser accepts it without complaint. When that malformed
+      two-element set is then compared against the well-formed "IP67", _compare_ingress falls into
+      its set-vs-single branch, finds no shared key between {IP6X, IP7X} and {IP67}, and reports a
+      flat CONTRADICTION -- an accusatory finding manufactured entirely from a delimiter that
+      should have caused a refusal. Expected here is `undetermined` (the honest "this notation is
+      not recognised" answer); if the actual run instead shows `contradiction`, that is this exact
+      bug and the code, not this label, is what should change.
+
+  - id: ing-h039
+    a: "IP67"
+    b: "IP6/7"
+    expect: undetermined
+    source: "Same defect as ing-h038, sides reversed -- confirms the misparse is not order-dependent."
+    rationale: >-
+      Included specifically to check whether the bug in ing-h038 is direction-sensitive (e.g. only
+      manifests when the malformed string is the catalog value). It is not: _compare_ingress's
+      set-vs-single path is symmetric in how it computes shared/disjoint keys, so both directions
+      are expected to reproduce the same false contradiction.
+
+  - id: ing-h040
+    a: "IPX"
+    b: "IP67"
+    expect: granularity
+    source: >-
+      IEC 60529 4.1: "IPX" alone, with no digits at all, is the maximally under-specified case --
+      neither numeral is stated. The parser's one-numeral-given shorthand rule (already exercised
+      by ingress.yaml's ing-105, `IPX4` vs `IP54`) applies degenerately here: a lone "X" fills the
+      solids position and the missing liquids group is treated the same as an explicit X, i.e.
+      both numerals unspecified rather than guessed.
+    rationale: >-
+      Listed among the brief's "nonsensical/incomplete" strings to check whether the parser
+      normalizes it or refuses it. Confirmed directly: it parses to IngressSpec(solids=None,
+      liquids=None) ("IPXX") rather than refusing. Judged here as defensible, not a bug: treating a
+      bare "IPX" as "nothing certified" is the conservative, non-guessing reading consistent with
+      how the grammar already treats a single stated digit (e.g. "IP6" -> solids=6,
+      liquids=unspecified, per ing-105/ing-106 in the base suite) -- it never invents a claim, it
+      just carries forward the least information possible. Compared against a fully-specified
+      IP67, that minimal information content is genuinely under-specified relative to the
+      datasheet on both numerals, and B_MORE_SPECIFIC/granularity is the correct read.
+
+  # ------------------------------------------------------------------------------------------
+  # Group 8 -- suffixes: the K high-pressure-jet test (a different standard hiding in the same
+  # string shape) and the ordinary informational letters, which behave as a real refinement.
+  - id: ing-h041
+    a: "IP69K"
+    b: "IP68"
+    expect: contradiction
+    source: >-
+      IEC 60529 / ISO 20653 (DIN 40050-9): IP69K's K suffix denotes the high-pressure,
+      high-temperature steam-jet test, a wholly different test rig from IEC 60529's own numeral-8
+      continuous-immersion test, regardless of how close the leading digits look ("69" vs "68").
+    rationale: >-
+      A new pair not in the base suite's K-suffix coverage (which only compares IP69K against
+      IP69). Chosen because "68" and "69K" look numerically adjacent and both plausibly describe a
+      well-sealed enclosure, which is exactly the situation where a reviewer might be tempted to
+      wave this through as "basically the same, and better besides". They are certifications of
+      different physical tests and neither implies the other.
+
+  - id: ing-h042
+    a: "IP67W"
+    b: "IP67"
+    expect: agreement_specific
+    source: >-
+      IEC 60529 clause 8 (supplementary letters): W means "suitable for use under specified
+      weather conditions and provided with additional protective features or processes" -- a genuine refinement of the same numeral pair rather than a different
+      test standard (unlike K). The catalog states the base rating plus this refinement; the
+      datasheet states only the base rating.
+
+  - id: ing-h043
+    a: "IP67"
+    b: "IP67W"
+    expect: granularity
+    source: "IEC 60529 clause 8, ing-h042 with the sides reversed."
+
+  - id: ing-h044
+    a: "IP68H"
+    b: "IP68"
+    expect: agreement_specific
+    source: >-
+      IEC 60529 clause 8: H denotes high-voltage apparatus, an informational letter and a
+      refinement, not a different test standard.
+
+  - id: ing-h045
+    a: "IP68"
+    b: "IP68H"
+    expect: granularity
+    source: "IEC 60529 clause 8, ing-h044 with the sides reversed."

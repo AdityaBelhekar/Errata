@@ -1,0 +1,23 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Content-addressed blob store: documents are fetched, never committed (FR-9.5)
+var/
+blobs/
+*.pdf
+!bench/fixtures/**/*.manifest.json
+
+# Local run output
+out/
+*.local.yaml
+.env

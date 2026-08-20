@@ -1,0 +1,762 @@
+# Equivalence suite -- materials, adversarial extension (FR-0.1).
+#
+# This file does not repeat materials.yaml. It exists because materials.yaml passes every case,
+# and the harness itself says that is weak evidence: a suite written alongside the code it grades
+# encodes the same blind spots twice. Every case below was driven through the actual pipeline
+# (`errata_comparator.compare_attribute`) before its `expect` label was written down, and the label
+# is what a competent domain reviewer should say -- not what the code happened to output. Where the
+# two disagree, the disagreement is left in the file; that is the valuable part of this exercise.
+#
+# Material-equivalence claims are the highest-risk category in the whole benchmark (a wrong
+# "equivalent" is a silent false negative that can reach a safety-relevant field), so every source
+# below is either a standard citation already used in the ontology, or a cross-reference verified
+# against a manufacturer technical datasheet or a standards cross-reference during authoring. Any
+# claim that could not be pinned to a verifiable source is prefixed [UNVERIFIED - needs checking].
+
+suite: equivalence
+family: materials
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: material_grade
+    label: Material
+    kinds: [material]
+
+cases:
+  # ================================================================================================
+  # A. The 316 / 316L / 316Ti three-way. The L is a real compositional restriction (carbon ceiling);
+  #    Ti-stabilisation is a different, additional alloying change. 316 vs 316L is a family relation
+  #    (granularity); 316L vs 316Ti is two specific, different grades (contradiction) -- and the
+  #    ontology does not carry a 316Ti group at all, so the comparator cannot make the second call.
+  # ================================================================================================
+  - id: mat-h001
+    a: "316"
+    b: "316Ti"
+    expect: contradiction
+    source: "EN 10088-1: 1.4401 (316, no titanium) against 1.4571 (316Ti, titanium-stabilised); UNS S31600 against S31635"
+    rationale: >-
+      316Ti adds titanium stabilisation that plain 316 does not carry -- a real compositional
+      difference, not a spelling variant. The materials ontology has no 316Ti group at all (only
+      304, 304L, 316, 316L, 321, 430), so both '316' and '316Ti' clear the material lookup but
+      '316Ti' cannot resolve and the comparator declines instead of catching the contradiction. A
+      missed defect that declines rather than guesses is the honest failure mode, but it is still a
+      real coverage gap on a common industrial designation.
+
+  - id: mat-h002
+    a: "316L"
+    b: "316Ti"
+    expect: contradiction
+    source: "EN 10088-1: 1.4404 (316L, low-carbon) against 1.4571 (316Ti, titanium-stabilised); different alloying elements control the two restrictions"
+    rationale: >-
+      The exact three-way distinction the family is built to test: 316L restricts carbon, 316Ti adds
+      titanium. Both are real, different, specific members of the 316 family and neither contains
+      the other. The comparator has no 316Ti group and declines.
+
+  - id: mat-h003
+    a: "316Ti"
+    b: "321"
+    expect: contradiction
+    source: "EN 10088-1: 1.4571 (316Ti, Mo-bearing, Ti-stabilised) against 1.4541 (321, no molybdenum, Ti-stabilised)"
+    rationale: >-
+      Both grades are titanium-stabilised, which is exactly the trap: sharing one stabilisation
+      strategy does not make them the same steel. 321 has no molybdenum and is not a member of the
+      316 family; 316Ti is. A comparator that keyed on "Ti-stabilised" rather than group identity
+      would get this wrong. The ontology declines rather than conflating them, which is correct, but
+      it also means the genuine contradiction is never surfaced.
+
+  - id: mat-h004
+    a: "1.4404"
+    b: "1.4571"
+    expect: contradiction
+    source: "EN 10088-1: 1.4404 designates 316L, 1.4571 designates 316Ti"
+    rationale: "The EN-number spelling of mat-h002, to confirm the gap is not an artefact of one alias form."
+
+  - id: mat-h005
+    a: "1.4404"
+    b: "1.4435"
+    expect: contradiction
+    source: >-
+      EN 10088-1: both are 316L-family low-carbon molybdenum grades, but 1.4404 specifies Ni
+      10.0-13.0% / Mo 2.0-2.5% and 1.4435 specifies Ni 12.5-15.0% / Mo 2.5-3.0% -- a real
+      composition difference with a measurably higher PREN (pitting resistance) for 1.4435, which is
+      why mills sell it as the upgraded low-ferrite variant for higher-corrosion duty.
+    rationale: >-
+      This is the file's second numeric-adjacency trap, and it is a live one, not a hypothetical:
+      the materials ontology lists '1.4404' and '1.4435' as two *aliases of the same group*
+      (steel/stainless/316L), so the comparator calls them a flat semantic equivalence with no
+      finding at all. They are close enough to be commercially interchangeable in most catalogs,
+      which is presumably why the ontology folded them together -- but they are not the same
+      composition, and a spec that explicitly calls out 1.4435 for its lower ferrite content is
+      relying on a distinction the comparator currently cannot see.
+
+      LABEL CHANGED 2026-08-19, granularity -> contradiction. The original label called 1.4435 "the
+      narrower, tighter-spec member", which would make this a subsumption. That is not what the
+      envelopes say: 1.4404 is Mo 2.00-2.50 and 1.4435 is Mo 2.50-3.00, so 1.4435's band is SHIFTED,
+      not NESTED -- a bar meeting 1.4435 at Mo 2.8 fails 1.4404's ceiling outright. Neither grade
+      subsumes the other; they are siblings under the 316L family, and two mutually exclusive
+      composition claims about one part are a contradiction. Verified against SteelNumber's EN 10088
+      composition tables and mill datasheets (Lucefin, Notz) on 2026-08-19. The ontology was
+      restructured to match the standard, and this label follows the standard -- NOT the
+      implementation; the prior reading is preserved above so the change can be audited.
+
+  # ================================================================================================
+  # B. Aluminium tempers. Bare '6061' has no ontology temper structure below 6061-T6, and no
+  #    grouping at all for 5052 or 6082 tempers -- so most temper-precision questions decline rather
+  #    than resolve, even though T6 vs T651 has a real, citable answer (same spec, different process).
+  # ================================================================================================
+  - id: mat-h006
+    a: "6061"
+    b: "6061-T4"
+    expect: granularity
+    source: "Aluminum Association temper system (ASTM B209): T4 (solution heat-treated, naturally aged) is a specific, materially different temper from unspecified or T6 condition"
+    rationale: >-
+      Bare '6061' names the alloy without a temper; T4 is a real, specific heat-treatment state with
+      lower strength than T6. The catalog side is under-specified, not wrong -- classic granularity.
+      '6061-T4' is not in the ontology (only bare 6061 and 6061-T6 are), so the comparator declines.
+
+  - id: mat-h007
+    a: "6061-T6"
+    b: "6061-T651"
+    expect: granularity
+    source: >-
+      ASTM B209: 6061-T6 and 6061-T651 carry identical minimum tensile/yield property requirements
+      in the standard's mechanical-property tables; T651 is T6 material given an additional
+      controlled stretch (typically 1.5-3% permanent set) to relieve residual stress, a processing
+      step that does not change the alloy or the specified mechanical minimums.
+    rationale: >-
+      A catalog that says plain T6 where the datasheet says T651 has not stated anything false --
+      the datasheet is adding a processing detail (stress-relief) that a machinist cares about but
+      that does not contradict the mechanical spec. This should be the same shape of relation as
+      mat-304 in the base suite (temper detail added). '6061-T651' is not in the ontology at all, so
+      the comparator declines instead of recognising the family relation.
+
+  - id: mat-h008
+    a: "6061-T651"
+    b: "6061-T6"
+    expect: agreement_specific
+    source: "Same as mat-h007, sides reversed"
+    rationale: >-
+      Direction check on mat-h007: now the catalog is the more-specific side and the evidence is
+      coarser. Should resolve as agreement (no finding), not granularity. Still declines.
+
+  - id: mat-h009
+    a: "AA6061-T6"
+    b: "6082-T6"
+    expect: contradiction
+    source: "EN 573-3: 6061 and 6082 are different aluminium alloy compositions (6082 carries higher Mn and Si for higher strength) regardless of temper"
+    rationale: >-
+      Even though neither '6082-T6' resolves in the ontology (only bare 6082 does), a competent
+      reviewer does not need the temper to know these are different alloys -- mat-104 in the base
+      suite already establishes 6061-T6 against 6082 as a contradiction. Appending T6 to the unknown
+      side should not change the verdict, but because '6082-T6' fails to parse, the comparator
+      abstains instead of reaching the same conclusion it reaches for the un-tempered pair.
+
+  - id: mat-h010
+    a: "5052"
+    b: "5052-H32"
+    expect: granularity
+    source: "Aluminum Association temper system: H32 is a specific strain-hardened, stabilised temper with defined minimum properties, distinct from unspecified condition"
+    rationale: >-
+      Parallel to mat-h006 for the 5000-series: the ontology's 5052 group carries no temper variants
+      at all, so any '5052-Hxx' designation is unrecognised regardless of how common it is on a real
+      datasheet.
+
+  # ================================================================================================
+  # C. Brass across EN and UNS/ASTM. CW614N/CuZn39Pb3/C38500 (leaded, free-cutting) is already in
+  #    the ontology; the unleaded 63/37 brass family (CuZn37/CW508L/C27200) is not, despite being
+  #    at least as common on datasheets, and despite being a genuinely different alloy from the
+  #    leaded grade the ontology does know.
+  # ================================================================================================
+  - id: mat-h011
+    a: "CuZn37"
+    b: "C27200"
+    expect: equivalent
+    source: >-
+      EN 12163 (rod) / EN 12166 (wire) CuZn37 cross-referenced to UNS C27200 ("Yellow Brass") --
+      confirmed against KME's own technical datasheet for CuZn37 (which lists C27200 in its standards
+      cross-reference table), Chaplin Wire Ltd's CuZn37 datasheet ("CuZn37 / CW508 / C27200 / CZ108")
+      and Aurubis' PNA 243 datasheet, three independent manufacturer sources. (Corrected: the earlier
+      text cited EN 12164, which is the free-machining LEADED rod standard and is not the right
+      reference for unleaded CuZn37.)
+    rationale: >-
+      The EN/UNS crosswalk pattern the file already tests for CW614N/C38500, applied to the far more
+      common unleaded 63/37 brass -- and the ontology simply does not have this group. A real,
+      verified equivalence the comparator cannot currently recognise.
+
+  - id: mat-h012
+    a: "CW508L"
+    b: "C27200"
+    expect: equivalent
+    source: >-
+      Same cross-reference as mat-h011. CW508L is the EN material DESIGNATION (number) and CuZn37 the
+      EN material SYMBOL -- the earlier text had these two terms the wrong way round -- tested against
+      UNS C27200.
+    rationale: "Confirms the gap is in the alloy, not the particular alias spelling."
+
+  - id: mat-h013
+    a: "CuZn39Pb3"
+    b: "CuZn37"
+    expect: contradiction
+    source: "EN 12164 (CuZn39Pb3: leaded free-cutting brass, ~2.5-3.5% Pb) against EN 12163 (CuZn37: unleaded 63/37 brass, no intentional lead)"
+    rationale: >-
+      The brass analogue of mat-301 (304L vs 316L): a shared 'CuZn3x' prefix hiding a real
+      compositional difference (lead content, which materially changes machinability and is
+      restricted in some drinking-water and food-contact specs). '316L'-style prefix-sharing traps
+      are exactly what a string-similarity comparator gets wrong; here the ontology instead abstains
+      because CuZn37 is simply absent.
+
+  # ================================================================================================
+  # D. Property classes (ISO 898-1) confused with material grades. A property class is a mechanical
+  #    performance envelope, not a composition -- ISO 898-1 itself says the base steel varies within
+  #    a class. Comparing it against an actual grade designation is a category mismatch the
+  #    comparator currently resolves as a flat contradiction, which over-claims certainty it does
+  #    not have.
+  # ================================================================================================
+  - id: mat-h014
+    a: "class 8.8"
+    b: "hot-dip galvanised"
+    expect: undetermined
+    source: >-
+      ISO 898-1 defines property class 8.8 by mechanical performance (proof/tensile/yield strength)
+      achieved by quench-and-temper; it explicitly allows the underlying steel composition to vary.
+      Hot-dip galvanising (ISO 1461) is an independent surface treatment. A fastener can carry both
+      facts at once -- they describe different aspects of the same part, not competing claims about
+      one fact.
+    rationale: >-
+      This is the conflation the family is built to catch: the ontology models '8.8' as a material
+      group (broader: steel/carbon, steel), so any other steel-family term that is not literally the
+      same group falls through to CONTRADICTION -- including a coating descriptor that is not even
+      making a claim about the same kind of thing. Calling these two "cannot both be true" is false;
+      the honest answer is that a property-class value and a surface-treatment value are not
+      resolvable against each other at all. Actual output is contradiction.
+
+  - id: mat-h015
+    a: "10.9"
+    b: "galvanised steel"
+    expect: undetermined
+    source: "ISO 898-1 (property class 10.9, mechanical only) against ISO 1461 (hot-dip galvanising, an independent surface treatment)"
+    rationale: "Same conflation as mat-h014, testing the next property class up."
+
+  - id: mat-h016
+    a: "12.9"
+    b: "zinc plated steel"
+    expect: undetermined
+    source: "ISO 898-1 (property class 12.9, mechanical only) against a zinc coating descriptor"
+    rationale: >-
+      Same conflation again, and doubly interesting because 'zinc plated steel' is itself grouped
+      under hot-dip galvanising in the ontology (see mat-h019) -- so this case is also downstream of
+      the surface-treatment bug in section E.
+
+  - id: mat-h017
+    a: "8.8"
+    b: "S235"
+    expect: undetermined
+    source: >-
+      ISO 898-1 Table 2 (materials / chemical composition limits -- NOT Table 3, which is the
+      mechanical-properties table) permits a range of steel chemistries for class 8.8, not a single grade; S235 (EN 10025-2) is a delivered-condition structural grade
+      defined by its own as-rolled mechanical properties, not a feedstock chemistry declaration.
+      Neither standard asserts that a class-8.8 fastener is or is not made from S235-equivalent
+      chemistry.
+    rationale: >-
+      The cleanest illustration of the property-class/material-grade category error: '8.8' and
+      'S235' are not verified to be the same fact or verified to be different facts -- they are two
+      different *kinds* of claim (performance class vs. delivery-condition grade) and the honest
+      answer is that this comparison cannot be resolved from the two strings alone. The comparator's
+      flat group-difference rule instead reports a confident contradiction.
+
+  - id: mat-h018
+    a: "8.8"
+    b: "1.4301"
+    expect: contradiction
+    source: >-
+      ISO 898-1 property classes (4.6-12.9) apply only to carbon and alloy steel fasteners; austenitic
+      stainless fasteners are classified under the separate ISO 3506-1 A2/A4 system. A fastener
+      cannot be marked both '8.8' and '1.4301' under the standards that define those marks.
+    rationale: >-
+      Included deliberately as the counterpart to mat-h014/015/016/017: not every property-class
+      pairing is a category-mismatch false alarm. Here the two marking systems are genuinely
+      mutually exclusive (stainless fasteners are never property-classed under ISO 898-1), so
+      contradiction is the correct, defensible call and the comparator already gets it right. Kept
+      in the suite so the property-class section is not one-sided.
+
+  # ================================================================================================
+  # E. Surface treatment vs base material. Hot-dip galvanising (ISO 1461) and zinc electroplating
+  #    (ISO 4042 / ASTM B633) are different processes with different coating thickness and service
+  #    life. The ontology's own caveat text says so -- and then groups them as one material anyway.
+  # ================================================================================================
+  - id: mat-h019
+    a: "galvanised steel"
+    b: "zinc plated steel"
+    expect: contradiction
+    source: >-
+      ISO 1461 (hot-dip galvanising: coating typically 45-85 micron, decades of outdoor service life)
+      against ISO 4042 / ASTM B633 (electroplated zinc: typically 5-25 micron, a fraction of the
+      corrosion life). Different processes, different standards, different performance -- not the
+      same fact stated two ways.
+    rationale: >-
+      The ontology's own caveat on this alias says it plainly: "Electroplated zinc and hot-dip
+      galvanising are different coatings with different thicknesses and service lives." That caveat
+      is attached as a note, but the *verdict* the comparator returns is semantic_equivalence -- no
+      finding at all, silently. On a coating attribute this is a corrosion-performance defect
+      travelling through the pipeline invisibly. This is the headline finding of this file: a
+      documented, self-acknowledged false equivalence that ships anyway because the caveat mechanism
+      only annotates, it does not change the classification.
+
+  - id: mat-h020
+    a: "HDG"
+    b: "zinc plated steel"
+    expect: contradiction
+    source: "Same as mat-h019, HDG abbreviation form"
+    rationale: "Confirms the bug is not specific to one spelling of the hot-dip side."
+
+  - id: mat-h021
+    a: "galvanized steel"
+    b: "zinc plated steel"
+    expect: contradiction
+    source: "Same as mat-h019, US spelling"
+    rationale: "Confirms the bug survives the American-spelling alias too."
+
+  - id: mat-h022
+    a: "hot-dip galvanised"
+    b: "galvanised steel"
+    expect: equivalent
+    source: "ISO 1461 -- both aliases genuinely name the hot-dip process"
+    rationale: >-
+      Included as the control: unlike mat-h019-021, this pair *should* be a flat equivalence, and
+      the comparator gets it right. Without this case, section E would only show failures and a
+      reader could not tell the ontology's alias mechanism from the specific bug in it.
+
+  - id: mat-h023
+    a: "zinc-plated"
+    b: "zinc plated steel"
+    expect: equivalent
+    source: "Same commercial fact, hyphenated bare-word spelling common on datasheets"
+    rationale: >-
+      A coverage gap distinct from the process-conflation bug above: the bare hyphenated spelling
+      'zinc-plated' (without 'steel') is not a registered alias at all, so this pair declines even
+      though, if it resolved, it ought to land on the same group as 'zinc plated steel'.
+
+  - id: mat-h024
+    a: "galvanised"
+    b: "hot-dip galvanised"
+    expect: granularity
+    source: >-
+      [UNVERIFIED - needs checking] In structural and fastener trade usage, unqualified 'galvanised'
+      is widely read as defaulting to the hot-dip process, with 'hot-dip galvanised' as the specific
+      reading. ISO 1461 defines hot-dip galvanized coatings but does NOT establish that a bare
+      "galvanised" must be read as hot-dip; the earlier text cited it as though it did. No primary
+      source for the default-reading convention was located.
+    rationale: >-
+      Bare 'galvanised' (without the word 'steel') is not registered anywhere in the ontology --
+      neither as a material alias nor as a generic subsuming term -- despite 'stainless steel' and
+      'Aluminium' having exactly this generic-term treatment. A real, fixable coverage gap.
+
+  # ================================================================================================
+  # F. Trademark vs generic chemical name. PTFE/Teflon is the safe case already in the base suite.
+  #    FKM/FPM/Viton is genuinely more hazardous, and Kalrez is the trap: it looks like "another
+  #    fluoroelastomer trade name" but is chemically a different polymer family (FFKM, not FKM).
+  # ================================================================================================
+  - id: mat-h025
+    a: "FKM"
+    b: "FPM"
+    expect: equivalent
+    source: "FKM (ASTM D1418) and FPM (ISO/DIN 1629) are parallel abbreviations for the same fluoroelastomer material class"
+    rationale: >-
+      The elastomer analogue of the 316/A4/1.4401 headline pattern: two standards bodies, one
+      material. Confirms the ISO-vs-ASTM naming split resolves correctly for elastomers, not only
+      for steel.
+
+  - id: mat-h026
+    a: "Viton"
+    b: "FPM"
+    expect: equivalent
+    source: "ISO 1629 FPM; Viton is Chemours' trade name for FKM/FPM-family grades"
+    rationale: "Same trademark-to-generic pattern as mat-015 in the base suite, tested against the ISO spelling rather than the ASTM one."
+
+  - id: mat-h027
+    a: "Viton"
+    b: "Kalrez"
+    expect: contradiction
+    source: >-
+      FKM (Viton, ASTM D1418) is a partially fluorinated elastomer (66-70% fluorine, hydrogen atoms
+      remain in the backbone). FFKM (Kalrez, DuPont/Chemours trade name for perfluoroelastomer) is
+      fully fluorinated with no backbone hydrogen, giving materially different temperature (up to
+      ~320 C vs ~200-230 C) and chemical-resistance performance. They are different polymer families,
+      not two trade names for one material.
+    rationale: >-
+      The trap this section is built to catch: both are Chemours-adjacent fluorine-elastomer trade
+      names, which invites exactly the false-equivalence a naive "sounds like a rubber trade name"
+      heuristic would make. 'Kalrez' is not in the materials ontology at all, so the comparator
+      correctly declines rather than wrongly equating them -- but the genuine, citable contradiction
+      is never raised either.
+
+  - id: mat-h028
+    a: "Makrolon"
+    b: "Lexan"
+    expect: equivalent
+    source: "Both are trade names for polycarbonate (Makrolon: Covestro; Lexan: SABIC), ISO 7391-1"
+    rationale: >-
+      A different flavour of trademark case from Viton/FKM: two *different companies'* trademarks
+      converging on the same generic polymer, both already registered as PC aliases with caveats.
+      Confirms the ontology's caveat-and-equate pattern is applied consistently for polycarbonate.
+
+  - id: mat-h029
+    a: "PBT"
+    b: "Ultradur"
+    expect: equivalent
+    source: "Ultradur is BASF's trade name for polybutylene terephthalate, ISO 7792-1"
+    rationale: "Third trademark family, confirms PBT's trade names resolve the same way as PA66/PC/PTFE do."
+
+  - id: mat-h030
+    a: "PTFE"
+    b: "polytetrafluoroethylene"
+    expect: equivalent
+    source: "ISO 12086-1, abbreviation against full chemical name"
+    rationale: "Sanity check that the full IUPAC-style name, not only the trademark, resolves against the abbreviation."
+
+  - id: mat-h031
+    a: "ABS"
+    b: "acrylonitrile butadiene styrene"
+    expect: equivalent
+    source: "ISO 2580-1, abbreviation against full chemical name"
+
+  - id: mat-h032
+    a: "uPVC"
+    b: "PVC-U"
+    expect: equivalent
+    source: "ISO 1163-1, both common orderings of unplasticised PVC"
+
+  - id: mat-h033
+    a: "EPDM"
+    b: "ethylene propylene diene"
+    expect: equivalent
+    source: "ISO 1629, abbreviation against expanded name"
+
+  - id: mat-h034
+    a: "SS"
+    b: "CRES"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] Both are generic trade abbreviations for stainless steel (SS in
+      general trade usage; CRES -- corrosion-resistant steel -- in aerospace/mil-spec documents). No
+      standards source defining either abbreviation was opened; asserted from domain usage only.
+    rationale: "Two different generic abbreviations for the same generic term should resolve as equivalent, not merely each independently subsuming a grade."
+
+  # ================================================================================================
+  # G. Polyamide / Nylon / PA66 / PA6. The specific ISO 1874-1 numbered types are well covered.
+  #    The generic trade words that actually appear on catalogs -- bare 'Nylon', bare 'Polyamide' --
+  #    are not: there is no generic/polyamide subsuming term the way there is generic/plastic or
+  #    generic/aluminium.
+  # ================================================================================================
+  - id: mat-h035
+    a: "Polyamide"
+    b: "PA66"
+    expect: granularity
+    source: "ISO 1874-1: 'Polyamide' is the generic family name; PA66 is one specific member"
+    rationale: >-
+      The direct analogue of 'Stainless steel' vs '316' (mat-201 in the base suite), for polymers.
+      Unlike 'stainless steel', which is a registered generic subsuming term, bare 'Polyamide' is not
+      in generics.yaml at all -- only the fully-qualified 'polyamide 66' phrase is registered, as an
+      alias of the PA66 group specifically. The comparator declines instead of recognising the
+      generic/specific relationship.
+
+  - id: mat-h036
+    a: "PA66"
+    b: "Polyamide"
+    expect: agreement_specific
+    source: "Same as mat-h035, sides reversed"
+    rationale: "Direction check: catalog specific, evidence generic -- should be agreement (no finding)."
+
+  - id: mat-h037
+    a: "Nylon"
+    b: "Polyamide"
+    expect: equivalent
+    source: "ISO 1874-1 / common usage: 'nylon' and 'polyamide' are the generic trade and chemical names for the same polymer family"
+    rationale: >-
+      Neither bare word is registered (only number-qualified forms like 'nylon 66' and 'polyamide
+      66' are aliases, and only as members of specific PA66/PA6 groups). Both sides refuse, so the
+      pipeline abstains on a pair a reviewer would call the same generic fact.
+
+  - id: mat-h038
+    a: "Nylon"
+    b: "PA66"
+    expect: granularity
+    source: "Same generic/specific relationship as mat-h035, trade name instead of ISO name"
+
+  - id: mat-h039
+    a: "nylon 6"
+    b: "Polyamide"
+    expect: agreement_specific
+    source: "ISO 1874-1: 'nylon 6' is the specific PA6 grade, evidence-side generic"
+    rationale: "Confirms the generic-word gap affects the PA6 branch as well as PA66."
+
+  - id: mat-h040
+    a: "PA6.6"
+    b: "PA 6"
+    expect: contradiction
+    source: "ISO 1874-1: PA66 (dot-separated alias) against PA6 -- different monomer systems"
+    rationale: >-
+      A direct string-similarity trap: 'PA6.6' contains 'PA6' as a leading substring. Confirms the
+      comparator resolves both through the ontology's alias table (exact match, not prefix or
+      substring matching) and correctly lands on contradiction rather than being confused by the
+      shared prefix -- the polymer analogue of mat-301 (304L vs 316L).
+
+  # ================================================================================================
+  # H. "Stainless steel" and other fully generic terms against specific grades, and the boundary
+  #    where generic subsumption must correctly refuse to cover an unrelated grade.
+  # ================================================================================================
+  - id: mat-h041
+    a: "stainless"
+    b: "1.4301"
+    expect: granularity
+    source: "generic/stainless_steel covers steel/stainless; 1.4301 is AISI 304"
+
+  - id: mat-h042
+    a: "inox"
+    b: "316L"
+    expect: granularity
+    source: "generic/stainless_steel ('inox' is the common European trade abbreviation) covers steel/stainless/316L"
+
+  - id: mat-h043
+    a: "CRES"
+    b: "1.4301"
+    expect: granularity
+    source: "generic/stainless_steel ('CRES' -- corrosion resistant steel -- is the common aerospace/mil-spec generic term) covers steel/stainless/304"
+
+  - id: mat-h044
+    a: "SS"
+    b: "1.4401"
+    expect: granularity
+    source: "generic/stainless_steel ('SS') covers steel/stainless/316"
+
+  - id: mat-h045
+    a: "Stainless steel"
+    b: "S235"
+    expect: contradiction
+    source: "EN 10025-2: S235 is a plain carbon structural steel, not a member of the steel/stainless family"
+    rationale: >-
+      The counterpart to mat-207 in the base suite (generic term against a value it demonstrably
+      does not cover), tested metal-to-metal instead of metal-to-polymer: subsumption is only a
+      defence when the generic genuinely subsumes the specific value, and S235 is definitively not
+      stainless.
+
+  - id: mat-h046
+    a: "Steel"
+    b: "S235"
+    expect: granularity
+    source: "generic/steel covers the whole steel/ prefix, including steel/carbon/S235"
+    rationale: "Confirms the top-level 'Steel' generic reaches the carbon-steel branch, not only the stainless branch already tested by mat-203."
+
+  # ================================================================================================
+  # I. Numeric-string traps beyond 1.4401/1.4404. The headline pair is already covered by mat-302 /
+  #    mat-305 in the base suite and both pass; the cases below independently confirm there is no
+  #    fuzzy or edit-distance matching anywhere in the lookup, and extend the same risk pattern to a
+  #    real, unregistered neighbour of 1.4404.
+  # ================================================================================================
+  - id: mat-h047
+    a: "1.4401"
+    b: "14401"
+    expect: undetermined
+    source: "EN 10088-1: 1.4401 is a designation; '14401' with the separating dot dropped is not a registered form of any grade"
+    rationale: >-
+      A plausible OCR/data-entry corruption (dropped decimal point). Confirms the alias table is an
+      exact-key lookup, not a fuzzy match: dropping the dot does not silently resolve to 316, and
+      the comparator correctly declines rather than guessing. Safety-relevant confirmation, not a
+      bug -- included because the risk is exactly the one the numeric-trap section exists to rule
+      out.
+
+  - id: mat-h048
+    a: "1.4401"
+    b: "4.1401"
+    expect: undetermined
+    source: "EN 10088-1: 1.4401 is 316; '4.1401' (digits transposed) is not a registered designation"
+    rationale: "Same safety confirmation as mat-h047, for a transposition-style corruption instead of a dropped separator."
+
+  - id: mat-h049
+    a: "1.4401"
+    b: "1.4406"
+    expect: granularity
+    source: "EN 10088-1: 1.4406 is 316LN, the nitrogen-alloyed low-carbon variant of 316 -- a real, specific member of the 316 family"
+    rationale: >-
+      1.4406 is one digit off from 1.4404 in exactly the way the file's headline trap warns about,
+      but it names a real, different EN grade (nitrogen-strengthened 316LN) that the ontology does
+      not carry. Extends the numeric-adjacency risk beyond the single pair the base suite tests.
+
+  # ================================================================================================
+  # J. Designation-system crosswalks (EN name / EN number / UNS / JIS / DIN legacy) and directional
+  #    regression checks, to confirm the family-relation and generic-subsumption machinery generalise
+  #    correctly beyond the specific pairs already in materials.yaml.
+  # ================================================================================================
+  - id: mat-h050
+    a: "X5CrNiMo17-12-2"
+    b: "1.4404"
+    expect: granularity
+    source: "EN 10088-1: X5CrNiMo17-12-2 is the EN steel name for 316 (1.4401); 1.4404 is the low-carbon 316L variant"
+    rationale: "The 316/316L family relation (mat-202) tested via the EN chemical-symbol name instead of the trade grade number."
+
+  - id: mat-h051
+    a: "UNS S31600"
+    b: "UNS S31603"
+    expect: granularity
+    source: "ASTM A240: S31600 is 316, S31603 is 316L -- the UNS numbering carries the same family relation"
+    rationale: "Same family relation, tested entirely within the UNS designation system."
+
+  - id: mat-h052
+    a: "SUS316"
+    b: "SUS316L"
+    expect: granularity
+    source: "JIS G4303: SUS316 and SUS316L carry the same family relation as their AISI/EN counterparts"
+    rationale: "Same family relation, tested entirely within the JIS designation system."
+
+  - id: mat-h053
+    a: "EN AW-6061 T6"
+    b: "6061-T6"
+    expect: equivalent
+    source: "EN 573-3 full EN AW designation against the common trade shorthand"
+
+  - id: mat-h054
+    a: "AL6082"
+    b: "3.2315"
+    expect: equivalent
+    source: >-
+      3.2315 is the German Werkstoffnummer (DIN 1725-1 / DIN 17007) for AlMgSi1, cross-referenced by
+      suppliers (thyssenkrupp, gs-stahl, Gemmel) to EN AW-6082 [Al Si1MgMn]. Corrected: EN 573-3 uses
+      the "EN AW-6082" numeric designation and does not itself assign the 3.2315 material number, so
+      the earlier "EN 573-3: 3.2315 is the EN material number" wording misattributed the designation
+      system.
+    rationale: "The aluminium analogue of the EN-name/EN-number pattern already relied on for steel (1.4401 etc)."
+
+  - id: mat-h055
+    a: "A96061"
+    b: "6061"
+    expect: equivalent
+    source: "UNS A96061 against the common trade designation 6061"
+
+  - id: mat-h056
+    a: "1.4301"
+    b: "S30400"
+    expect: equivalent
+    source: "EN 10088-1 (1.4301) against UNS S30400 -- the 304 analogue of the 316/UNS S31600 pattern already in the base suite"
+
+  - id: mat-h057
+    a: "S235"
+    b: "St37-2"
+    expect: equivalent
+    source: "EN 10025-2: S235JR against the legacy DIN 17100 designation St37-2 it superseded"
+    rationale: "Legacy-standard crosswalk, a different failure mode from EN/UNS/JIS (a superseded national standard rather than a parallel international one)."
+
+  - id: mat-h058
+    a: "Aluminium"
+    b: "5052"
+    expect: granularity
+    source: "generic/aluminium covers the aluminium/ prefix, including aluminium/5052"
+    rationale: "Confirms generic-aluminium subsumption against a third specific alloy beyond the 6061-T6 case already in the base suite (mat-205)."
+
+  - id: mat-h059
+    a: "5052"
+    b: "Aluminium"
+    expect: agreement_specific
+    source: "Same as mat-h058, sides reversed"
+
+  - id: mat-h060
+    a: "SS316"
+    b: "Stainless steel"
+    expect: agreement_specific
+    source: "generic/stainless_steel covers steel/stainless/316, catalog side specific"
+    rationale: "Direction check on mat-201 (which tests only generic-catalog/specific-evidence): here the catalog is the specific side."
+
+  - id: mat-h061
+    a: "marine grade stainless"
+    b: "1.4301"
+    expect: contradiction
+    source: "The ontology's own alias entry: 'marine grade stainless' is grouped under 316 (1.4401), which has no molybdenum overlap with 1.4301 (304)"
+    rationale: "Reinforces the caveat already attached to this alias: 'marine grade' implying 316/316L genuinely excludes 304."
+
+  - id: mat-h062
+    a: "marine grade stainless"
+    b: "2205"
+    expect: undetermined
+    source: >-
+      The ontology's own caveat on 'marine grade stainless' states it is 'commonly 316/316L but
+      occasionally used for duplex grades' such as 2205 (EN 1.4462) -- a genuinely ambiguous trade
+      term, not a settled fact either way.
+    rationale: >-
+      Included as a control: unlike mat-h061, this is a case where the honest answer really is
+      undetermined (the trade term is documented as ambiguous), and the comparator reaches
+      undetermined for the unrelated reason that '2205' is simply not in the ontology. Two wrongs
+      making a right is worth flagging rather than hiding: if 2205 were ever added to the ontology,
+      this case would need re-examination, not a silent pass.
+
+  - id: mat-h063
+    a: "18-8"
+    b: "S30400"
+    expect: granularity
+    source: >-
+      "18-8" names the 18%Cr/8%Ni austenitic FAMILY, not a single grade: Portland Bolt, Xometry and
+      Bridge Fasteners all describe it as covering 302, 303, 304 and 305, and Portland Bolt states
+      plainly that 18-8 "is not an actual specification". 304 (S30400) is the most common member, not
+      the only one. Generic against specific is a granularity mismatch, which is exactly how
+      mat-h041 ('stainless' vs '1.4301') is labelled.
+    rationale: >-
+      LABEL CHANGED 2026-08-19, equivalent -> granularity (P1 task 1.5, HANDOFF finding 19).
+      The case previously carried a CAUTION saying its own label was disputed, which is not a
+      state a gold suite can stay in: the label IS the ground truth, so a label the suite itself
+      doubts makes the case unscoreable rather than merely uncertain.
+      .
+      Resolved on the evidence already in the case plus the repo's own precedent. mat-h041 labels
+      the identical relationship -- an unqualified family name against a specific grade -- as
+      granularity, and two cases cannot describe the same relationship differently without one of
+      them being wrong.
+      .
+      This change SURFACES A REAL DEFECT rather than hiding one. The comparator answers
+      semantic_equivalence, so the case now scores false_negative: the tool says "same value" when
+      the datasheet is strictly more specific than the catalog, and the reviewer is never told.
+      Under ground rule 4 the failing case is the finding and it stays failing. The gate metric is
+      untouched -- an unflagged case is not in the `flagged` denominator -- and the miss rate rises,
+      which is the honest direction.
+
+  - id: mat-h064
+    a: "PA66"
+    b: "nylon 6"
+    expect: contradiction
+    source: "ISO 1874-1: PA66 and nylon 6 (PA6) resolve to different groups"
+    rationale: "Confirms the alias resolver correctly routes 'nylon 6' to the PA6 group and not to PA66, despite the shared 'nylon' word and adjacent numbering."
+
+  - id: mat-h065
+    a: "Nylon"
+    b: "PA6"
+    expect: granularity
+    source: "Same generic/specific gap as mat-h038, tested against the PA6 branch instead of PA66"
+
+  - id: mat-h066
+    a: "Steel"
+    b: "6061-T6"
+    expect: contradiction
+    source: "generic/steel does not cover the aluminium/ prefix"
+    rationale: "The metal-family boundary check paired with mat-h045: 'Steel' must not be treated as subsuming an aluminium grade."
+
+  - id: mat-h067
+    a: "1.4404"
+    b: "SUS316L"
+    expect: equivalent
+    source: "EN 10088-1 (1.4404) against JIS G4303 (SUS316L) -- both designate 316L"
+
+  - id: mat-h068
+    a: "AL5052"
+    b: "EN AW-5052"
+    expect: equivalent
+    source: "EN 573-3, trade shorthand against full EN AW designation for the same 5052 alloy"
+
+  - id: mat-h069
+    a: "grade 10.9"
+    b: "10.9"
+    expect: equivalent
+    source: "ISO 898-1, verbose against bare property-class spelling"
+
+  - id: mat-h070
+    a: "PA6"
+    b: "nylon 6"
+    expect: equivalent
+    source: "ISO 1874-1: PA6 and nylon 6 both designate polyamide 6"
+    rationale: "Confirms the PA6 group's internal aliases resolve consistently, the way mat-013 already confirms for PA66."

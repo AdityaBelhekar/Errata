@@ -1,0 +1,279 @@
+# Equivalence suite -- unit frames, magnitudes, ranges and sets (FR-0.1).
+#
+# Two failure modes are being measured here at once. Flagging `0.5 in` against `12.7 mm` is a false
+# accusation. Missing `63 A` against `6 A` is a decimal-shift defect walking into a live catalog.
+# The suite has to punish both, which is why the contradictions in this file are mostly near-misses
+# rather than obvious ones.
+
+suite: equivalence
+family: units
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: nominal_dimension
+    label: Dimension
+    kinds: [quantity, quantity_set, range]
+
+cases:
+  # -- unit-frame equivalence, resolved silently -------------------------------------------------
+  - id: uni-001
+    a: "0.5 in"
+    b: "12.7 mm"
+    expect: equivalent
+    source: "1 in = 25.4 mm exactly (ISO 31)"
+    rationale: "The §3.3 unit-frame row. Must resolve silently."
+
+  - id: uni-002
+    a: '1/2"'
+    b: "12.7 mm"
+    expect: equivalent
+    source: "Inch mark and fraction notation"
+
+  - id: uni-003
+    a: "3/8 in"
+    b: "9.525 mm"
+    expect: equivalent
+    source: "0.375 in x 25.4"
+
+  - id: uni-004
+    a: "1 in"
+    b: "25.4 mm"
+    expect: equivalent
+    source: "Exact definition"
+
+  - id: uni-005
+    a: "10 mm"
+    b: "1 cm"
+    expect: equivalent
+    source: "SI prefix"
+
+  - id: uni-006
+    a: "1.5 mm2"
+    b: "1.5 mm²"
+    expect: equivalent
+    source: "Superscript notation; the canonicalizer rewrites it before the grammar sees it"
+
+  - id: uni-007
+    a: "25 Nm"
+    b: "25 N*m"
+    expect: equivalent
+    source: "Torque written with and without the product operator"
+    rationale: >-
+      Pint does not read a bare 'Nm' as newton-metre. The industrial unit extension defines it,
+      because every torque row in every fastener datasheet writes it that way.
+
+  - id: uni-008
+    a: "2500 mNm"
+    b: "2.5 Nm"
+    expect: equivalent
+    source: "SI prefix on torque"
+
+  - id: uni-009
+    a: "1 kA"
+    b: "1000 A"
+    expect: equivalent
+    source: "SI prefix"
+
+  - id: uni-010
+    a: "0 degC"
+    b: "32 degF"
+    expect: equivalent
+    source: "Affine temperature conversion"
+    rationale: >-
+      Included because an affine unit converted with a plain multiplicative factor gives 0 degF,
+      and that error is silent.
+
+  - id: uni-011
+    a: "100 degC"
+    b: "212 degF"
+    expect: equivalent
+    source: "Affine temperature conversion"
+
+  - id: uni-012
+    a: "1 bar"
+    b: "100 kPa"
+    expect: equivalent
+    source: "1 bar = 100 000 Pa"
+
+  # -- written-precision variation is not a finding ------------------------------------------------
+  - id: uni-101
+    a: "10 mm"
+    b: "10.0 mm"
+    expect: equivalent
+    source: "Same value at different written precision"
+    rationale: >-
+      Trailing zeros are kept in the parse but a rounding convention is not a defect. Flagging this
+      would bury a reviewer under thousands of non-findings.
+
+  - id: uni-102
+    a: "63 A"
+    b: "63.0 A"
+    expect: equivalent
+    source: "Written precision"
+
+  - id: uni-103
+    a: "0.5 in"
+    b: "13 mm"
+    expect: equivalent
+    source: "12.7 mm rounded to two significant figures"
+    rationale: >-
+      Labelled equivalent deliberately. 13 mm asserts 12.5..13.5 and 0.5 in asserts 12.573..12.827;
+      the intervals overlap, so at the precision the sources chose to write, they agree.
+
+  - id: uni-104
+    a: "230 V"
+    b: "230 V AC"
+    expect: equivalent
+    source: "One side states the current-type frame and the other does not"
+
+  - id: uni-105
+    a: "63 A"
+    b: "63 A max"
+    expect: equivalent
+    source: "An advisory qualifier against an unqualified value"
+
+  - id: uni-106
+    a: "1,5 mm"
+    b: "1.5 mm"
+    expect: equivalent
+    source: "German decimal comma; unambiguous because fewer than three digits follow"
+
+  # -- contradictions --------------------------------------------------------------------------------
+  - id: uni-201
+    a: "63 A"
+    b: "6 A"
+    expect: contradiction
+    source: "Decimal-shift signature; the spec's worked example"
+
+  - id: uni-202
+    a: "6 A"
+    b: "60 A"
+    expect: contradiction
+    source: "Order-of-magnitude error"
+
+  - id: uni-203
+    a: "10 mm"
+    b: "10 cm"
+    expect: contradiction
+    source: "Same magnitude, wrong SI prefix -- a classic feed-mapping defect"
+
+  - id: uni-204
+    a: "0.5 in"
+    b: "0.5 mm"
+    expect: contradiction
+    source: "Magnitude copied, unit not converted"
+
+  - id: uni-205
+    a: "230 V AC"
+    b: "230 V DC"
+    expect: contradiction
+    source: "IEC 60050: frame-defining qualifier"
+
+  - id: uni-206
+    a: "25 Nm"
+    b: "25 Ncm"
+    expect: contradiction
+    source: "Torque off by a factor of 100"
+
+  - id: uni-207
+    a: "10 kA"
+    b: "6 kA"
+    expect: contradiction
+    source: "IEC 60898-1 breaking capacity; a safety-class attribute"
+
+  - id: uni-208
+    a: "1.5 mm2"
+    b: "2.5 mm2"
+    expect: contradiction
+    source: "IEC 60228 conductor cross-sections"
+
+  - id: uni-209
+    a: "0 degC"
+    b: "0 degF"
+    expect: contradiction
+    source: "Affine units; -17.8 degC against 0 degC"
+
+  - id: uni-210
+    a: "63 A max"
+    b: "63 A min"
+    expect: contradiction
+    source: "Opposing bound qualifiers on the same magnitude"
+
+  # -- ranges and alternative-value sets ---------------------------------------------------------------
+  - id: uni-301
+    a: "-25 ... +70 °C"
+    b: "-25 .. 70 degC"
+    expect: equivalent
+    source: "Range separator and degree-sign notation"
+
+  - id: uni-302
+    a: "-25 to 70 degC"
+    b: "-25...+70 degC"
+    expect: equivalent
+    source: "Word and ellipsis range separators"
+
+  - id: uni-303
+    a: "10-16 A"
+    b: "10 .. 16 A"
+    expect: equivalent
+    source: "Hyphen as a range separator between two unsigned magnitudes"
+
+  - id: uni-304
+    a: "230/400 V"
+    b: "400/230 V"
+    expect: equivalent
+    source: "A set of alternative supply voltages is unordered"
+
+  - id: uni-305
+    a: "230/400 V"
+    b: "400/690 V"
+    expect: undetermined
+    source: "Sets overlap without containment"
+    rationale: >-
+      Deliberately labelled undetermined rather than contradiction. The two share 400 V; declaring
+      a defect would be a guess, and abstaining is the cheaper mistake.
+
+  - id: uni-306
+    a: "-25 .. 70 degC"
+    b: "-40 .. 85 degC"
+    expect: undetermined
+    source: "One range inside the other, but neither side is obviously the catalog defect"
+    expect_alternatives: [granularity, agreement_specific]
+
+  - id: uni-307
+    a: "-25 .. 70 degC"
+    b: "100 .. 150 degC"
+    expect: contradiction
+    source: "Disjoint operating ranges"
+
+  - id: uni-308
+    a: "3/8 in"
+    b: "230/400 V"
+    expect: undetermined
+    source: "A fraction against a set; incommensurable"
+    rationale: >-
+      Both surfaces are digits separated by a slash. The reading is decided by the denominator and
+      the unit, and when the two disagree the comparator must decline rather than pick.
+
+  # -- incommensurable: abstain, never flag -------------------------------------------------------------
+  - id: uni-401
+    a: "63 A"
+    b: "230 V"
+    expect: undetermined
+    source: "Different physical dimensions -- a schema mismatch upstream, not a product defect"
+
+  - id: uni-402
+    a: "10 mm"
+    b: "10 kg"
+    expect: undetermined
+    source: "Different physical dimensions"
+
+  - id: uni-403
+    a: "1,000 V"
+    b: "1000 V"
+    expect: undetermined
+    source: "Thousands-separator ambiguity"
+    rationale: >-
+      '1,000' is 1000 in English and 1 in German. The library refuses without a declared locale.
+      A wrong guess here is a 1000x error on a rated-voltage field.

@@ -1,0 +1,10 @@
+# Normalise line endings in the repository. Checked out native, stored as LF.
+# This repo is developed on Windows and the suite YAML is compared byte-for-byte
+# by tests, so leaving this to each machine's autocrlf setting invites diffs that
+# are nothing but line endings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary

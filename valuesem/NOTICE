@@ -1,0 +1,29 @@
+errata-valuesem
+Copyright 2026 The Errata Authors
+
+This product includes software developed by The Errata Authors.
+Licensed under the Apache License, Version 2.0 (the "License"). See LICENSE.
+
+--------------------------------------------------------------------------------
+Third-party data attribution
+--------------------------------------------------------------------------------
+
+ETIM
+  Unit and value-list references in this package derive from the ETIM Classification Model,
+  published by ETIM International under the Open Data Commons Attribution License (ODC-By 1.0).
+  https://opendatacommons.org/licenses/by/1-0/
+  Attribution: ETIM International.
+
+UN/CEFACT Recommendation 21 (and Recommendation 20)
+  Package-type codes in ontology/packaging.yaml are Rec 21 codes. Rec 20 covers units of
+  measure; the container nouns (BX, PK, CT, BG, RL, RO, CS, TU) carry status X in Rec 20 with
+  the instruction "Use UN/ECE Recommendation 21". Both recommendations are published by UNECE
+  and are freely available.
+
+ECLASS
+  NOT INCLUDED. No ECLASS class, property, value-list or IRDI content appears in this package.
+  See docs/adr/ADR-003 in the Errata repository.
+
+Standards references
+  ISO, IEC, EN, ASME, ASTM and DIN standards are cited by number and clause in source comments
+  and in the ontology's `source:` fields for provenance. No standard text is reproduced.

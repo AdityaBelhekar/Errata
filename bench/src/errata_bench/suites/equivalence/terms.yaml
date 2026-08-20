@@ -1,0 +1,257 @@
+# Equivalence suite -- controlled vocabularies and tolerances (FR-0.1).
+#
+# Two families share this file because they share a failure mode: both look like trivial string
+# comparisons and both are not. `1P+N` and `2P` differ by one character and describe different
+# products. `10 mm` and `10 +/-0.2 mm` differ by a tolerance the manufacturer published and the
+# catalog discarded.
+
+suite: equivalence
+family: terms
+version: "0.1.0"
+
+cases:
+  # -- tripping characteristic ---------------------------------------------------------------------
+  - id: trm-001
+    attribute: { key: tripping_characteristic, label: Tripping characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "C"
+    b: "Type C"
+    expect: equivalent
+    source: "IEC 60898-1 tripping characteristic C"
+
+  - id: trm-002
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "curve B"
+    b: "Char. B"
+    expect: equivalent
+    source: "IEC 60898-1 spelling variants"
+
+  - id: trm-003
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "B"
+    b: "C"
+    expect: contradiction
+    source: "IEC 60898-1: 3-5 In against 5-10 In instantaneous trip band"
+    rationale: "A safety-class attribute. Getting the curve wrong is a nuisance-trip or a fire."
+
+  - id: trm-004
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type C"
+    b: "Type D"
+    expect: contradiction
+    source: "IEC 60898-1"
+
+  - id: trm-005
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "K"
+    b: "Z"
+    expect: contradiction
+    source: "IEC 60947-2 motor-protection against semiconductor-protection curves"
+
+  # -- pole configuration -----------------------------------------------------------------------------
+  - id: trm-101
+    attribute: { key: number_of_poles, label: Number of poles, kinds: [term], vocabulary: poles }
+    a: "2P"
+    b: "2 P"
+    expect: equivalent
+    source: "Spacing variant"
+
+  - id: trm-102
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "1P+N"
+    b: "1+N"
+    expect: equivalent
+    source: "IEC 60947-1 spelling variants"
+
+  - id: trm-103
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "2P"
+    b: "1P+N"
+    expect: contradiction
+    source: "IEC 60947-1: two switched phases against one phase plus neutral"
+    rationale: >-
+      Distributors collapse these constantly. They are different products with different
+      installation rules, and a one-character string distance hides that completely.
+
+  - id: trm-104
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "3P"
+    b: "3P+N"
+    expect: contradiction
+    source: "IEC 60947-1"
+
+  - id: trm-105
+    attribute: { key: number_of_poles, kinds: [term], vocabulary: poles }
+    a: "4P"
+    b: "3P+N"
+    expect: contradiction
+    source: "A four-pole device switches the neutral; 3P+N may not"
+    expect_alternatives: [undetermined]
+    rationale: >-
+      Dual-labelled. Some manufacturers use the two designations interchangeably for the same
+      part, and where a vocabulary genuinely has synonym drift the honest answer may be abstention.
+
+  # -- RCD type ------------------------------------------------------------------------------------------
+  - id: trm-201
+    attribute: { key: rcd_type, label: RCD type, kinds: [term], vocabulary: rcd_type }
+    a: "Type A"
+    b: "A type"
+    expect: equivalent
+    source: "IEC 62423 spelling variant"
+
+  - id: trm-202
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type A"
+    b: "Type AC"
+    expect: contradiction
+    source: "IEC 62423: Type A detects pulsating DC residual currents; Type AC does not"
+
+  - id: trm-203
+    attribute: { key: rcd_type, kinds: [term], vocabulary: rcd_type }
+    a: "Type B"
+    b: "Type B+"
+    expect: contradiction
+    source: "IEC 62423 / DIN VDE 0664-400"
+    expect_alternatives: [granularity]
+
+  # -- mounting and connection ------------------------------------------------------------------------------
+  - id: trm-301
+    attribute: { key: mounting_method, label: Mounting, kinds: [term], vocabulary: mounting }
+    a: "DIN rail"
+    b: "TH35"
+    expect: equivalent
+    source: "IEC 60715 top-hat rail, 35 mm"
+
+  - id: trm-302
+    attribute: { key: mounting_method, kinds: [term], vocabulary: mounting }
+    a: "DIN rail"
+    b: "Panel mount"
+    expect: contradiction
+    source: "Different mounting provisions"
+
+  - id: trm-303
+    attribute: { key: connection_method, label: Connection, kinds: [term], vocabulary: connection }
+    a: "push-in"
+    b: "Spring terminal"
+    expect: equivalent
+    source: "IEC 60947-7-1 spring-clamp connection, trade spellings"
+
+  # -- ambiguity the library must refuse rather than resolve ----------------------------------------------------
+  - id: trm-401
+    attribute: { key: unspecified_attribute, kinds: [term] }
+    a: "Type B"
+    b: "Type B"
+    expect: undetermined
+    source: "'Type B' is a listed value of both trip_curve and rcd_type"
+    rationale: >-
+      Identical strings, and the correct answer is still abstention when no vocabulary was named.
+      Two identical surfaces that mean different things in different attributes are not evidence of
+      agreement -- they are evidence that the attribute was not resolved.
+
+  - id: trm-402
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Type B"
+    b: "Type B"
+    expect: equivalent
+    source: "The same pair, with the vocabulary named"
+    rationale: "The counterpart to trm-401: naming the attribute is what makes the answer available."
+
+  - id: trm-403
+    attribute: { key: tripping_characteristic, kinds: [term], vocabulary: trip_curve }
+    a: "Q"
+    b: "C"
+    expect: undetermined
+    source: "Q is not a listed value of the trip-curve vocabulary"
+    rationale: >-
+      Constrained decoding rejects it rather than coercing it to the nearest listed value. A
+      catalog value outside the value list is a Declined-bucket record, not a contradiction --
+      we do not know what the author meant.
+
+  # -- tolerances ------------------------------------------------------------------------------------------------
+  - id: tol-001
+    attribute: { key: nominal_dimension, label: Dimension, kinds: [quantity] }
+    a: "10 +/- 0.2 mm"
+    b: "10 ±0.2 mm"
+    expect: equivalent
+    source: "Plus-minus sign against its ASCII spelling"
+
+  - id: tol-002
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10 mm ±0.2"
+    b: "10 ±0.2 mm"
+    expect: equivalent
+    source: "Unit placed before or after the tolerance"
+
+  - id: tol-003
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10 mm"
+    b: "10 ±0.2 mm"
+    expect: precision
+    source: "The §3.3 precision-mismatch row: the tolerance was dropped"
+    rationale: >-
+      Low severity and still a finding. It matters for fit and not for search, and the resolution
+      policy's tolerance_never_dropped rule depends on it being detected.
+
+  - id: tol-004
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10 ±0.2 mm"
+    b: "10 mm"
+    expect: agreement_specific
+    source: "The catalog carries the tolerance the evidence omits; not a catalog defect"
+
+  - id: tol-005
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10.4 mm"
+    b: "10 ±0.2 mm"
+    expect: contradiction
+    source: "10.4 lies outside 9.8..10.2"
+    rationale: "The nominal is outside the stated tolerance band, which is a real defect."
+
+  - id: tol-006
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10 +0.2/-0.1 mm"
+    b: "10 +0.2 -0.1 mm"
+    expect: equivalent
+    source: "Asymmetric tolerance, slash and space spellings"
+
+  - id: tol-007
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "10 ±0.2 mm"
+    b: "10 ±0.5 mm"
+    expect: equivalent
+    source: "Overlapping tolerance bands on the same nominal"
+    expect_alternatives: [precision]
+    rationale: >-
+      Dual-labelled. The bands overlap and the nominal agrees, so this is not a contradiction; but
+      a tighter band on the datasheet is arguably information the catalog lost.
+
+  - id: tol-008
+    attribute: { key: nominal_dimension, kinds: [quantity] }
+    a: "100 mm ±2%"
+    b: "100 ±2 mm"
+    expect: equivalent
+    source: "Relative and absolute spellings of the same band"
+
+  # -- booleans -----------------------------------------------------------------------------------------------------
+  - id: bool-001
+    attribute: { key: rohs_compliant, label: RoHS compliant, kinds: [boolean] }
+    a: "Yes"
+    b: "true"
+    expect: equivalent
+    source: "Boolean surface forms"
+
+  - id: bool-002
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "Y"
+    b: "No"
+    expect: contradiction
+    source: "Opposing boolean values on a compliance flag"
+
+  - id: bool-003
+    attribute: { key: rohs_compliant, kinds: [boolean] }
+    a: "x"
+    b: "Yes"
+    expect: undetermined
+    source: "'x' is a ticked checkbox in one feed and 'does not apply' in the next"
+    rationale: >-
+      Deliberately absent from the boolean ontology. There is no way to tell which reading is meant
+      from the value alone, and a compliance flag is the worst possible place to guess.

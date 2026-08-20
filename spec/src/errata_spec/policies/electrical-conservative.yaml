@@ -1,0 +1,74 @@
+# Resolution policy (§4.2).
+#
+# Last-write-wins is how catalogs get poisoned. Every conflict between competing claims is resolved
+# by a versioned, human-readable document, and the resolved value records which policy version
+# resolved it. That converts "why does this field say 6 A" from an opinion into a chain: this
+# claim, from this document revision, selected by policy v3 rule `prefer_higher_rank` over that
+# claim.
+#
+# This file is a customer-editable artifact. That is deliberate: it turns "your tool disagrees with
+# our conventions" from a product objection into a configuration change. It is also, per
+# phase5-red-team.md §2.4, a support surface that multiplies with customer count -- so the schema
+# is fixed and only the values are editable.
+
+policy_id: electrical-conservative
+version: 3
+description: >-
+  Default policy for low-voltage circuit protection. Conservative: it prefers the manufacturer's
+  own current document, never drops a tolerance, never resolves a safety-class attribute
+  automatically, and abstains rather than arbitrating between two sources of equal standing.
+
+# Higher wins. The ranking is evidentiary, not chronological: a current manufacturer datasheet
+# outranks a scraped product page no matter which was fetched more recently.
+source_rank:
+  manufacturer_datasheet_current: 100
+  manufacturer_datasheet_archived: 80
+  manufacturer_api_feed: 75
+  etim_datapool: 60
+  distributor_feed: 40
+  scraped_product_page: 20
+
+rules:
+  - name: prefer_higher_rank
+    action: select_higher_rank
+
+  - name: recency_within_rank
+    action: select_more_recent
+    window_days: 400
+    note: >-
+      Only applies between claims of equal evidentiary rank. Recency never beats rank.
+
+  - name: prefer_more_specific
+    action: select_more_specific
+    note: >-
+      NPT 1/2-14 beats Threaded; never the reverse. A generic term is under-specified, and
+      replacing a specific value with a generic one destroys information.
+
+  - name: tolerance_never_dropped
+    action: select_more_specific
+    applies_to_relations: [a_precision_loss, b_precision_loss]
+    note: >-
+      10 +/-0.2 mm supersedes 10 mm; a bare value never supersedes a toleranced one.
+
+  - name: safety_class_override
+    action: escalate_to_human
+    attributes:
+      - breaking_capacity
+      - rated_current
+      - rated_voltage
+      - tripping_characteristic
+      - short_circuit_capacity
+      - residual_current_rating
+      - material_grade
+      - temperature_rating
+      - packaging_uom
+    note: >-
+      No automated resolution, ever, at any confidence. Not a threshold that can be raised under
+      deadline pressure -- the attribute list is the whole rule.
+
+  - name: equal_rank_conflict
+    action: abstain_and_surface_both
+    declined_reason: equal_rank_source_conflict
+    note: >-
+      Two sources of identical evidentiary rank disagree. The policy declines to arbitrate and
+      shows the reviewer both, rather than picking one and calling it resolution.

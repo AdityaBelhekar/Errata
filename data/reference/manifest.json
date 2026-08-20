@@ -1,0 +1,536 @@
+{
+  "$comment": [
+    "Reference-data register. Follows FR-1.3 (Document Register) and FR-9.5 (distribute URLs +",
+    "content hashes + a fetch script, never the payload). Payloads land in var/reference/, which",
+    "is gitignored. This manifest is committed; scripts/fetch_reference_data.sh reconstructs the",
+    "corpus locally and verifies each sha256 before use.",
+    "",
+    "Ground rule 1 applies: every entry records the URL actually fetched and the date it was",
+    "fetched. Nothing here is asserted from memory."
+  ],
+  "schema_version": "1.0.0",
+  "artifacts": [
+    {
+      "id": "etim-10.0-all-sectors-csv-metric",
+      "title": "ETIM 10.0 ALL-SECTORS classification model, CSV, metric",
+      "url": "https://www.etim-international.com/wp-content/uploads/2024/12/ETIM-10.0-ALL-SECTORS-CSV-METRIC-EI-2024-12-05.zip",
+      "sha256": "9b2aa17f105315884661fe6a7a35f5fdbc8835d768a5906117cbc420420b6214",
+      "bytes": 2895379,
+      "retrieved_utc": "2026-08-19",
+      "released": "2024-12-05",
+      "licence": "Open Data Commons Attribution Licence (ODC-By)",
+      "attribution_required": true,
+      "access": "direct download, no login, no registration",
+      "dest": "var/reference/etim/",
+      "unpacks_to": "var/reference/etim/extracted/",
+      "satisfies": [
+        "FR-2.1",
+        "FR-2.4"
+      ],
+      "does_not_satisfy": [
+        "FR-0.4 / gate 3 -- this release is the TAXONOMY ONLY. It carries no SKU counts of any",
+        "kind. Gate 3 needs a per-class product histogram, which ETIM does not publish. Verified",
+        "by inspection of all nine CSVs on 2026-08-19: no count column exists."
+      ],
+      "verified_contents": {
+        "ETIMARTCLASS.csv": {
+          "rows": 5640,
+          "columns": [
+            "ARTCLASSID",
+            "ARTGROUPID",
+            "ARTCLASSDESC",
+            "ARTCLASSVERSION",
+            "ARTCLASSVERSIONDATE"
+          ]
+        },
+        "ETIMARTGROUP.csv": {
+          "rows": 159
+        },
+        "ETIMFEATURE.csv": {
+          "rows": 17377
+        },
+        "ETIMVALUE.csv": {
+          "rows": 16163
+        },
+        "ETIMUNIT.csv": {
+          "rows": 188
+        },
+        "ETIMARTCLASSFEATUREMAP.csv": {
+          "rows": null,
+          "note": "class -> feature mapping, not row-counted"
+        },
+        "ETIMARTCLASSFEATUREVALUEMAP.csv": {
+          "rows": null
+        },
+        "ETIMARTCLASSSYNONYMMAP.csv": {
+          "rows": null
+        },
+        "ETIMFEATUREGROUP.csv": {
+          "rows": null
+        }
+      },
+      "loader_notes": [
+        "TRAP: the CSVs are UTF-16-LE with NO byte-order mark. Python's encoding='utf-16' raises",
+        "UnicodeDecodeError('Stream does not start with BOM'). Use encoding='utf-16-le'.",
+        "Delimiter is ';', not ','.",
+        "FR-2.1 requires the loader be release-parameterised so ETIM 11.0 (due 2026-12-01) loads",
+        "without a code change -- do not hardcode '10.0' or the filename date."
+      ],
+      "r1_scope_anchor": {
+        "$comment": "FR-2.4 limits R1 to low-voltage circuit protection. These ids were read out of the file above, not recalled.",
+        "EC000042": "Miniature circuit breaker (MCB)",
+        "EC000003": "Residual current circuit breaker (RCCB)",
+        "EC000271": "Miniature circuit breaker (MCB) plug model",
+        "EC001047": "Selective main line circuit breaker",
+        "EC000905": "Earth leakage circuit breaker -- NB: errata_valuesem leaves ELCB deliberately UNREGISTERED (three live readings, no way to pick one from the surface form). Pinned by test. Do not 'helpfully' map this."
+      }
+    },
+    {
+      "id": "uncefact-rec20-units",
+      "title": "UN/CEFACT Recommendation 20 -- Codes for Units of Measure Used in International Trade, Rev 17 (2021)",
+      "url": "https://raw.githubusercontent.com/datasets/unece-units-of-measure/main/data/units-of-measure.csv",
+      "sha256": "e2d06370cdadf5da1bce705783ff5d0d94d11d70eacba6d592adf401c32fb76e",
+      "bytes": 174949,
+      "retrieved_utc": "2026-08-19",
+      "licence": "UNECE code list, freely published. The mirror is Public Domain Dedication and Licence (PDDL).",
+      "dest": "var/reference/uncefact/",
+      "filename": "rec20-units-of-measure.csv",
+      "provenance_caveat": [
+        "THIS IS A MIRROR, NOT THE UNECE ORIGIN. unece.org returns HTTP 403 to scripted",
+        "clients (verified 2026-08-19 across four URL forms and a browser user-agent), so the",
+        "machine-readable list was taken from the Frictionless `datasets` mirror.",
+        "",
+        "Corroboration, so this is not an unchecked mirror: the file carries 2136 codes, which",
+        "is exactly the count an earlier session recorded when it verified finding 15 against",
+        "'the machine-readable Rec 20 Rev 17 list (2136 entries)'. Every specific claim that",
+        "session made -- CQ=cartridge not hundred, CEN=hundred, RL=reel, RO=roll, DZN=dozen,",
+        "DZ absent -- was independently re-derived from this file and all six held.",
+        "",
+        "Under ground rule 1 this is a source actually opened, and its status as a mirror is",
+        "stated rather than elided. A citation that needs to be defended externally should be",
+        "re-checked against the UNECE original."
+      ],
+      "verified_contents": {
+        "codes": 2136,
+        "columns": [
+          "Status",
+          "CommonCode",
+          "Name",
+          "Description",
+          "LevelAndCategory",
+          "Symbol",
+          "ConversionFactor"
+        ]
+      },
+      "facts_pinned_from_this_file": {
+        "$comment": "Asserted in bench/tests/test_citation_integrity.py. Read out of the file on 2026-08-19.",
+        "active_unit_codes": {
+          "EA": "each",
+          "PR": "pair",
+          "CEN": "hundred",
+          "DZN": "dozen",
+          "H87": "piece",
+          "MIL": "thousand"
+        },
+        "status_X_container_nouns": {
+          "$comment": "All eight carry status X with the description 'Use UN/ECE Recommendation 21 (refer to Note 2 in the spreadsheet introduction, 1st sheet).' -- they are Rec 21 codes.",
+          "codes": [
+            "BX",
+            "PK",
+            "CT",
+            "BG",
+            "RL",
+            "RO",
+            "CS",
+            "TU"
+          ]
+        },
+        "absent_entirely": {
+          "PCE": "trade/EDIFACT abbreviation for piece; Rec 20's code is H87",
+          "DZ": "trade abbreviation for dozen; Rec 20's code is DZN"
+        }
+      },
+      "satisfies": [
+        "P1 task 1.6 -- finding N1 sweep"
+      ]
+    },
+    {
+      "id": "uncefact-rec21-package-codes",
+      "title": "UN/CEFACT Recommendation 21 -- Codes for Types of Cargo, Packages and Packaging Materials",
+      "url": "https://raw.githubusercontent.com/datasets/unece-package-codes/main/data/data.csv",
+      "sha256": "a5b56ca58fb6147a9cc6fabb1158096551bdcbd9b6172e02df5a29767896650d",
+      "bytes": 24230,
+      "retrieved_utc": "2026-08-19",
+      "licence": "UNECE code list, freely published. The mirror is Public Domain Dedication and Licence (PDDL).",
+      "dest": "var/reference/uncefact/",
+      "filename": "rec21-package-codes.csv",
+      "provenance_caveat": [
+        "MIRROR, not the UNECE origin -- same 403 as Rec 20 above. Cross-checks against the",
+        "Rec 20 file held on every shared code: each of BX PK CT BG RL RO CS TU is present",
+        "here as a package type AND status X in Rec 20 with the redirect to Rec 21, which is",
+        "the exact relationship the two recommendations are supposed to have."
+      ],
+      "verified_contents": {
+        "codes": 406,
+        "columns": [
+          "Status",
+          "Code",
+          "Name",
+          "Description",
+          "Numeric code"
+        ]
+      },
+      "facts_pinned_from_this_file": {
+        "package_types": {
+          "BX": "Box",
+          "PK": "Package",
+          "CT": "Carton",
+          "BG": "Bag",
+          "RL": "Reel",
+          "RO": "Roll",
+          "CS": "Case",
+          "TU": "Tube"
+        },
+        "collision_worth_knowing": {
+          "PR": "Receptacle, plastic in Rec 21 -- but 'pair' in Rec 20. Context decides."
+        }
+      },
+      "satisfies": [
+        "P1 task 1.6 -- finding N1 sweep"
+      ]
+    },
+    {
+      "id": "iso-261-1998-preview",
+      "title": "ISO 261:1998 -- ISO general purpose metric screw threads, General plan (publisher preview)",
+      "url": "https://cdn.standards.iteh.ai/samples/4165/ec50482690954e82931c52fdce3bc8bb/ISO-261-1998.pdf",
+      "sha256": "6dcbae5f5d4827c87ebd4bf62af00dfb2718f68bf4504227179dff9dbc632ebe",
+      "bytes": 166967,
+      "retrieved_utc": "2026-08-19",
+      "licence": "Copyright ISO. Publisher preview distributed by iTeh Standards. Referenced for verification only; no standard text is reproduced in this repository.",
+      "dest": "var/reference/iso/",
+      "filename": "ISO-261-1998-preview.pdf",
+      "why_this_matters": [
+        "ISO standards are paywalled, which is why HANDOFF section 7's citation problem persisted:",
+        "nobody could open the locator being cited. This preview is unusual in that it carries the",
+        "COMPLETE Table 2 (nominal diameter / pitch, all three choice columns) plus clauses 1-5 --",
+        "8 pages, of which pages 3-7 are substantive. It is a primary source actually opened."
+      ],
+      "verified_contents": {
+        "pages": 8,
+        "table_2": "complete -- nominal diameter Col.1/2/3 by coarse and fine pitch, M1 to M300",
+        "clause_4": "'A screw thread in conformity with this International Standard shall be designated according to ISO 965-1'",
+        "clause_5_1": "'Choose, for preference, diameters in column 1 of table 2 and, if necessary, in column 2 and then in column 3.'"
+      },
+      "facts_read_from_it": {
+        "$comment": "Pinned in bench/tests/test_citation_integrity.py. Read off the rendered table, not recalled.",
+        "choice_column": {
+          "M9": 3,
+          "M11": 2,
+          "M4.5": 2,
+          "M2.2": 2,
+          "M68": 2
+        },
+        "largest_pitch_mm": 8,
+        "largest_pitch_note": "8 mm appears at M125 and M130. 6 mm is the largest COARSE pitch (M64, M68); above M68 Table 2 lists no coarse pitch at all.",
+        "coarse_pitch_mm": {
+          "M2.2": "0.45",
+          "M4.5": "0.75",
+          "M6": "1",
+          "M8": "1.25",
+          "M9": "1.25",
+          "M10": "1.5",
+          "M11": "1.5",
+          "M12": "1.75",
+          "M14": "2",
+          "M16": "2",
+          "M18": "2.5",
+          "M20": "2.5",
+          "M22": "2.5",
+          "M24": "3",
+          "M30": "3.5",
+          "M36": "4",
+          "M52": "5",
+          "M64": "6",
+          "M68": "6"
+        }
+      },
+      "satisfies": [
+        "P1 task 1.1 -- citation audit of threads_hard.yaml"
+      ],
+      "still_unverified": [
+        "ASME B1.1, B1.5, B1.15, B1.20.1, B1.20.3, B1.21M; BS 84; BS 21; ISO 7-1; ISO 228-1;",
+        "ISO 965-1; ISO 2901. All paywalled, none opened. threads_hard.yaml cites all of them and",
+        "its header now says so. Their claims were checked for internal consistency only."
+      ]
+    },
+    {
+      "id": "abb-s200-2CDC002142D0207",
+      "title": "ABB System pro M compact -- Miniature Circuit Breaker S 200 / S 200 M, technical catalogue",
+      "url": "https://library.e.abb.com/public/cd9dbd4aef619f03c1257e2f00448bbb/2CDC002142D0207.pdf",
+      "sha256": "07b267e711236a27934be66d72e84d009284dcb4fc6a40862c32be8315d560df",
+      "bytes": 2234536,
+      "retrieved_utc": "2026-08-19",
+      "licence": "Copyright ABB. Published openly by the manufacturer. NOT REDISTRIBUTED -- this repository stores the URL and content hash only (FR-9.5); the fetch script reconstructs the file from ABB's own server.",
+      "dest": "var/spike/datasheets/",
+      "filename": "abb-s200-2CDC002142D0207.pdf",
+      "satisfies": [
+        "P3 task 3.1 -- MCB corpus",
+        "P3 task 3.2 -- document register on real input"
+      ],
+      "verified_contents": {
+        "pages": 16,
+        "word_boxes": 4210,
+        "born_digital": true,
+        "note": "Has a real embedded text layer -- pymupdf returns per-word bounding boxes directly. NO OCR REQUIRED, which removes the largest engineering risk from the P3 spike. Verified 2026-08-19; the extracted layer is byte-identical across runs."
+      }
+    },
+    {
+      "id": "abb-s200muc-1SXP403008B0202",
+      "title": "ABB Miniature Circuit Breakers S200M UC, datasheet",
+      "url": "https://library.e.abb.com/public/53ac189cddb24a168c4ec4cbbb4c4632/1SXP403008B0202.pdf",
+      "sha256": "0f6d9ee30f4605df2443ce1cc608e399992ea34326be60a214c5a7fc5e255000",
+      "bytes": 1347576,
+      "retrieved_utc": "2026-08-19",
+      "licence": "Copyright ABB. Published openly by the manufacturer. NOT REDISTRIBUTED -- this repository stores the URL and content hash only (FR-9.5); the fetch script reconstructs the file from ABB's own server.",
+      "dest": "var/spike/datasheets/",
+      "filename": "abb-s200muc-1SXP403008B0202.pdf",
+      "satisfies": [
+        "P3 task 3.1 -- MCB corpus",
+        "P3 task 3.2 -- document register on real input"
+      ],
+      "verified_contents": {
+        "pages": 9,
+        "word_boxes": 2359,
+        "born_digital": true,
+        "note": "Has a real embedded text layer -- pymupdf returns per-word bounding boxes directly. NO OCR REQUIRED, which removes the largest engineering risk from the P3 spike. Verified 2026-08-19; the extracted layer is byte-identical across runs."
+      }
+    },
+    {
+      "id": "extractbench-arxiv-2607.29677",
+      "title": "ExtractBench: A Benchmark for Schema-Guided Enterprise Document Extraction",
+      "url": "https://arxiv.org/pdf/2607.29677",
+      "sha256": "533891e9018811295376a858315feffaa56a0156165944d0b13764d9e3ae982d",
+      "bytes": 6161091,
+      "retrieved_utc": "2026-08-19",
+      "licence": "arXiv preprint. Referenced for verification; no text reproduced beyond short quotation.",
+      "dest": "var/reference/arxiv/",
+      "filename": "extractbench-2607.29677.pdf",
+      "satisfies": [
+        "P3 task 3.10 -- re-verify the grounding baseline"
+      ],
+      "why_this_matters": [
+        "HANDOFF section 7 listed this as the repository's one carried-forward claim never",
+        "re-checked: 'the arXiv PDF is 5.9MB of compressed streams and no PDF text library was",
+        "available locally'. One is available now. Every ExtractBench figure the repo quotes has",
+        "been read out of the paper."
+      ],
+      "verified_contents": {
+        "pages": 36,
+        "table_3_page_9": {
+          "$comment": "Grounding score (%). Caption: 'Word-level grounding F1 requires a correct value and word-level box at IoU 0.5; page-level grounding F1 requires a correct value and the source page.'",
+          "word_level_f1_overall": {
+            "LE Agentic Plus": 46.4,
+            "LE Agentic": 44.1,
+            "LE Cost-Eff.": 40.4,
+            "Datalab A+B": 2.0,
+            "Extend Max": 25.1,
+            "Reducto Deep": 43.3,
+            "All other systems": 0.0
+          },
+          "page_level_f1_overall": {
+            "LE Agentic Plus": 84.9,
+            "LE Agentic": 66.1,
+            "Reducto Deep": 71.7,
+            "All other systems": 0.0
+          }
+        },
+        "section_3_2_page_7": "'Agentic Plus reaches 95.6% at 8.1 c/page'",
+        "section_1_page_3": "'We compare 14 systems'; 'commercial VLMs and coding agents do not return word-level boxes'",
+        "conclusion_page_11": "'word-level grounding F1 remains at 46.4% even for specialized systems that return boxes'",
+        "appendix_b4_page_23": "'A word-level box tightly encloses the cited word or a short span of adjacent words, rather than the surrounding table cell.' -- validates using WORD boxes, not cell rectangles, as gold evidence.",
+        "corpus": "370 documents, 4,869 pages, 67 document types, 8 business domains"
+      },
+      "corrections_made": [
+        "The repository carried 46.43 / 44.14 / 43.30 / 84.92. Table 3 prints ONE decimal place:",
+        "46.4 / 44.1 / 43.3 / 84.9. The substance was right in every case and the extra digit was",
+        "invented -- 46.43 is not a number this paper contains. Corrected in operating_point.py and",
+        "pinned by test. No conclusion moves: 46.34% measured against 46.4% is the same dead heat."
+      ]
+    },
+    {
+      "id": "ucum-essence-2.2",
+      "title": "UCUM -- Unified Code for Units of Measure, essence file, version 2.2",
+      "url": "https://raw.githubusercontent.com/ucum-org/ucum/main/ucum-essence.xml",
+      "sha256": "dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61",
+      "bytes": 82776,
+      "retrieved_utc": "2026-08-20",
+      "released": "2024-06-17",
+      "licence": "UCUM is published under its own licence by the Regenstrief Institute and the UCUM Organization; freely usable with attribution.",
+      "dest": "var/reference/ucum/",
+      "filename": "ucum-essence.xml",
+      "satisfies": [
+        "FR-0.1 (partial) -- independent corroboration of unit-equivalence labels"
+      ],
+      "why_this_matters": [
+        "FR-0.1 wants the equivalence suite dual-labelled by someone who did not write the",
+        "comparator, and no second person is available. UCUM is maintained by a standards committee",
+        "with no connection to this project and publishes EXACT conversion values, so for the subset",
+        "of the suite that turns on a question of fact -- is 0.5 in the same length as 12.7 mm -- it",
+        "can adjudicate independently. Read by errata_bench.ucum, which deliberately does NOT use",
+        "Pint: errata_valuesem resolves through Pint, so a Pint-based corroborator would be asking",
+        "one library the same question twice and reporting the echo as validation."
+      ],
+      "verified_contents": {
+        "version": "2.2",
+        "revision_date": "2024-06-17",
+        "base_units": 7,
+        "units": 305,
+        "inch": "[in_i] = 2.54 cm exactly",
+        "celsius": "Cel, special unit, offset 273.15 K",
+        "fahrenheit": "[degF], special unit, 5/9 K with offset 459.67 x 5/9 K"
+      },
+      "result": "39 of 624 cases (6.2%) were externally judgeable; agreement 100%, zero disagreements. Coverage is partial by nature -- no external standard applies to the ingress, materials, terms or threads families -- and the taxonomy judgments (granularity vs precision vs undetermined) remain outstanding for a human."
+    },
+    {
+      "id": "nbs-handbook-h28-1957-part-i",
+      "title": "NBS Handbook H28 (1957) Part I -- Screw-Thread Standards for Federal Services",
+      "url": "https://everyspec.com/FED-STD/download.php?spec=HANDBOOK_H-28_1957_PART-I.048158.pdf",
+      "sha256": "7bcbf0e5afc63a379a2a475513a74c2d03cb689120cbd6800dced8dea5344cb6",
+      "bytes": 36334819,
+      "retrieved_utc": "2026-08-20",
+      "licence": "United States Government publication (National Bureau of Standards, Dept of Commerce). PUBLIC DOMAIN.",
+      "dest": "var/reference/h28/",
+      "filename": "H28-1957-Part-I.pdf",
+      "satisfies": [
+        "FR-0.1 (partial) -- independent corroboration of Unified inch thread labels"
+      ],
+      "why_this_matters": [
+        "ASME B1.1 is the current Unified-thread standard and is paywalled, which is why the threads",
+        "family had no external source beyond the metric cases ISO 261 covers.",
+        "",
+        "NBS Handbook H28 is a US Government publication in the PUBLIC DOMAIN, covers the same",
+        "UNC/UNF/UNEF series, and is the document ASME B1.1 descends from. That is the general",
+        "trick and it is worth remembering: where a current standard is paywalled, the federal or",
+        "national standard covering the same subject frequently is not.",
+        "",
+        "Adding it took the threads family from 38 externally-judged cases to 58, and total",
+        "corroboration coverage from 14.6% to 17.8%."
+      ],
+      "verified_contents": {
+        "pages": 217,
+        "table_III_3_p25": "Coarse thread series UNC and NC -- size, threads per inch, thread symbol",
+        "table_III_4_pp25_26": "Fine thread series UNF and NF",
+        "table_III_5_p26": "Extra-fine thread series UNEF and NEF",
+        "table_III_6_p26": "8-thread series 8UN"
+      },
+      "read_how": [
+        "VISUALLY, from rendered page images -- not from the OCR text layer. The OCR on this 1957",
+        "scan renders 40 as '4b' and 56 as '6', which is exactly the kind of plausible-wrong number",
+        "that ground rule 1 exists to keep out. Same method used for ISO 261 Table 2."
+      ],
+      "deliberate_omissions": [
+        "#4 UNC and #6 UNF are smudged past legibility in this scan and are NOT recorded. Their",
+        "values are well known, and 'well known' is precisely how an unread number gets written down",
+        "as though it had been read. The adjudicator declines both rather than asserting them."
+      ],
+      "spot_checks_against_the_suite": {
+        "1 3/4 UNC": "5 -- matches thr-h054",
+        "1 1/4 UNF": "12 -- matches thr-h055",
+        "2 UNC": "4.5 -- matches thr-h056",
+        "1/2 UNEF": "28 -- matches thr-h063",
+        "#12 UNEF": "32 -- matches thr-h061",
+        "1 1/16 UNEF": "18 -- matches thr-h062",
+        "1/2 UNF": "20 -- matches thr-h063",
+        "3/8 UNF": "24 -- matches thr-h074"
+      },
+      "incidental_confirmation": "HANDOFF section 7 records an earlier session 'briefly wrote UNF's 12 TPI values into the UNEF table, where the correct value is 18'. Both tables confirm it and show how it happened: from 1 inch upward UNF runs 12 and UNEF runs 18, in adjacent columns of adjacent pages."
+    },
+    {
+      "id": "unspsc-codeset-ok-open-data",
+      "title": "UNSPSC codeset -- United Nations Standard Products and Services Code, four levels, published as open data by the State of Oklahoma (OMES)",
+      "url": "https://data.ok.gov/dataset/18a622a6-32d1-48f6-842a-8232bc4ca06c/resource/b92ad3ac-b0f5-4c62-9bd0-eac023cfd083/download/data-unspsc-codes.csv",
+      "sha256": "e1d5ea56b11ce560fa199e4758be1dd3225a786b9cbee1734a96af8f4887b3aa",
+      "bytes": 11993535,
+      "retrieved_utc": "2026-08-20",
+      "licence": "UNSPSC(R) is published by GS1 US. This file is a public-sector republication by the Oklahoma Office of Management and Enterprise Services on data.ok.gov; the portal records no licence id. NOT REDISTRIBUTED -- this repository stores the URL and content hash only (FR-9.5), and the bridge cites individual codes as evidence in the way a standard's clause is cited.",
+      "dest": "var/reference/unspsc/",
+      "filename": "ok-unspsc-codes.csv",
+      "satisfies": [
+        "FR-9.7 -- the ETIM<->UNSPSC attribute bridge needs a UNSPSC side that was actually opened"
+      ],
+      "provenance_caveat": [
+        "THIS IS A PUBLIC-SECTOR REPUBLICATION, NOT unspsc.org. The official codeset download is",
+        "behind a registration form; a state procurement portal publishes the same four-level code",
+        "list as open data, which is a source that can be fetched, hashed and re-fetched by a third",
+        "party reproducing our scores -- the FR-9.5 property that matters here.",
+        "",
+        "The portal's metadata records metadata_modified 2019-10-31, so this is a 2019-vintage",
+        "snapshot of a codeset that is revised roughly annually. That is stated rather than elided:",
+        "the bridge pins the codes it uses by both code AND title, and errata_ecosystem.bridge",
+        "refuses to load a mapping whose title no longer matches the codeset it is validated",
+        "against, so a newer UNSPSC release produces a failure rather than a silent drift.",
+        "",
+        "Under ground rule 1 this is a source actually opened, and its status is stated."
+      ],
+      "verified_contents": {
+        "rows": 71502,
+        "columns": [
+          "Segment",
+          "Segment Name",
+          "Family",
+          "Family Name",
+          "Class",
+          "Class Name",
+          "Commodity",
+          "Commodity Name"
+        ],
+        "note": "Read on 2026-08-20. Four levels, eight-digit codes, NO attribute layer of any kind -- which is the hole FR-9.7 exists to fill, confirmed by inspection rather than from the PRD's say-so."
+      },
+      "facts_pinned_from_this_file": {
+        "$comment": "Asserted in ecosystem/tests/test_bridge.py. Read out of the file on 2026-08-20.",
+        "class_39121600": "Circuit protection devices and accessories -- 47 commodity codes",
+        "commodities": {
+          "39121601": "Circuit breakers",
+          "39121602": "Magnetic circuit breakers",
+          "39121603": "Miniature circuit breakers",
+          "39121614": "Earth leakage circuit breakers",
+          "39121615": "Air circuit breakers",
+          "39121616": "Molded case circuit breakers"
+        },
+        "absent_entirely": {
+          "residual current device": "No commodity code contains 'residual current'. The nearest is 39121614 'Earth leakage circuit breakers'. This is a real gap in UNSPSC, not a gap in the searching, and the bridge records it as one.",
+          "selective main line circuit breaker": "No commodity code for the SLS/selective-main device ETIM EC001047 names."
+        }
+      },
+      "loader_notes": [
+        "TRAP: the file is cp1252, NOT UTF-8. 93 of its bytes are non-ASCII and utf-8 raises",
+        "on the first of them 5,779 bytes in (an acute e in a phalaenopsis cultivar; a",
+        "non-breaking space inside 'Optical transmitter'; an acute e in 'cliche').",
+        "errors='replace' would corrupt three commodity titles, and titles are what the bridge",
+        "validates against -- so a corrupted one becomes a mapping that stops loading for no",
+        "visible reason. Read with encoding='cp1252'.",
+        "Delimiter is ',', line terminator CRLF, one header row, 71,502 data rows."
+      ]
+    }
+  ],
+  "not_obtained": [
+    {
+      "id": "etim-class-sku-distribution",
+      "needed_for": "FR-0.4 / R0 gate 3",
+      "shape": "class_id,sku_count",
+      "status": "NOT PUBLICLY REACHABLE -- searched 2026-08-19 and re-confirmed on setup",
+      "why": "ETIM publishes taxonomy only. 2BA (4M+ product records) gates statistics behind membership. No open dataset of ETIM-classified products with counts was found.",
+      "routes": [
+        "Scrape one ETIM-adopting distributor and crosswalk to ETIM class ids. TRAP: if the mapping is inferred rather than published, gate 3 emits a number that looks measured and is not -- strictly worse than NOT_MEASURED under ground rule 1.",
+        "Request a datapool export (2BA / IDEA membership, or a friendly distributor). The only route that yields a defensible number."
+      ]
+    },
+    {
+      "id": "mcb-labelled-corpus",
+      "needed_for": "FR-0.3 / R0 gate 2",
+      "shape": "per record: gold value, gold page, gold bbox, predicted value, predicted bbox, confidence",
+      "status": "PARTIALLY RESOLVED 2026-08-19 -- the P3 spike built a 1,426-record corpus from two ABB S200 datasheets. Gold values and boxes are document-derived rather than expert-labelled, and the catalog side is constructed. Gate 2 is MEASURED; an expert-labelled pass would strengthen it.",
+      "why": "The PDFs are free (Schneider Acti9 iC60, ABB S200, Siemens 5SL, Legrand, Eaton, Rockwell). The predicted columns require the grounding pipeline (FR-1.2-1.5), which does not exist."
+    }
+  ]
+}

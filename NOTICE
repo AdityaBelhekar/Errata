@@ -1,0 +1,48 @@
+Errata
+Copyright 2026 The Errata Authors
+
+This product includes software developed by The Errata Authors.
+Licensed under the Apache License, Version 2.0 (the "License"). See LICENSE.
+
+--------------------------------------------------------------------------------
+Third-party data attribution
+--------------------------------------------------------------------------------
+
+ETIM
+  Class, attribute, unit and value-list references in this repository derive from the ETIM
+  Classification Model and the ETIM MC extension, published by ETIM International under the
+  Open Data Commons Attribution License (ODC-By 1.0).
+  https://opendatacommons.org/licenses/by/1-0/
+  Attribution: ETIM International.
+
+  Note: the free international distribution covers the coding structure and 'ETIM English' plus
+  Belgian-Flemish, Belgian-French, German, Italian, Finnish and Norwegian. It does NOT cover all
+  local language versions.
+
+UNSPSC
+  Code references only (segment/family/class/commodity, eight digits), cited from a public-sector
+  republication of the codeset (State of Oklahoma, Office of Management and Enterprise Services)
+  recorded with its URL and SHA-256 in data/reference/manifest.json. UNSPSC(R) is published by
+  GS1 US; no UNSPSC content is redistributed by this repository.
+
+  UNSPSC defines no technical attribute layer -- verified by inspection of all 71,502 commodity
+  rows on 2026-08-20. The ETIM <-> UNSPSC bridge
+  (ecosystem/src/errata_ecosystem/data/etim-unspsc-bridge.yaml) is original work by The Errata
+  Authors, published under Apache-2.0 with the ODC-By attribution above; its ETIM-derived
+  attribute layer is computed at load time from the ETIM release, never copied into the file.
+
+ECLASS
+  NOT INCLUDED. ECLASS requires a licence, priced by company size. No ECLASS class, property,
+  value-list or IRDI content appears in this repository, in any container image built from it, or
+  in any published benchmark set. The /eclass-adapter component reads the customer's own licensed
+  dictionary files at runtime. See docs/adr/ADR-003.
+
+Manufacturer datasheets
+  NOT REDISTRIBUTED. Datasheets referenced by the benchmark and test fixtures are copyrighted by
+  their publishers. This repository stores URLs, SHA-256 content hashes, page-level annotation
+  layers, bounding-box coordinates and gold values only. A fetch script reconstructs the corpus
+  locally from the publishers' own servers.
+
+ExtractBench
+  Grounding metric definition (value accepted AND predicted box overlapping an accepted evidence
+  box at IoU 0.5) is reused verbatim for comparability. ExtractBench is Apache-2.0.

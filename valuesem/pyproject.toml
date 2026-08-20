@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-valuesem"
+version = "0.1.0"
+description = "Deterministic value semantics for industrial product data: compound-value grammars, material and vocabulary equivalence, unit frames. No model in the hot path."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "The Errata Authors" }]
+keywords = ["ETIM", "PIM", "product-data", "units", "normalization", "industrial"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Manufacturing",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
+]
+
+# FR-4.1: nothing here may make a network call or invoke a model.
+# Enforced by tests/test_determinism_boundary.py, not by convention.
+dependencies = [
+    "lark>=1.1",
+    "Pint>=0.23",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/errata-data/errata"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_valuesem = ["grammars/*.lark", "ontology/*.yaml", "units/*.txt"]

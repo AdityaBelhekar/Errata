@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-audit"
+version = "0.1.0"
+description = "Errata R1: end-to-end single-SKU audit -- ingest, class resolution, blind re-derivation, calibrated redlines with word-level evidence, and the reviewer console."
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "The Errata Authors" }]
+
+dependencies = [
+    "errata-spec>=0.1.0",
+    "errata-valuesem>=0.1.0",
+    "errata-comparator>=0.1.0",
+    "pydantic>=2.7",
+    "PyYAML>=6.0",
+    "pymupdf>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+errata-audit = "errata_audit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_audit = ["config/*.yaml", "demo/*.csv", "demo/*.yaml"]

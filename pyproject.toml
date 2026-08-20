@@ -1,0 +1,61 @@
+# Workspace root. The distributions live in valuesem/, spec/, comparator/, bench/ and audit/ --
+# this file only carries the shared developer tooling, so that `errata-valuesem` stays installable
+# on its own with nothing else from this repository (FR-4.6).
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+# audit/ is R1 (PHASES.md P4). It was entered on an explicit, recorded waiver of the PRD's
+# three-gate entry criterion -- gate 3 is deferred by decision D-1 -- and the waiver is written up
+# in PHASES.md §10 rather than implied by this line.
+#
+# spike/ is throwaway scaffolding (see spike/README.md) and is deliberately NOT a distribution --
+# but the corpus it produces carries R0 gate 2, so the properties that make that corpus mean
+# anything are tested here with the rest. Removing this entry is part of deleting the spike.
+testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests", "spike"]
+addopts = "-q --strict-markers --strict-config"
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["valuesem/src", "spec/src", "comparator/src", "bench/src", "audit/src", "scale/src", "ecosystem/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",
+    "RUF001", # ambiguous unicode is the point in a library that parses datasheet notation
+    "RUF002",
+    "RUF003",
+    # UP042 wants `class X(str, Enum)` rewritten as `class X(StrEnum)`. It is NOT a
+    # behaviour-preserving change, and these enums are printed:
+    #
+    #     class M(str, Enum): PASS = "pass"   ->  str(M.PASS) == "M.PASS"
+    #     class M(StrEnum):   PASS = "pass"   ->  str(M.PASS) == "pass"
+    #
+    # (verified on the interpreter, 2026-08-19; json.dumps and == "pass" are identical
+    # either way). Gate, Verdict, Provenance, Strategy, GroundingLevel and CoverageGate are
+    # interpolated into the kill tests' own text reports, so accepting this rule would
+    # silently change what R0 prints while every test still passed. Ground rule 7: a change
+    # that quietly alters output is worse than the lint finding it removes.
+    "UP042",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["B011", "SIM117", "E402"]
+# F811 in scale/tests: the R2 tests import their fixtures by name from `scalefixtures` rather than
+# picking them up from a `conftest.py`, because a second conftest would shadow `audit/tests`'
+# -- both directories are on sys.path with no `__init__.py`, and `audit/tests/test_audit.py`
+# does `from conftest import ...`. A fixture imported into a test module's namespace is discovered
+# normally, and ruff reads the parameter of the same name as a redefinition. See
+# scale/tests/scalefixtures.py.
+"scale/tests/*" = ["B011", "SIM117", "E402", "F811"]
+# E402 in the test files is deliberate: later sections import their own fixtures next to the
+# tests that use them, under a banner comment that says which finding the section came from.
+# Hoisting those imports to the top would separate them from the reason they exist.
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+ignore_missing_imports = true

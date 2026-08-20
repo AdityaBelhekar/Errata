@@ -1,0 +1,65 @@
+// Magnitudes: plain quantities, tolerances, ranges and alternative-value sets.
+//
+// Runs on text that has already been through canonicalize(), so by this point the multiplication
+// sign is "x", the degree sign is "degC", "±" is "+/-", en dashes are " .. " and the decimal
+// separator has been resolved or refused.
+//
+// Accepted:
+//   plain      63 A | 10.0 mm | 230 V AC | max 63 A | 63 A max | <= 40 degC | 12 | 45 %
+//   tolerance  10 +/- 0.2 mm | 10 mm +/- 0.2 | 10 mm +/-2% | 10 +0.2/-0.1 mm | 10 +0.3 -0.1 mm
+//   range      -25 .. 70 degC | 10 .. 16 A | 10-16 A | 0.5 .. 1.5 Nm
+//   set        230/400 V | 400/690 V | 110/230/400 V
+//   fraction   1/2 in | 3/8 in | 1 1/2 in
+//
+// The fraction-versus-set decision is deliberately NOT made here. "3/8" and "230/400" have the
+// same shape, and only the magnitudes tell them apart. The grammar emits the digits; the
+// transformer decides, and records which reading it took.
+
+?start: dimension
+
+?dimension: rangev
+          | tolv
+          | plainv
+          | bare
+
+// Rule priorities resolve the genuine ambiguities. A reading that consumes a unit beats a reading
+// that treats the same token as a trailing qualifier: "10 min" is ten minutes, not ten-with-a-
+// minimum-qualifier. That is why `plainv` (which requires a unit) and `bare` (which forbids one)
+// are separate rules rather than one rule with an optional unit -- Lark carries priority per rule,
+// so the preference has to be expressed in the rule names.
+rangev.4: signed unit? RANGESEP signed unit?
+        | NUM DASH NUM unit?
+
+tolv.5: signed unit? TOL unit? QUAL?
+
+plainv.3: QUAL? CMP? signed unit QUAL?
+bare.1:   QUAL? CMP? signed QUAL?
+
+signed: SIGN? magnitude
+magnitude: SLASHNUMS
+         | MIXED
+         | NUM
+
+unit: UNITTOK
+
+// ------------------------------------------------------------------------------- terminals ----
+//
+// UNITTOK outranks QUAL, and the ordering is load-bearing. "min" is both a qualifier and the
+// symbol for a minute; "10 min" is ten minutes and "63 A max" is a bounded current. Where both
+// readings complete, the unit reading wins on terminal priority. Where only the qualifier reading
+// completes -- "230 V AC" cannot carry two units -- Earley falls back to QUAL on its own. Giving
+// QUAL the higher priority instead turns every duration field into a qualified dimensionless
+// number, silently.
+TOL.9:       /\+\s*\d+(?:\.\d+)?\s*%?\s*\/?\s*-\s*\d+(?:\.\d+)?\s*%?|\+\/-\s*\d+(?:\.\d+)?\s*%?/
+UNITTOK.8:   /[A-Za-zΩ%'"][A-Za-z0-9_%*\/^.]*/
+QUAL.7:      /(?:AC\/DC|AC|DC|rms|RMS|peak|pk|p-p|pp|max|min|typ|nom|approx|eff|abs)(?![A-Za-z])/
+RANGESEP.7:  ".."
+CMP.7:       /<=|>=|<|>/
+MIXED.6:     /\d+\s+\d+\/\d+(?![\/\d])/
+SLASHNUMS.5: /\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)+(?![\/\d])/
+NUM.4:       /\d+(?:\.\d+)?/
+SIGN.3:      /[+-]/
+DASH.2:      "-"
+
+%import common.WS
+%ignore WS

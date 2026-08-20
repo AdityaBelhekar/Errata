@@ -1,0 +1,68 @@
+// Screw thread designations.
+//
+// FR-4.2: this grammar either parses or refuses. There is no fallback branch that accepts
+// arbitrary text, because an "unknown thread" that still compares equal to something is worse than
+// a refusal a human can route.
+//
+// Accepted:
+//   metric   M8 | M8x1.25 | M8 x 1.25 | M8-1.25 | M8x1.25-6g | M8x1 LH | M 8 X 1.25 - 6H
+//   unified  3/8-16 UNC | 3/8-16UNC-2A | #10-24 UNC | 1/4-20 | No. 8-32 UNF
+//   pipe     NPT 1/2-14 | 1/2-14 NPT | 1/2 in NPT | G1/2 | G 1/2 A | Rp 1/2 | BSPT 3/4 | 1 1/2 NPT
+
+?start: thread
+
+?thread: metric
+       | unified
+       | pipe
+
+// ---------------------------------------------------------------------------------- metric ----
+// The pitch separator is written as "x", "*" or a bare hyphen. "M8-1.25" and "M8x1.25" are the
+// same thread, and DIN drawings use both.
+metric: MPREFIX NUM ((XSEP | DASH) NUM)? mclass? hand?
+
+mclass: DASH? MCLASS
+
+// --------------------------------------------------------------------------------- unified ----
+unified: usize DASH NUM userseries? uclass? hand?
+       | usize userseries uclass? hand?
+
+usize: FRACTION
+     | GAUGE
+     | MIXED
+     | NUM
+
+userseries: UNSERIES
+uclass: DASH? UNCLASS
+
+// ------------------------------------------------------------------------------------ pipe ----
+pipe: PIPESERIES psize INCH? (DASH NUM)? pipeclass?
+    | psize INCH? (DASH NUM)? PIPESERIES pipeclass?
+
+psize: MIXED
+     | FRACTION
+     | NUM
+
+pipeclass: DASH? PIPECLASS
+
+hand: HAND
+
+// ------------------------------------------------------------------------------- terminals ----
+// Priorities keep the multi-character designators from being shredded into digits and letters.
+
+PIPESERIES.6: /(?:NPTF|NPSM|NPSC|NPSF|NPT|NPS|BSPP|BSPT|BSP)(?![A-Za-z])|(?:Rp|Rc|G|R)(?=\s*\d)/i
+HAND.6:       /(?:LH|RH)(?![A-Za-z])|left[ -]hand|right[ -]hand/i
+UNSERIES.5:   /UN(?:JC|JF|EF|C|F|S|R)?(?![A-Za-z])/i
+INCH.5:       /in(?:ch)?(?![A-Za-z])/i
+UNCLASS.4:    /[123][AB](?![A-Za-z0-9])/
+MCLASS.4:     /[1-9](?:[ghefGHEF])(?:[1-9][ghefGHEF])?(?![A-Za-z0-9])/
+PIPECLASS.3:  /[AB](?![A-Za-z0-9])/
+GAUGE.5:      /#\s*\d{1,2}(?![\d])|No\.?\s*\d{1,2}(?![\d])/i
+MPREFIX.5:    /M(?![A-Za-z])/
+MIXED.4:      /\d+\s+\d+\/\d+/
+FRACTION.3:   /\d+\/\d+/
+NUM:          /\d+(?:\.\d+)?/
+DASH:         "-"
+XSEP:         /[xX*]/
+
+%import common.WS
+%ignore WS

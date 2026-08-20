@@ -1,0 +1,249 @@
+"""Build the distributable gold set: annotations and hashes, never a document (FR-9.5).
+
+    .venv/Scripts/python.exe ecosystem/tools/build_gold.py
+
+Reads the hash-registered ABB datasheets out of ``var/spike/datasheets`` -- which
+``scripts/fetch_reference_data.sh`` reconstructs from ABB's own server -- and writes:
+
+    data/gold/manifest.json                     documents by URL and sha256, annotation hashes
+    data/gold/annotations/<doc-id>.jsonl        the annotation layer, one record per line
+    data/gold/splits/hard-tail.json             the frozen split (FR-9.6), with its own hash
+
+**This is a tool, not part of the distribution.** It imports ``spike``, which is throwaway
+scaffolding (``spike/README.md``); the published package reads the committed annotation layer and
+re-verifies it against the documents with R1's own layout module, so deleting the spike does not
+strand the gold set. That separation is the point: a benchmark whose gold can only be regenerated
+by the code being benchmarked has no independent gold.
+
+Re-running this on the same documents must produce byte-identical files. If it does not, something
+non-deterministic entered the extraction path and the diff is the finding.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+
+from spike.gold import GOLD_VERSION, build_gold  # noqa: E402
+from spike.layout import LAYOUT_VERSION  # noqa: E402
+
+DATASHEETS = REPO_ROOT / "var" / "spike" / "datasheets"
+GOLD_DIR = REPO_ROOT / "data" / "gold"
+ANNOTATIONS = GOLD_DIR / "annotations"
+SPLITS = GOLD_DIR / "splits"
+REFERENCE_MANIFEST = REPO_ROOT / "data" / "reference" / "manifest.json"
+
+#: The attribute keys the gold set carries, mapped to the canonical vocabulary at read time by
+#: ``errata_ecosystem.vocabulary``. Written as keys here because that is what the spike's gold
+#: builder emits, and rewriting them at build time would put a second vocabulary in a file whose
+#: whole purpose is to be read by someone else (finding N15, again).
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    return _sha256_bytes(path.read_bytes())
+
+
+def _reference_artifacts() -> dict[str, dict]:
+    doc = json.loads(REFERENCE_MANIFEST.read_text(encoding="utf-8"))
+    return {a["id"]: a for a in doc["artifacts"]}
+
+
+def main() -> int:
+    ANNOTATIONS.mkdir(parents=True, exist_ok=True)
+    SPLITS.mkdir(parents=True, exist_ok=True)
+    artifacts = _reference_artifacts()
+
+    documents: list[dict] = []
+    annotation_files: list[dict] = []
+    hard_tail: list[str] = []
+    unrepresented: list[dict] = []
+
+    for artifact_id, artifact in sorted(artifacts.items()):
+        if not str(artifact.get("dest", "")).startswith("var/spike/datasheets"):
+            continue
+        pdf = DATASHEETS / artifact["filename"]
+        if not pdf.exists():
+            print(f"!! {pdf} absent -- run scripts/fetch_reference_data.sh", file=sys.stderr)
+            return 2
+        actual = _sha256_file(pdf)
+        if actual != artifact["sha256"]:
+            print(f"!! {pdf.name}: sha256 mismatch against the manifest", file=sys.stderr)
+            return 2
+
+        records, layer = build_gold(pdf)
+        doc_id = artifact_id
+        lines: list[str] = []
+        for record in records:
+            record_id = f"{doc_id}::{record.sku}::{record.attribute}"
+            lines.append(
+                json.dumps(
+                    {
+                        "record_id": record_id,
+                        "document": doc_id,
+                        "document_sha256": actual,
+                        "sku": record.sku,
+                        "attribute_key": record.attribute,
+                        "value": record.value,
+                        "page": record.page,
+                        "boxes": [[round(c, 2) for c in box] for box in record.boxes],
+                        "column_header": record.column_header,
+                        "from_merged_cell": record.from_merged_cell,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            if record.from_merged_cell:
+                hard_tail.append(record_id)
+
+        payload = ("\n".join(lines) + "\n") if lines else ""
+        out = ANNOTATIONS / f"{doc_id}.jsonl"
+        out.write_text(payload, encoding="utf-8", newline="\n")
+
+        documents.append(
+            {
+                "document": doc_id,
+                "url": artifact["url"],
+                "sha256": actual,
+                "bytes": artifact["bytes"],
+                "pages": layer.page_count,
+                "licence": artifact["licence"],
+                "annotation_file": str(out.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "records": len(lines),
+            }
+        )
+        annotation_files.append(
+            {
+                "file": str(out.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "sha256": _sha256_bytes(payload.encode("utf-8")),
+                "records": len(lines),
+            }
+        )
+        if not lines:
+            unrepresented.append(
+                {
+                    "document": doc_id,
+                    "records": 0,
+                    "why": (
+                        "This datasheet's ordering tables are TRANSPOSED -- each product is a "
+                        "column and the header row collapses into a single cell -- so the gold "
+                        "builder, which reads a value as a cell under a named column in a row "
+                        "identified by its type designation, finds nothing to read. The document "
+                        "is registered, fetched and hashed; it contributes zero annotations. That "
+                        "is a gap in the gold set, recorded here rather than left to be inferred "
+                        "from a record count."
+                    ),
+                }
+            )
+
+    total = sum(d["records"] for d in documents)
+    split_payload = {
+        "$comment": [
+            "FR-9.6 -- the frozen hard-tail split. Never used for tuning; the guard that enforces",
+            "that is errata_ecosystem.splits.assert_untouched, and CI fails on a violation.",
+            "",
+            "WHAT IS IN IT: every gold record whose value comes from a MERGED SOURCE CELL -- the",
+            "ordering tables state a pole count once for a block of twenty rows, and the value is",
+            "therefore not printed on the row it belongs to. Resolving those needs cell geometry;",
+            "an extractor that reads the row as printed gets them wrong or abstains.",
+            "",
+            "WHAT IS NOT IN IT, AND THIS IS THE HONEST HALF: the PRD names degraded scans,",
+            "fold-outs, cross-page tables and superseded revisions. NONE of the four occurs in",
+            "this corpus, which is two born-digital PDFs from one manufacturer. Freezing an empty",
+            "split for each named category would be theatre. The categories are listed as",
+            "unrepresented below, and the machinery takes them the day a document carrying one",
+            "arrives -- a split file is a list of record ids and a hash, with no code path per",
+            "category.",
+        ],
+        "split": "hard-tail",
+        "frozen_utc": "2026-08-20",
+        "criterion": "gold record sourced from a merged cell",
+        "record_ids": sorted(hard_tail),
+        "records": len(hard_tail),
+        "of_total": total,
+        "unrepresented_categories": [
+            {
+                "category": "degraded scans",
+                "present": False,
+                "why": "Both registered documents are born-digital with real embedded text layers. No OCR is on the path at all, so there is no degradation to be robust to.",
+            },
+            {
+                "category": "fold-outs",
+                "present": False,
+                "why": "Measured, not assumed: every page of the first document is 595x842 pt (A4) and every page of the second is 612x792 pt (US Letter). A fold-out is an oversized page, and neither document has one.",
+            },
+            {
+                "category": "cross-page tables",
+                "present": False,
+                "why": "Every ordering table resolved by the extractor begins and ends on one page. A table continued across a page break would be a different problem and the corpus does not contain one.",
+            },
+            {
+                "category": "superseded revisions",
+                "present": False,
+                "why": "The two registered documents describe different product families and share no type designation, so no SKU is documented twice and no revision supersedes another. The supersession AXIS is scored separately, on ledger chains, where supersession actually happens (FR-9.2).",
+            },
+        ],
+        "gold_set_gaps": unrepresented,
+    }
+    split_body = json.dumps(split_payload, indent=2, ensure_ascii=False) + "\n"
+    (SPLITS / "hard-tail.json").write_text(split_body, encoding="utf-8", newline="\n")
+
+    manifest = {
+        "$comment": [
+            "FR-9.5 -- the gold set is distributed as URLs, content hashes and annotation layers.",
+            "NO SOURCE DOCUMENT IS REDISTRIBUTED. The datasheets below are ABB's, published openly",
+            "by ABB and copyright ABB; scripts/fetch_reference_data.sh reconstructs them from ABB's",
+            "own server and verifies each sha256 before use.",
+            "",
+            "An annotation is a value, a page, and word boxes -- facts about where a number is",
+            "printed. It is not the document, and it is not enough to reconstruct one.",
+            "",
+            "Regenerate with: .venv/Scripts/python.exe ecosystem/tools/build_gold.py",
+            "Verify with:     errata-r3 gold verify",
+        ],
+        "schema_version": "1.0.0",
+        "gold_set": "errata-gold/1.0.0",
+        "built_utc": "2026-08-20",
+        "layout_version": LAYOUT_VERSION,
+        "gold_version": GOLD_VERSION,
+        "records": total,
+        "documents": documents,
+        "annotations": annotation_files,
+        "splits": [
+            {
+                "split": "hard-tail",
+                "file": "data/gold/splits/hard-tail.json",
+                "sha256": _sha256_bytes(split_body.encode("utf-8")),
+                "records": len(hard_tail),
+            }
+        ],
+        "labelling_caveat": (
+            "GOLD IS DOCUMENT-DERIVED, NOT EXPERT-LABELLED. The value is the text printed in an "
+            "ordering-table cell and the evidence is the word boxes of that text, read "
+            "mechanically from table structure. That is faithful, and it is not a domain expert's "
+            "judgement; it shares gate 1's weakness that the same author wrote the labeller and "
+            "the thing being measured. An independent pass would strengthen it and has not been "
+            "done."
+        ),
+    }
+    GOLD_DIR.mkdir(parents=True, exist_ok=True)
+    (GOLD_DIR / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    print(f"gold set: {total} records across {len(documents)} documents")
+    print(f"hard-tail split: {len(hard_tail)} records")
+    for doc in documents:
+        print(f"  {doc['document']}: {doc['records']} records, {doc['pages']} pages")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

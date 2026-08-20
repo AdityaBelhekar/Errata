@@ -1,0 +1,1086 @@
+# Adversarial equivalence suite -- threads family (FR-0.1 hardening pass).
+#
+# ---------------------------------------------------------------------------------------------
+# CITATION AUDIT -- 2026-08-19 (P1 task 1.1). This file had never been audited; its authoring
+# agent hit the session limit mid-run, and HANDOFF section 7 flags it as the largest unaudited
+# suite in the repository. Every `source:` field in all 114 cases was read.
+#
+# WHAT WAS VERIFIED AGAINST THE STANDARD ITSELF
+#   ISO 261:1998 was opened -- the free iTeh publisher preview carries the complete Table 2
+#   (nominal diameter / pitch, all three choice columns) and clauses 1-5. Registered with its
+#   sha256 in data/reference/manifest.json.
+#
+#   * 28 of 31 numeric coarse-pitch claims re-derived from Table 2 and CORRECT.
+#   * 3 choice-category claims WRONG and corrected: M11, M4,5 and M2,2 were each called
+#     "3rd-choice"; Table 2 puts all three in Col. 2. Their PITCHES were right, which is why
+#     nothing failed and nobody noticed. Only M9 among the diameters this file discusses is
+#     genuinely 3rd choice.
+#   * 2 claims of the form "no metric pitch exceeds 6 mm" WRONG and corrected: Table 2 lists a
+#     pitch of 8 mm at M125 and M130. 6 mm is the largest COARSE pitch (M64, M68); above M68 the
+#     table lists no coarse pitch at all. The conclusions those cases draw are unaffected -- the
+#     premise was overstated, not the verdict.
+#   * 1 mis-attribution corrected: the right-hand-default rule was sourced to ISO 261. ISO 261
+#     clause 4 says a thread "shall be designated according to ISO 965-1"; the designation rules
+#     live there.
+#
+# WHAT WAS NOT VERIFIED, AND WHY -- read this before quoting any citation below
+#   ASME B1.1, B1.5, B1.15, B1.20.1, B1.20.3 and B1.21M, BS 84, BS 21, ISO 7-1, ISO 228-1,
+#   ISO 965-1 and ISO 2901 are all paywalled and no copy was opened. Their claims here were
+#   checked only for INTERNAL CONSISTENCY -- TPI values against each other and against the
+#   parser's tables, geometry against the neighbouring cases -- and no contradiction was found.
+#   That is weaker evidence than the ISO 261 pass and is not the same thing as verification.
+#   Under ground rule 1, treat every non-ISO-261 citation in this file as
+#   [UNVERIFIED -- needs checking] until someone opens the standard.
+#
+# NO LABEL WAS CHANGED by this audit, and the gate did not move (1.30%, before and after).
+# Facts read out of ISO 261 are pinned in bench/tests/test_citation_integrity.py so the
+# corrected columns cannot silently revert.
+# ---------------------------------------------------------------------------------------------
+#
+# threads.yaml passes all 30 of its cases. Per the harness's own caveat that is weak evidence: a
+# suite written alongside the code it grades encodes the same blind spots twice. Every case below
+# was driven through the real pipeline (errata_valuesem.normalize / compare and
+# errata_comparator.compare_attribute) BEFORE its label was written, and the label is what a
+# competent domain reviewer would say -- checked against, never copied from, the code's output.
+# Where the two disagree, the disagreement is the deliverable. Nothing here was relabelled to make
+# the comparator look better.
+#
+# The headline finding is the good news: the fine-pitch trap is CLOSED. `M20` against `M20x1.5` is
+# a contradiction, correctly, because the ISO 261 coarse pitch for M20 is 2.5 mm and the completion
+# is a table lookup rather than a heuristic (thr-h001..thr-h012). That is the single most important
+# thing this family had to get right, and it gets it right at every diameter tested from M8 to M64.
+#
+# Six real defect clusters were found underneath it:
+#
+#   1. INCOMPLETE ISO 261 COARSE TABLE (thr-h020..thr-h025). tables.ISO_COARSE_PITCH_MM carries the
+#      1st- and 2nd-choice diameters but omits others -- M9 (1.25, Col. 3), M11 (1.5, Col. 2),
+#      M4.5 (0.75, Col. 2), M2.2 (0.45, Col. 2) -- and M68 (6, Col. 2). Columns corrected
+#      2026-08-19 against ISO 261:1998 Table 2; of these, only M9 is a 3rd-choice diameter. For every one of these the completion silently
+#      declines to fire and a genuinely equivalent pair is raised as a granularity finding. These
+#      are false positives on the most ordinary thing a catalog can say.
+#
+#   2. ISO 965-1 ABBREVIATION RULE NOT IMPLEMENTED (thr-h030, thr-h031). ISO 965-1 states that when
+#      the pitch-diameter and crest-diameter tolerance class designations are the same they are not
+#      repeated: 6g6g IS 6g and 6H6H IS 6H, by definition and not by convention. The comparator
+#      string-compares the class field and reports a contradiction between a thread and itself.
+#
+#   3. ISO 965-1 CASE IS SEMANTIC AND IS BEING FOLDED AWAY (thr-h032, thr-h033). _compare_thread_class
+#      does `ta.tolerance_class.upper()` on both sides before comparing. In ISO 965-1 a capital
+#      letter is an INTERNAL thread and a small letter is an EXTERNAL thread. Upper-casing makes a
+#      bolt and a nut compare equal: 6g against 6G, and 6H against 6h, both resolve silently.
+#      Note the asymmetry with the unified side, where 2A against 2B IS caught -- the same
+#      distinction, the opposite outcome, purely because A and B are already capitals.
+#
+#   4. LENGTH SUFFIX READ AS PITCH (thr-h040..thr-h045). `M8x1.25x40` refuses outright, and the far
+#      worse `M8x40` -- the ordinary way to write an M8 coarse bolt 40 mm long -- parses 40 as a
+#      PITCH and raises a contradiction. No metric pitch in ISO 261 exceeds 6 mm, so a second number
+#      larger than the nominal diameter cannot be a pitch and can be rejected as one without any new
+#      judgment being introduced.
+#
+#   5. PREFILTER NARROWER THAN THE GRAMMAR (thr-h057, thr-h065, thr-h087..thr-h091, thr-h120).
+#      parsers/thread.py PREFILTER is the gate in front of a grammar that is strictly more capable
+#      than it is. Designations the grammar handles but the prefilter never lets through: `Rc 1/2`
+#      (Rc is a PIPESERIES terminal AND a PIPE_SERIES table entry, but the prefilter branch
+#      `\bRp?\s*\d+\s*/` cannot match it); `G 1 1/4` and every other mixed-number BSPP size, among
+#      the commonest hydraulic ports in existence; the bare `UN` constant-pitch series (`1-8 UN`),
+#      because the prefilter demands a letter after UN; and lower-case `m8`, which the prefilter
+#      admits and the grammar's case-sensitive MPREFIX then rejects. Each is a silent coverage hole
+#      rather than a wrong answer -- but the abstention is content-blind: it fires identically
+#      whether the pair agrees or contradicts (thr-h057 against thr-h058).
+#
+#   6. SERIES IDENTITY DISCARDED ON BOTH THE INCH AND PIPE SIDES (thr-h050..thr-h053, thr-h080..thr-h082).
+#      _compare_thread never compares the `series` field. NPTF collapses onto NPT because
+#      PIPE_SERIES maps both to system "pipe_npt", so a dryseal fitting and a sealant-dependent one
+#      are declared the same fact -- the canonical text for NPTF even comes back as "NPT 1/2-14".
+#      UNJC collapses onto UNC because the nominal and TPI match and nothing looks at the J. Both
+#      are real, mateability-changing distinctions.
+#
+# One further false positive with a different shape: pipe nominal sizes are compared as STRINGS
+# (_nominals_match falls back to nominal_mm, which the pipe builder never populates), so `0.5 NPT`
+# and `1/2 NPT` -- the same half-inch port -- are a contradiction (thr-h084). The unified path gets
+# the identical substitution right (thr-h064), which makes this an inconsistency inside one
+# comparator rather than a missing capability.
+#
+# Standards used: ISO 261/262 (metric diameter-pitch series), ISO 68-1 (M profile), ISO 965-1
+# (metric tolerance classes), ISO 228-1 (G parallel pipe), ISO 7-1 (R/Rc/Rp taper pipe),
+# ISO 2901/2904 (Tr trapezoidal), ASME B1.1 (unified), B1.5 (Acme), B1.15 (UNJ), B1.21M (MJ),
+# B1.20.1 (NPT/NPS), B1.20.3 (NPTF dryseal), BS 84 (Whitworth BSW/BSF).
+
+suite: equivalence
+family: threads
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: thread_size
+    label: Thread
+    kinds: [thread]
+
+cases:
+  # == 1. The fine-pitch trap: coarse completion must NOT fire =====================================
+  # A bare metric designation means the COARSE pitch. Every pair below states a real ISO 261 fine
+  # pitch on one side. A comparator that "completes" the bare side by any route other than an exact
+  # table lookup -- nearest neighbour, interpolation, diameter/8, anything -- gets these wrong, and
+  # every one of them is a fastener that does not mate. This is the load-bearing block of the file,
+  # and the comparator passes all of it.
+  - id: thr-h001
+    a: "M20"
+    b: "M20x1.5"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M20 is 2.5 mm; 1.5 mm is a listed fine pitch for M20"
+    rationale: >-
+      The exact trap a careless coarse-pitch lookup falls into. M20 is not "M20 with an unstated
+      pitch that might be 1.5" -- it is M20x2.5 by reference to the standard, and M20x1.5 is a
+      different thread. Calling this equivalent ships a bolt that will not enter the hole.
+
+  - id: thr-h002
+    a: "M20x1.5"
+    b: "M20"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M20 is 2.5 mm"
+    rationale: >-
+      The same fact with the sides swapped. Contradiction is the one relation that must be
+      symmetric; if only one direction fires, the verdict depends on which feed was loaded first.
+
+  - id: thr-h003
+    a: "M16"
+    b: "M16x1.5"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M16 is 2 mm; 1.5 mm is a listed fine pitch"
+
+  - id: thr-h004
+    a: "M12"
+    b: "M12x1.25"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M12 is 1.75 mm; 1.25 mm is a listed fine pitch"
+
+  - id: thr-h005
+    a: "M18"
+    b: "M18x1.5"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M18 is 2.5 mm; 1.5 mm is a listed fine pitch"
+
+  - id: thr-h006
+    a: "M22"
+    b: "M22x2"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M22 is 2.5 mm; 2 mm is a listed fine pitch"
+    rationale: >-
+      Only 0.5 mm apart, and both are legitimate M22 threads, which is exactly why the completion
+      has to be a lookup. Nothing about the string 'M22' hints at which of the two is meant.
+
+  - id: thr-h007
+    a: "M24"
+    b: "M24x2"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M24 is 3 mm; 2 mm is a listed fine pitch"
+
+  - id: thr-h008
+    a: "M30"
+    b: "M30x2"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M30 is 3.5 mm; 2 mm is a listed fine pitch"
+
+  - id: thr-h009
+    a: "M36"
+    b: "M36x3"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M36 is 4 mm; 3 mm is a listed fine pitch"
+
+  - id: thr-h010
+    a: "M64"
+    b: "M64x4"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M64 is 6 mm; 4 mm is a listed fine pitch"
+    rationale: >-
+      At the top of the ISO 261 range the coarse and fine pitches diverge most, so a heuristic that
+      survived the small diameters fails loudest here.
+
+  - id: thr-h011
+    a: "M14x1.5"
+    b: "M14"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M14 is 2 mm; 1.5 mm is a listed fine pitch"
+
+  - id: thr-h012
+    a: "M8x0.5"
+    b: "M8"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M8 is 1.25 mm, and 0.5 mm is not a listed M8 pitch at all"
+    rationale: >-
+      A stated pitch that appears in no M8 column. The right answer is still contradiction, but the
+      comparator should say so while flagging that one side is off the standard entirely.
+
+  # -- and the mirror: coarse completion MUST fire ------------------------------------------------
+  - id: thr-h013
+    a: "M20"
+    b: "M20x2.5"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M20 is 2.5 mm"
+    rationale: >-
+      The other half of thr-h001. A gate that gets contradiction right by refusing to complete
+      anything has not solved the problem, it has moved it into the false-negative column.
+
+  - id: thr-h014
+    a: "M24"
+    b: "M24x3"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M24 is 3 mm"
+
+  - id: thr-h015
+    a: "M36"
+    b: "M36x4"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M36 is 4 mm"
+
+  - id: thr-h016
+    a: "M52"
+    b: "M52x5"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M52 is 5 mm"
+
+  - id: thr-h017
+    a: "M8-6g"
+    b: "M8x1.25-6g"
+    expect: equivalent
+    source: "ISO 261 coarse pitch 1.25 mm for M8; ISO 965-1 class 6g carried on both sides"
+    rationale: "The completion has to survive a trailing tolerance class, not only a bare designation."
+
+  - id: thr-h018
+    a: "M10x1.5-6g"
+    b: "M10-6g"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M10 is 1.5 mm; ISO 965-1 class 6g on both sides"
+
+  # == 2. Gaps in the ISO 261 coarse table =========================================================
+  # ISO 261 lists 1st-, 2nd- and 3rd-choice nominal diameters, and a 3rd-choice diameter is not a
+  # non-standard one -- it has a published coarse pitch exactly as M8 does. The implementation table
+  # stops at the 1st and 2nd choices, so for these diameters the completion quietly does not happen
+  # and an equivalent pair is raised as a finding. Every case in this block is a false positive.
+  - id: thr-h020
+    a: "M9"
+    b: "M9x1.25"
+    expect: equivalent
+    source: "ISO 261: M9 is a 3rd-choice diameter with coarse pitch 1.25 mm (DIN 13-1 agrees)"
+    rationale: >-
+      Identical in form to thr-001's M8/M8x1.25, and the reviewer's answer is identical: a bare M9
+      is fully specified by reference to the standard. The comparator raises a granularity finding
+      because ISO_COARSE_PITCH_MM has no M9 row -- an accusation caused by a missing table entry,
+      which is the worst kind, because it is invisible from the outside.
+
+  - id: thr-h021
+    a: "M11"
+    b: "M11x1.5"
+    expect: equivalent
+    source: >-
+      ISO 261:1998 Table 2: M11 is a Col. 2 (2nd choice) diameter with coarse pitch 1,5 mm.
+      Verified against the standard 2026-08-19. The pitch was right; an earlier revision of
+      this citation called M11 3rd choice, which the table contradicts.
+
+  - id: thr-h022
+    a: "M4.5"
+    b: "M4.5x0.75"
+    expect: equivalent
+    source: >-
+      ISO 261:1998 Table 2: M4,5 is a Col. 2 (2nd choice) diameter with coarse pitch 0,75 mm.
+      Verified against the standard 2026-08-19. The pitch was right; an earlier revision of
+      this citation called M4,5 3rd choice, which the table contradicts.
+
+  - id: thr-h023
+    a: "M68"
+    b: "M68x6"
+    expect: equivalent
+    source: "ISO 261: M68 is a 2nd-choice diameter with coarse pitch 6 mm"
+    rationale: >-
+      Not even a 3rd-choice size -- M68 is 2nd choice, one step below M64 in priority, and the table
+      simply stops at M64. The boundary is arbitrary and nothing in the code marks it as one.
+
+  - id: thr-h024
+    a: "M2.2"
+    b: "M2.2x0.45"
+    expect: equivalent
+    source: >-
+      ISO 261:1998 Table 2: M2,2 is a Col. 2 (2nd choice) diameter with coarse pitch 0,45 mm.
+      Verified against the standard 2026-08-19. The pitch was right; an earlier revision of
+      this citation called M2,2 3rd choice, which the table contradicts.
+
+  - id: thr-h025
+    a: "M2.2x0.45"
+    b: "M2.2"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M2.2 is 0.45 mm"
+    rationale: >-
+      The direction the missing-table-row bug does NOT show up in: with the pitch on the catalog
+      side the comparator returns A_MORE_SPECIFIC and raises nothing, while thr-h024 -- the same two
+      facts with the columns swapped -- is accused. Whether a reviewer gets a finding depends on
+      which feed happened to carry the pitch.
+
+  - id: thr-h026
+    a: "M9x1"
+    b: "M9x1.25"
+    expect: contradiction
+    source: "ISO 261: coarse pitch for M9 is 1.25 mm; 1 mm is a listed fine pitch for M9"
+    rationale: >-
+      With both pitches written out the missing table row stops mattering and the comparator is
+      right again. Kept as the control for thr-h020.
+
+  # == 3. ISO 965-1 tolerance classes ==============================================================
+  - id: thr-h030
+    a: "M8x1.25-6g"
+    b: "M8x1.25-6g6g"
+    expect: equivalent
+    source: >-
+      ISO 965-1: the class designation is the pitch-diameter class followed by the crest-diameter
+      class, and where the two are the same the symbols are not repeated -- 6g6g and 6g are the same
+      designation
+    rationale: >-
+      Not a convention or a house style: the abbreviation is defined in the standard. The comparator
+      string-compares the class field and reports a contradiction between a thread and itself.
+      Drawings written by a tolerance-conscious draughtsman spell it 6g6g; ERP records spell it 6g,
+      so this pair appears the first time a drawing set meets a master-data extract.
+
+  - id: thr-h031
+    a: "M8x1.25-6H6H"
+    b: "M8x1.25-6H"
+    expect: equivalent
+    source: "ISO 965-1: 6H6H abbreviates to 6H, the two class designations being identical"
+
+  - id: thr-h032
+    a: "M8x1.25-6g"
+    b: "M8x1.25-6G"
+    expect: contradiction
+    source: >-
+      ISO 965-1: the tolerance-position letter is a capital for internal threads and small for
+      external threads, so 6g is an external thread and 6G is an internal thread
+    rationale: >-
+      One of these is a bolt and the other is a nut. _compare_thread_class upper-cases both sides
+      before comparing, so the single character carrying the entire external/internal distinction is
+      destroyed and the pair resolves silently. Compare thr-h066: the identical distinction written
+      in the unified system as 2A against 2B IS caught, only because A and B happen to be capitals
+      already.
+
+  - id: thr-h033
+    a: "M8x1.25-6H"
+    b: "M8x1.25-6h"
+    expect: contradiction
+    source: "ISO 965-1: 6H is an internal-thread class; 6h is an external-thread close-tolerance class"
+
+  - id: thr-h034
+    a: "M8x1.25-5g6g"
+    b: "M8x1.25-6g"
+    expect: contradiction
+    source: >-
+      ISO 965-1: 5g6g is grade 5 on the pitch diameter and grade 6 on the crest diameter; 6g is
+      grade 6 on both. Different acceptance limits on the pitch diameter.
+    rationale: >-
+      The control for thr-h030. Two-part classes that genuinely differ must still contradict, so the
+      fix for 6g6g cannot be "ignore the second half of the class".
+
+  - id: thr-h035
+    a: "M8x1.25-6e"
+    b: "M8x1.25-6g"
+    expect: contradiction
+    source: "ISO 965-1: e and g are different tolerance positions (different fundamental deviation)"
+
+  - id: thr-h036
+    a: "M8x1.25-6g"
+    b: "M8x1.25"
+    expect: agreement_specific
+    source: "ISO 965-1 tolerance class present on the catalog side and omitted by the evidence"
+
+  - id: thr-h037
+    a: "M8x1.25"
+    b: "M8x1.25-6g"
+    expect: granularity
+    source: "ISO 965-1 tolerance class is a refinement the catalog omitted"
+
+  # == 4. Length suffix: the second number is not always a pitch ===================================
+  - id: thr-h040
+    a: "M8x1.25x40"
+    b: "M8x1.25"
+    expect: agreement_specific
+    source: >-
+      ISO 261:1998 Table 2: the largest pitch listed for M8 is 1,25 mm, so the trailing 40 in
+      M8x1.25x40 is the fastener length in millimetres, not a third thread parameter.
+      Corrected 2026-08-19: an earlier revision argued this from a claimed 6 mm ceiling on the
+      whole metric pitch series, which the standard contradicts -- Table 2 lists a pitch of
+      8 mm at M125 and M130.
+      The largest COARSE pitch is 6 mm (M64, M68), and above M68 Table 2 gives no coarse pitch
+      at all. The conclusion is unaffected; the argument now rests on the M8 row, which is the
+      row that actually decides it.
+    rationale: >-
+      The single commonest way a fastener is written on a purchase line. The grammar has no
+      production for a length suffix, so the whole value refuses and the record is never audited. A
+      refusal is honest, but this is a coverage hole on the highest-volume string in the family.
+
+  - id: thr-h041
+    a: "M12x1.75x60"
+    b: "M12"
+    expect: agreement_specific
+    source: "ISO 261: coarse pitch for M12 is 1.75 mm; 60 is a length in mm -- no metric pitch is 60 mm"
+
+  - id: thr-h042
+    a: "M8-1.25-40"
+    b: "M8x1.25"
+    expect: agreement_specific
+    source: "ISO 261 coarse pitch 1.25 mm for M8; DIN drawings separate all three fields with hyphens"
+
+  - id: thr-h043
+    a: "M8x40"
+    b: "M8x1.25"
+    expect: equivalent
+    source: >-
+      ISO 261:1998 Table 2: the largest M8 pitch is 1,25 mm, so 40 in 'M8x40' cannot be a pitch
+      -- it is the 40 mm length of an M8 coarse bolt. Corrected 2026-08-19: an earlier revision
+      also claimed a 6 mm ceiling on the whole metric pitch series. The true maximum is 8 mm
+      (Table 2, M125 and M130). Only the M8 row is load-bearing here.
+    rationale: >-
+      The dangerous member of this group, and the only one that produces an accusation rather than a
+      refusal. The parser accepts 40 as a pitch and the comparator reports 'pitches differ: 40 mm
+      against 1.25 mm'. A reviewer reads that finding, sees an ordinary M8x40 cap screw, and stops
+      trusting the queue. The guard is arithmetic, not judgment: a second number larger than the
+      nominal diameter is not a pitch.
+
+  - id: thr-h044
+    a: "M6x30"
+    b: "M6"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M6 is 1 mm; the M6 pitch column tops out at 1 mm, so 30 is a length"
+
+  - id: thr-h045
+    a: "M10x50"
+    b: "M10x1.5"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M10 is 1.5 mm; no metric pitch in the standard is 50 mm"
+
+  # == 5. Unified inch: series identity, table gaps, the 8-series ==================================
+  - id: thr-h050
+    a: "1/4-20 UNJC"
+    b: "1/4-20 UNC"
+    expect: contradiction
+    source: >-
+      ASME B1.15: UNJ external threads carry a controlled 0.15011P-0.18042P root radius and the
+      minor diameter of both external and internal threads is increased above the B1.1 UN form;
+      UNJ external threads assemble only with UNJ internal threads
+    rationale: >-
+      Same nominal, same TPI, different thread form -- thr-106's NPT/BSPT trap moved into the
+      fastener domain. _compare_thread never looks at the series field, so the J is discarded and an
+      aerospace fatigue-rated fastener is declared identical to a hardware-store one.
+
+  - id: thr-h051
+    a: "3/8-24 UNJF"
+    b: "3/8-24 UNF"
+    expect: contradiction
+    source: "ASME B1.15: UNJF is the controlled-root-radius fine series, not interchangeable with B1.1 UNF"
+
+  - id: thr-h052
+    a: "3/8-16 UNC-2A"
+    b: "3/8-16 UNJC-2A"
+    expect: contradiction
+    source: "ASME B1.15 UNJC against ASME B1.1 UNC; an identical tolerance class does not make them one thread"
+    rationale: "The class matching on both sides removes the last cue a comparator could have used."
+
+  - id: thr-h053
+    a: "1/2-20 UNF"
+    b: "1/2-20 UNJF"
+    expect: contradiction
+    source: "ASME B1.15: the UNJF root radius and increased minor diameter distinguish it from B1.1 UNF"
+
+  - id: thr-h054
+    a: "1 3/4 UNC"
+    b: "1 3/4-5 UNC"
+    expect: equivalent
+    source: "ASME B1.1: the UNC coarse series gives 5 TPI at 1 3/4 in"
+    rationale: >-
+      The inch-side twin of thr-h020. UNC_TPI stops at 1 1/2 in, so above that the series lookup
+      cannot complete and a bare 'UNC' is raised against its own TPI as a granularity finding.
+      Structural bolting above 1 1/2 in is not a rare corner of a fastener catalog.
+
+  - id: thr-h055
+    a: "1 1/4 UNF"
+    b: "1 1/4-12 UNF"
+    expect: equivalent
+    source: "ASME B1.1: the UNF fine series gives 12 TPI at 1 1/4 in"
+
+  - id: thr-h056
+    a: "2-4.5 UNC"
+    b: "2 UNC"
+    expect: equivalent
+    source: "ASME B1.1: the UNC coarse series gives 4.5 TPI at 2 in"
+    rationale: >-
+      The direction that escapes the missing-row bug: with the TPI on the catalog side the
+      comparator returns A_MORE_SPECIFIC and raises nothing, while thr-h054 with the same shape and
+      the sides swapped is accused. Kept next to thr-h054 to make the asymmetry legible.
+
+  - id: thr-h057
+    a: "1-8 UN"
+    b: "1-8 UNC"
+    expect: equivalent
+    source: >-
+      ASME B1.1: where a constant-pitch series coincides with the C, F or EF series the C, F or EF
+      designation takes precedence -- 1 in at 8 TPI is UNC, and '1-8 UN' names that same thread
+    rationale: >-
+      The 8-UN constant-pitch series is the specified thread form for ASTM A193 B7 and A320 studs,
+      so this string is on every flange-bolt datasheet ever written. PREFILTER requires a letter
+      after 'UN' (\bUN[CFEJSR]), so a bare UN designation never reaches a grammar that would parse
+      it perfectly well.
+
+  - id: thr-h058
+    a: "2-8 UN"
+    b: "2-4.5 UNC"
+    expect: contradiction
+    source: "ASME B1.1: 2 in UNC is 4.5 TPI; the 8-UN constant-pitch series puts 8 TPI on that diameter"
+    rationale: >-
+      The same prefilter hole as thr-h057, but here the two values genuinely contradict. The
+      abstention is content-blind -- it fires identically whether the pair agrees or is a defect --
+      which is what makes a coverage hole worse than it first looks.
+
+  - id: thr-h059
+    a: "1 1/2-8 UN"
+    b: "1 1/2-6 UNC"
+    expect: contradiction
+    source: "ASME B1.1: 1 1/2 in UNC is 6 TPI, against 8 TPI in the 8-UN constant-pitch series"
+    rationale: >-
+      The control for thr-h058. A mixed-number size matches the prefilter's fraction branch, so the
+      identical designation form gets through and is judged correctly. Only whole-inch sizes fall in
+      the hole -- and whole-inch is where the 8-series is mostly used.
+
+  - id: thr-h060
+    a: "1 1/4-8 UN"
+    b: "1 1/4-7 UNC"
+    expect: contradiction
+    source: "ASME B1.1: 1 1/4 in UNC is 7 TPI, against 8 TPI in the 8-UN constant-pitch series"
+
+  - id: thr-h061
+    a: "#12-32 UNEF"
+    b: "#12-32"
+    expect: equivalent
+    source: "ASME B1.1: the UNEF extra-fine series gives 32 TPI at #12"
+    rationale: >-
+      UNEF is keyed on the size/TPI pair, not on diameter alone, so a coarse-pitch-style lookup keyed
+      only on the nominal would answer #12-24 here. The comparator gets it right.
+
+  - id: thr-h062
+    a: "1 1/16-18 UNEF"
+    b: "1 1/16-18"
+    expect: equivalent
+    source: "ASME B1.1: the UNEF extra-fine series gives 18 TPI at 1 1/16 in"
+
+  - id: thr-h063
+    a: "1/2-28 UNEF"
+    b: "1/2-20 UNF"
+    expect: contradiction
+    source: "ASME B1.1: 1/2 in is 28 TPI in UNEF and 20 TPI in UNF"
+
+  - id: thr-h064
+    a: "0.375-16 UNC"
+    b: "3/8-16 UNC"
+    expect: equivalent
+    source: "0.375 in and 3/8 in are the same diameter; ASME B1.1 permits the decimal form"
+    rationale: >-
+      Works because the unified builder computes nominal_mm from the designation and compares that.
+      Contrast thr-h084, where the identical substitution on a pipe thread is a contradiction,
+      because pipe specs never populate nominal_mm and the comparison falls back to the raw string.
+
+  - id: thr-h065
+    a: "0.25-20"
+    b: "1/4-20 UNC"
+    expect: equivalent
+    source: "ASME B1.1: 0.250 in at 20 TPI is the UNC coarse series by definition"
+    rationale: >-
+      A decimal-inch size with no series word matches no PREFILTER branch -- the fraction branch
+      needs a slash and the UN branch needs a letter after UN -- so it is declined outright, while
+      thr-h064's identical size with 'UNC' appended sails through.
+
+  - id: thr-h066
+    a: "1/4-20 UNC-2A"
+    b: "1/4-20 UNC-2B"
+    expect: contradiction
+    source: "ASME B1.1: class 2A is an external thread and class 2B is an internal thread"
+    rationale: >-
+      2A and 2B are the standard mating PAIR, which is exactly why this looks benign and is not. The
+      comparator is not asked whether two parts fit together; it is asked whether two statements
+      about ONE part's thread can both be true, and a single feature is either the bolt or the hole.
+      The metric spelling of this same distinction is missed -- see thr-h032.
+
+  - id: thr-h067
+    a: "1/4-20 UNC-2A"
+    b: "1/4-20 UNC-3A"
+    expect: contradiction
+    source: "ASME B1.1: class 2A and class 3A are different tolerance grades on an external thread"
+
+  - id: thr-h068
+    a: "1/4-20 UNC-2B"
+    b: "1/2-13 UNC-2A"
+    expect: contradiction
+    source: "ASME B1.1: different nominal diameters (1/4 in against 1/2 in) and different classes"
+    rationale: >-
+      The unambiguous version of thr-h066: whatever one thinks about 2A against 2B on one nominal,
+      2A against 2B on two different nominals is a contradiction on the size alone.
+
+  - id: thr-h069
+    a: "#6-32 UNC"
+    b: "#6-40 UNF"
+    expect: contradiction
+    source: "ASME B1.1: #6 is 32 TPI in UNC and 40 TPI in UNF"
+
+  - id: thr-h070
+    a: "No. 10-32"
+    b: "#10-32 UNF"
+    expect: equivalent
+    source: "ASME B1.1: #10 at 32 TPI is the UNF series; 'No. 10' and '#10' are spelling variants"
+
+  # == 6. Whitworth: the same TPI, a different thread form =========================================
+  # BS 84 Whitworth threads use a 55 degree flank angle against the 60 degrees of ISO and Unified.
+  # At several sizes the TPI is numerically identical to UNC, so a comparator working from size and
+  # thread count alone declares them equal. PREFILTER has no BSW/BSF branch, so instead of getting
+  # this wrong the pipeline declines -- the right instinct, but it means the check does not exist.
+  - id: thr-h071
+    a: "1/4 BSW"
+    b: "1/4-20 UNC"
+    expect: contradiction
+    source: >-
+      BS 84: 1/4 in BSW is 20 TPI on a 55 degree Whitworth form; ASME B1.1 1/4-20 UNC is 20 TPI on a
+      60 degree form
+    rationale: >-
+      Same diameter, same thread count, different flank angle -- thr-106's NPT/BSPT trap in the
+      fastener domain. These will start together and then bind. Nothing in the pipeline can see it
+      because the value never reaches a grammar.
+
+  - id: thr-h072
+    a: "3/8 BSW"
+    b: "3/8-16 UNC"
+    expect: contradiction
+    source: "BS 84: 3/8 in BSW is 16 TPI at 55 degrees; ASME B1.1 3/8-16 UNC is 16 TPI at 60 degrees"
+
+  - id: thr-h073
+    a: "1/2 BSW"
+    b: "1/2-13 UNC"
+    expect: contradiction
+    source: "BS 84: 1/2 in BSW is 12 TPI at 55 degrees; ASME B1.1 1/2 in UNC is 13 TPI at 60 degrees"
+
+  - id: thr-h074
+    a: "3/8 BSF"
+    b: "3/8-24 UNF"
+    expect: contradiction
+    source: "BS 84: 3/8 in BSF is 20 TPI at 55 degrees; ASME B1.1 3/8 in UNF is 24 TPI at 60 degrees"
+
+  - id: thr-h075
+    a: "1/4 BSW"
+    b: "1/4 BSW"
+    expect: equivalent
+    source: "BS 84: identical designations of the same Whitworth coarse thread"
+    rationale: >-
+      A value that cannot even be compared with itself. Included because it isolates the coverage
+      hole from any question about the verdict: there is no domain difficulty here at all.
+
+  # == 7. Pipe threads =============================================================================
+  - id: thr-h080
+    a: "NPT 1/2-14"
+    b: "NPTF 1/2-14"
+    expect: contradiction
+    source: >-
+      ASME B1.20.1 (NPT) against ASME B1.20.3 (NPTF dryseal): NPTF controls crest and root
+      truncation so that metal-to-metal contact occurs at the roots and crests and the joint seals
+      without compound; NPT requires a sealant and is gauged to B1.20.1 tolerances only
+    rationale: >-
+      PIPE_SERIES maps NPT and NPTF onto the same system string 'pipe_npt', and _compare_thread never
+      compares the series field, so the F is discarded -- the canonical text for NPTF comes back as
+      'NPT 1/2-14'. A port catalogued as NPT where the datasheet says NPTF loses the dryseal claim
+      the customer is buying, and these two designations are the single most commonly confused pair
+      in fluid power.
+
+  - id: thr-h081
+    a: "NPTF 1/8"
+    b: "NPT 1/8"
+    expect: contradiction
+    source: "ASME B1.20.3 dryseal against ASME B1.20.1; different truncation tolerances and gauging"
+
+  - id: thr-h082
+    a: "G 1/2"
+    b: "Rp 1/2"
+    expect: contradiction
+    source: >-
+      ISO 228-1 G is a parallel pipe thread for joints NOT made pressure-tight on the threads;
+      ISO 7-1 Rp is the parallel internal thread of a joint that IS made pressure-tight on the
+      threads. The same nominal dimensions, a different pitch-diameter tolerance and a different
+      minor diameter.
+    rationale: >-
+      Both map to system 'pipe_bspp' and resolve silently. The nominal dimensions really are shared,
+      which is what makes the collapse tempting -- but the two standards differ precisely on whether
+      the thread seals, and a port sold as sealing when it is a G thread leaks.
+
+  - id: thr-h083
+    a: "BSP 1/2"
+    b: "G 1/2"
+    expect: granularity
+    source: >-
+      'BSP' names the British Standard Pipe family, which covers both the parallel (ISO 228-1 G) and
+      taper (ISO 7-1 R/Rc) forms; ISO 228-1 G 1/2 is one member of it
+    rationale: >-
+      Under-specified, not wrong -- the §3.3 pattern applied to a pipe family name. The comparator
+      gives BSP its own system string 'pipe_bsp' and then reports that the two 'do not mate'. That
+      is an accusation built entirely on the tool's internal bookkeeping, which is the shape of
+      finding a reviewer trusts least.
+
+  - id: thr-h084
+    a: "0.5 NPT"
+    b: "1/2 NPT"
+    expect: equivalent
+    source: "ASME B1.20.1: 0.5 in and 1/2 in are the same nominal pipe size, 14 TPI either way"
+    rationale: >-
+      _nominals_match compares nominal_designation as a string and falls back to nominal_mm, which
+      the pipe builder never populates -- so '0.5' against '1/2' is reported as a contradiction on
+      the size. thr-h064 shows the unified path doing the same substitution correctly, which makes
+      this an inconsistency inside one comparator rather than a missing capability.
+
+  - id: thr-h085
+    a: "NPT 3 1/2"
+    b: "NPT 3 1/2-8"
+    expect: equivalent
+    source: "ASME B1.20.1: NPT is 8 TPI at 3 1/2 in nominal pipe size"
+    rationale: >-
+      NPT_TPI carries 2 1/2, 3, 4, 6 and 8 in but skips 3 1/2 and 5 in, so the completion fails on
+      two ordinary sizes and raises a granularity finding on a pair that agrees.
+
+  - id: thr-h086
+    a: "BSPP 5"
+    b: "BSPP 5-11"
+    expect: equivalent
+    source: "ISO 228-1: G 5 in is 11 TPI (pitch 2.309 mm), as are all sizes from 1 in to 6 in"
+    rationale: "BSP_TPI stops at 4 in; ISO 228-1 runs to 6 in."
+
+  - id: thr-h087
+    a: "G 1 1/4"
+    b: "BSPP 1 1/4"
+    expect: equivalent
+    source: "ISO 228-1: G and BSPP are the same parallel pipe thread designation, 11 TPI at 1 1/4 in"
+    rationale: >-
+      G 1 1/4 and G 1 1/2 are among the commonest hydraulic port sizes in existence. The grammar
+      handles them (psize accepts MIXED), but PREFILTER's G branch is '\bG\s*\d+\s*/', which demands
+      the slash immediately after the first number group -- so every mixed-number G size is rejected
+      before parsing. Spelling the identical thread 'BSPP 1 1/4' gets through, because BSPP has its
+      own prefilter branch.
+
+  - id: thr-h088
+    a: "G 1 1/2"
+    b: "BSPP 1 1/2"
+    expect: equivalent
+    source: "ISO 228-1: G and BSPP name the same parallel pipe thread, 11 TPI at 1 1/2 in"
+
+  - id: thr-h089
+    a: "Rc 1/2"
+    b: "Rp 1/2"
+    expect: contradiction
+    source: >-
+      ISO 7-1: Rc is the TAPER internal thread and Rp is the PARALLEL internal thread; they are
+      alternative internal halves of a jointing pair and are not the same feature
+    rationale: >-
+      Rc is a PIPESERIES terminal in the grammar AND a PIPE_SERIES table entry with tapered=True --
+      the capability is fully built. It is unreachable because PREFILTER's branch is
+      '\bRp?\s*\d+\s*/', which matches R and Rp and cannot match Rc. Table and grammar work that no
+      input can ever exercise.
+
+  - id: thr-h090
+    a: "Rc 3/4"
+    b: "R 3/4"
+    expect: contradiction
+    source: "ISO 7-1: Rc is the taper internal thread and R the taper external thread of the joint"
+
+  - id: thr-h091
+    a: "Rc 1/2"
+    b: "Rc 1/2"
+    expect: equivalent
+    source: "ISO 7-1: identical designations of the same taper internal thread"
+    rationale: "Isolates the prefilter hole from any question of verdict, as thr-h075 does for BSW."
+
+  - id: thr-h092
+    a: "Rp 1/2"
+    b: "R 1/2"
+    expect: contradiction
+    source: "ISO 7-1: Rp is the parallel internal thread and R the taper external thread"
+    rationale: "The control for thr-h089 -- Rp and R both reach the grammar and are judged correctly."
+
+  - id: thr-h093
+    a: "R 1/2"
+    b: "BSPT 1/2"
+    expect: equivalent
+    source: "ISO 7-1 R is the current designation for the taper external thread formerly BS 21 BSPT"
+
+  - id: thr-h094
+    a: "NPS 1/2-14"
+    b: "NPSM 1/2-14"
+    expect: granularity
+    source: >-
+      ASME B1.20.1: NPS names the straight pipe thread family (NPSC, NPSM, NPSL, NPSH); NPSM is the
+      free-fitting mechanical member of it
+    rationale: >-
+      The evidence names a member of the family the catalog names. Under-specified, not wrong. The
+      comparator maps both to 'pipe_nps' and calls them plainly equal, losing the refinement in the
+      opposite direction from thr-h083.
+
+  - id: thr-h095
+    a: "NPS 1/2"
+    b: "NPT 1/2"
+    expect: contradiction
+    source: "ASME B1.20.1: NPS is a straight pipe thread and NPT is tapered 1:16"
+
+  - id: thr-h096
+    a: "G 1/4"
+    b: "NPT 1/4"
+    expect: contradiction
+    source: "ISO 228-1 parallel 55 degree against ASME B1.20.1 taper 60 degree"
+
+  - id: thr-h097
+    a: "1/4 NPT"
+    b: "1/4 BSPT"
+    expect: contradiction
+    source: "ASME B1.20.1 NPT (18 TPI, 60 deg) against ISO 7-1 BSPT (19 TPI, 55 deg) at 1/4 in"
+
+  - id: thr-h098
+    a: "1/2 in NPT"
+    b: "NPT 1/2-14"
+    expect: equivalent
+    source: "ASME B1.20.1: 1/2 NPT is 14 TPI; the 'in' and the series-first word order are notation"
+
+  - id: thr-h099
+    a: "NPT 1 1/4"
+    b: "NPT 1 1/4-11.5"
+    expect: equivalent
+    source: "ASME B1.20.1: NPT is 11.5 TPI at 1 1/4 in"
+
+  # == 8. Trapezoidal, Acme, MJ, multi-start =======================================================
+  - id: thr-h100
+    a: "Tr20x4"
+    b: "Tr20x4"
+    expect: equivalent
+    source: "ISO 2901/2904: Tr 20 x 4 is a 20 mm trapezoidal thread of 4 mm pitch, 30 degree flank angle"
+    rationale: >-
+      There is no trapezoidal grammar at all, so the leadscrew half of the mechanical world is
+      invisible to the auditor. Declining is correct behaviour for an unknown form; the case records
+      the size of the hole rather than accusing the code of a wrong answer.
+
+  - id: thr-h101
+    a: "Tr20x8P4"
+    b: "Tr20x4"
+    expect: contradiction
+    source: >-
+      ISO 2901 multi-start designation: Tr 20 x 8 (P4) is lead 8 mm on pitch 4 mm, i.e. a 2-start
+      thread (starts = lead / pitch = 2); Tr 20 x 4 is single-start with lead 4 mm
+    rationale: >-
+      The lead-against-pitch trap. The two share a diameter and a pitch and differ only in lead, so
+      a comparator that reads the first number after the x as "the pitch" calls them equal. A 2-start
+      screw advances twice as far per turn as the single-start one it replaces.
+
+  - id: thr-h102
+    a: "Tr20x4"
+    b: "3/4-6 Acme"
+    expect: contradiction
+    source: >-
+      ISO 2901 trapezoidal threads use a 30 degree flank angle; ASME B1.5 general-purpose Acme uses
+      29 degrees. Different diameter series, and not interchangeable.
+    rationale: >-
+      Nominal 20 mm against 0.75 in (19.05 mm) is close enough that a numeric comparator with a
+      tolerance band would pair them. They are different thread forms in different unit systems.
+
+  - id: thr-h103
+    a: "MJ8x1.25"
+    b: "M8x1.25"
+    expect: contradiction
+    source: >-
+      ASME B1.21M: the MJ profile has a 0.15011P-0.18042P controlled root radius on the external
+      thread and an increased minor diameter on both external and internal threads relative to the
+      B1.13M M profile
+    rationale: >-
+      The metric twin of thr-h050. Identical notation apart from one letter, genuinely different
+      geometry, and an aerospace fastener standard that exists because the difference matters under
+      fatigue.
+
+  - id: thr-h104
+    a: "M8x1.25 2-start"
+    b: "M8x1.25"
+    expect: contradiction
+    source: >-
+      Lead = pitch x number of starts: a 2-start M8x1.25 has a 2.5 mm lead against 1.25 mm for the
+      single-start thread of the same designation
+    rationale: >-
+      The same pitch, the same diameter, twice the axial travel per turn. The pitch fields agree, so
+      the only thing distinguishing them is the word the parser cannot read.
+
+  # == 9. Handedness ===============================================================================
+  - id: thr-h110
+    a: "M8x1.25 RH"
+    b: "M8x1.25"
+    expect: equivalent
+    source: >-
+      ISO 965-1 / ISO 261: right-hand is the default and is not marked; only left-hand threads carry
+      a designator (LH), so a bare designation is a right-hand claim rather than silence about hand
+    rationale: >-
+      A documented judgment call, and the only defensible one: if bare meant "hand unknown" then
+      every ordinary bolt in the corpus would be undetermined against every other ordinary bolt. The
+      comparator agrees, and thr-h113 shows the claim has teeth in the other direction.
+
+  - id: thr-h111
+    a: "M8x1.25"
+    b: "M8x1.25 RH"
+    expect: equivalent
+    source: >-
+      ISO 965-1: right-hand is the unmarked default, so the explicit RH adds no fact.
+      Re-sourced 2026-08-19: this was attributed to ISO 261, but ISO 261:1998 clause 4 states
+      that a thread "shall be designated according to ISO 965-1" -- the designation rules,
+      including the hand designator, live in ISO 965-1, not in ISO 261.
+
+  - id: thr-h112
+    a: "M8x1.25 RH"
+    b: "M8x1.25 LH"
+    expect: contradiction
+    source: "ISO 965-1: LH is the left-hand designator; a thread has exactly one hand"
+
+  - id: thr-h113
+    a: "3/8-16 UNC LH"
+    b: "3/8-16 UNC"
+    expect: contradiction
+    source: >-
+      ASME B1.1: an unmarked unified designation is right-hand, so an explicit LH contradicts it
+      rather than refining it
+    rationale: >-
+      The consequence of thr-h110's reading. Having decided bare means RH, the tool must accuse here
+      -- and it should, because a left-hand thread substituted for a right-hand one backs itself out
+      under vibration.
+
+  - id: thr-h114
+    a: "M8x1.25 LH"
+    b: "M8 LH"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M8 is 1.25 mm; LH stated on both sides"
+
+  - id: thr-h115
+    a: "M8 LH"
+    b: "M8x1"
+    expect: contradiction
+    source: "ISO 261: 1 mm is a fine pitch for M8 and the coarse is 1.25 mm; LH against unmarked RH"
+    rationale: "Two independent contradictions at once. Reporting either is correct; reporting neither is not."
+
+  # == 10. Notation ================================================================================
+  - id: thr-h120
+    a: "m8"
+    b: "M8"
+    expect: equivalent
+    source: "ISO 261: M8 is the designation; the case of the M prefix is typography, not information"
+    rationale: >-
+      Lower-case 'm8' is what a spreadsheet with autocorrect off produces. PREFILTER is
+      case-insensitive so the value is admitted, and the grammar's MPREFIX is /M(?![A-Za-z])/ with
+      no i-flag so it then refuses -- the two halves of one parser disagree about case, and the
+      record is declined rather than audited.
+
+  - id: thr-h121
+    a: "m10x1.5"
+    b: "M10x1.5"
+    expect: equivalent
+    source: "ISO 261: coarse pitch for M10 is 1.5 mm; the prefix case is typography"
+
+  - id: thr-h122
+    a: "M8–1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: >-
+      ISO 261 designation M8x1.25; the separator here is U+2013 EN DASH, which word processors
+      substitute for a typed hyphen automatically
+    rationale: >-
+      threads.yaml already accepts the ASCII hyphen (thr-003). The en dash is that same character
+      after one round trip through a document editor, and it refuses.
+
+  - id: thr-h123
+    a: "M8 x 1.25 mm"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261: the pitch is expressed in millimetres by definition, so the unit word adds no fact"
+
+  - id: thr-h124
+    a: "M8×1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "U+00D7 MULTIPLICATION SIGN against ASCII x in the ISO 261 designation"
+
+  - id: thr-h125
+    a: "Ｍ８ｘ１．２５"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "Full-width forms of the ISO 261 designation M8x1.25, as produced by CJK-locale input"
+
+  - id: thr-h126
+    a: "M8 x 1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261 designation M8x1.25 separated by U+00A0 NO-BREAK SPACE"
+
+  - id: thr-h127
+    a: "M8*1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "The asterisk is a keyboard substitute for the multiplication sign on DIN drawings"
+
+  - id: thr-h128
+    a: "M08x1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261: a leading zero on the nominal diameter is zero-padding from a fixed-width feed"
+
+  - id: thr-h129
+    a: "M8.0x1.25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261: 8.0 mm and 8 mm are the same nominal diameter"
+
+  - id: thr-h130
+    a: "M8 x 1,25"
+    b: "M8x1.25"
+    expect: equivalent
+    source: "ISO 261 designation with a comma decimal separator, as written across continental Europe"
+
+  - id: thr-h131
+    a: "½ NPT"
+    b: "1/2 NPT"
+    expect: equivalent
+    source: "ASME B1.20.1: U+00BD VULGAR FRACTION ONE HALF against the ASCII fraction, 14 TPI either way"
+
+  - id: thr-h132
+    a: "M8x1.25 6g"
+    b: "M8x1.25-6g"
+    expect: equivalent
+    source: "ISO 965-1: the tolerance class is separated from the designation by a hyphen or a space"
+
+  # == 11. Generic terms against thread designations ===============================================
+  - id: thr-h140
+    a: "Male thread"
+    b: "M8x1.25"
+    expect: granularity
+    source: "Generic connection term against a specific ISO 261 designation"
+
+  - id: thr-h141
+    a: "Metric thread"
+    b: "3/8-16 UNC"
+    expect: contradiction
+    source: "A generic restricted to the metric system does not cover an ASME B1.1 unified thread"
+
+  - id: thr-h142
+    a: "NPT"
+    b: "G 1/2"
+    expect: contradiction
+    source: "ASME B1.20.1 NPT does not cover an ISO 228-1 parallel pipe thread"
+
+  - id: thr-h143
+    a: "Threaded"
+    b: "Rc 1/2"
+    expect: granularity
+    source: "ISO 7-1 Rc 1/2 is a specific thread; 'Threaded' is the generic that covers it"
+    rationale: >-
+      The generic side resolves fine; the specific side is the one the prefilter cannot reach
+      (thr-h089), so the subsumption rule never gets a chance to run. A coverage hole on one value
+      silently disables a rule that has nothing to do with it.
+
+  - id: thr-h144
+    a: "Threaded"
+    b: "1/4 BSW"
+    expect: granularity
+    source: "BS 84 1/4 in BSW is a specific thread; 'Threaded' is the generic that covers it"

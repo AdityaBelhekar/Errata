@@ -1,0 +1,74 @@
+# FR-2.4 -- the R1 class allow-list. Configuration, not hardcoded logic.
+#
+# "R1 scope limited to low-voltage circuit protection ETIM classes."
+#
+# Every class id and description below was read out of ETIM 10.0 ALL-SECTORS
+# (ETIMARTCLASS.csv, released 2024-12-05, ODC-By, sha256 in data/reference/manifest.json) on
+# 2026-08-20 -- not recalled. The whole allow-list sits in one ETIM group, EG000020 "Circuit
+# breakers and fuses", which is a fact about the taxonomy rather than a choice we made.
+#
+# The list is deliberately short. A wider scope is not more product, it is more surface the
+# calibration has never seen: FR-6.2's `calibration_out_of_distribution` exists precisely so that
+# a class nobody has labelled declines rather than guesses, and adding classes here without
+# labelled data would convert honest abstentions into confident findings.
+
+name: r1-low-voltage-circuit-protection
+release: "10.0"
+note: >-
+  Read from ETIM 10.0 ALL-SECTORS CSV (2024-12-05, ODC-By) on 2026-08-20. Attribution required by
+  the licence and carried in every report that uses the model.
+
+classes:
+  - class_id: EC000042
+    description: Miniature circuit breaker (MCB)
+    group: EG000020
+    reason: >-
+      The R1 target class. Both demonstration datasheets (ABB S200, S200 M UC) are MCB ordering
+      catalogues, and the gate-2 corpus is drawn from them.
+
+  - class_id: EC000003
+    description: Residual current circuit breaker (RCCB)
+    group: EG000020
+    reason: >-
+      The nearest neighbour to an MCB in both merchandising and language, and therefore the class
+      most likely to be resolved wrongly. In scope so that a wrong resolution is a measurable
+      error rather than an out-of-scope decline.
+
+  - class_id: EC000271
+    description: Miniature circuit breaker (MCB) plug model
+    group: EG000020
+    reason: >-
+      Shares the MCB attribute vocabulary and differs by mounting. Included to keep the resolver
+      honest about a distinction the surface form frequently does not carry -- when it cannot
+      separate this from EC000042 it must abstain (FR-2.3), not pick.
+
+  - class_id: EC001047
+    description: Selective main line circuit breaker
+    group: EG000020
+    reason: >-
+      A distinct device (SLS / selective main) that trade descriptions routinely call a circuit
+      breaker. In scope because a catalog calling it an MCB is a real classification defect.
+
+excluded:
+  - class_id: EC000905
+    description: Earth leakage circuit breaker
+    reason: >-
+      DELIBERATELY OUT OF SCOPE, and this is load-bearing rather than an omission. ETIM's
+      EC000905 is the RCBO-shaped class -- it carries both EF000889 "Release characteristic" and
+      EF002358 "Rated fault current" -- and `errata_valuesem` leaves the term unregistered because
+      three live readings exist and none can be picked from the surface form. A test in
+      valuesem/tests pins that non-registration. Do not "helpfully" map it here either: an audit
+      that resolves a catalog RCBO into this class inherits an ambiguity the value layer has
+      already declined to resolve.
+
+  - class_id: EC002695
+    description: Earth leakage circuit breaker with auxiliary device
+    reason: >-
+      Same ambiguity as EC000905, one accessory further out. Out of scope for the same reason.
+
+  - class_id: EC002297
+    description: Residual current circuit breaker (RCCB) module
+    reason: >-
+      A module rather than a device. Its attribute list overlaps EC000003 enough to attract
+      retrieval and it describes a different physical thing; excluded until there is labelled data
+      that says the resolver can tell them apart.

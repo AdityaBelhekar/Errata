@@ -1,0 +1,46 @@
+# A demonstration catalog for `errata-demo`.
+#
+# HOW TO READ THIS FILE, because the honesty rule applies to demos too.
+#
+# The SKU identifiers and product names below are ILLUSTRATIVE -- there is no ACME Electrical, and
+# no claim is made that any real manufacturer ships these part numbers.
+#
+# Every VALUE PAIR, by contrast, is real. Each attribute names a `case:` id from the equivalence
+# suite, and the demo loader pulls the catalog value, the datasheet value and the standards
+# citation straight out of that case. The loader FAILS if a case id does not exist. So nothing in
+# the output is a value someone typed to make the demo look good -- each one is a hand-labelled,
+# cited pair that the R0 gate also runs against, and if a fix changes the engine's mind the demo
+# changes with it.
+#
+# What the demo is NOT: it is not evidence grounding. The real product must point at the box on the
+# page where the datasheet value was found (FR-1.2-1.5). That pipeline does not exist yet, and this
+# demo does not pretend it does -- the "datasheet value" here is supplied, not located.
+
+title: "ACME Electrical Supply -- catalog audit, circuit protection & fasteners"
+
+skus:
+  - sku: "ACME-MCB-C16-1P"
+    name: "Miniature circuit breaker, 16 A, curve C, 1 pole"
+    attributes:
+      - { case: trm-h062, label: "Device type" }
+      - { case: trm-004,  label: "Tripping characteristic" }
+      - { case: trm-103,  label: "Number of poles" }
+      - { case: ing-001,  label: "Degree of protection" }
+      - { case: trm-h073, label: "Auxiliary contact fitted" }
+      - { case: pkg-101,  label: "Packaging / order unit" }
+
+  - sku: "ACME-BOLT-M8X40-A4"
+    name: "Hex head bolt, M8 x 40, stainless"
+    attributes:
+      - { case: mat-002,  label: "Material grade" }
+      - { case: mat-h019, label: "Surface coating" }
+      - { case: uni-001,  label: "Head width across flats" }
+      - { case: thr-001,  label: "Thread designation" }
+
+  - sku: "ACME-VLV-316L-DN25"
+    name: "Ball valve, DN25, 316L body"
+    attributes:
+      - { case: mat-h005, label: "Body material grade" }
+      - { case: ing-111,  label: "Degree of protection" }
+      - { case: ing-h026, label: "Enclosure rating" }
+      - { case: pkg-103,  label: "Packaging / order unit" }

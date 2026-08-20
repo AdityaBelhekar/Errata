@@ -1,0 +1,11 @@
+class_id,sku_count,parent_id,label
+EC000001,50,EG0001,Sample class one
+EC000002,50,EG0001,Sample class two
+EC000003,50,EG0002,Sample class three
+EC000004,5,EG0002,Sample class four
+EC000005,5,EG0002,Sample class five
+EC000006,5,EG0003,Sample class six
+EC000007,5,EG0003,Sample class seven
+EC000008,5,EG0003,Sample class eight
+EC000009,5,EG0004,Sample class nine
+EC000010,5,EG0004,Sample class ten

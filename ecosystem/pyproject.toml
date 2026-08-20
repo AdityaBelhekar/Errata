@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-ecosystem"
+version = "0.1.0"
+description = "Errata R3: the benchmark and the ecosystem -- ExtractBench's grounding metric reused verbatim, five axes nobody scores, a gold set distributed as URLs and hashes, a frozen hard-tail split, the ETIM<->UNSPSC attribute bridge, a bring-your-own-licence ECLASS adapter, and a leaderboard that prints our own losing scores."
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "The Errata Authors" }]
+
+dependencies = [
+    "errata-spec>=0.1.0",
+    "errata-valuesem>=0.1.0",
+    "errata-comparator>=0.1.0",
+    "errata-bench>=0.1.0",
+    "errata-audit>=0.1.0",
+    "errata-scale>=0.1.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+errata-r3 = "errata_ecosystem.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_ecosystem = ["data/*.yaml", "data/*.json"]

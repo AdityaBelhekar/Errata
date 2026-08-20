@@ -1,0 +1,89 @@
+# Errata industrial unit extensions for Pint.
+#
+# Scope: unit spellings that appear in manufacturer datasheets and distributor catalogs but are
+# absent from, or dangerously misread by, Pint's default registry.
+#
+# The dangerous case this file exists for: Pint reads bare "Nm" as nanometre-adjacent nonsense or
+# fails outright, while every torque row in every fastener datasheet writes "Nm" for newton-metre.
+# Pint is case-sensitive, so defining Nm here leaves lowercase nm (nanometre) untouched.
+
+# --- Torque -------------------------------------------------------------------------------
+Nm = newton * meter
+mNm = 0.001 * newton * meter
+cNm = 0.01 * newton * meter
+daNm = 10 * newton * meter
+kNm = 1000 * newton * meter
+Ncm = 0.01 * newton * meter
+Nmm = 0.001 * newton * meter
+kgfcm = 0.0980665 * newton * meter
+kgfm = 9.80665 * newton * meter
+
+# --- Electrical ---------------------------------------------------------------------------
+VA = volt * ampere
+kVA = 1000 * volt * ampere
+MVA = 1000000 * volt * ampere
+var = volt * ampere
+kvar = 1000 * volt * ampere
+Ah = ampere * hour
+mAh = 0.001 * ampere * hour
+kAh = 1000 * ampere * hour
+Wh = watt * hour
+kWh = 1000 * watt * hour
+AT = ampere_turn
+
+# --- Area and volume written without an exponent -------------------------------------------
+# "mm2" and "m3" appear constantly in cable cross-section and enclosure-volume fields.
+#
+# EVERY prefixed spelling must be listed explicitly, and the reason is a real bug this suite
+# caught (units_hard.yaml unt-h026 / unt-h064). Defining "m2 = meter ** 2" makes "m2" itself
+# prefixable, so any prefix Pint is left to resolve on its own is applied to the AREA rather than
+# to the LENGTH being squared:
+#
+#     um2  ->  micro * (meter ** 2)  =  1e-6  m2     WRONG; (micrometer) ** 2 = 1e-12 m2
+#     km2  ->  kilo  * (meter ** 2)  =  1e3   m2     WRONG; (kilometer)  ** 2 = 1e6   m2
+#
+# The error is silent and is the square of the prefix -- 1e6x on um2, 1e3x on km2. Nothing raises;
+# the value simply becomes wrong by orders of magnitude, on conductor cross-section, which is the
+# single most common mm2 field in electrical data. An explicit definition shadows the prefix
+# fallback, so the rule is: if a prefixed spelling can appear in a datasheet, define it here.
+# Do not rely on Pint to prefix these.
+um2 = micrometer ** 2
+µm2 = micrometer ** 2
+nm2 = nanometer ** 2
+mm2 = millimeter ** 2
+cm2 = centimeter ** 2
+dm2 = decimeter ** 2
+m2 = meter ** 2
+km2 = kilometer ** 2
+in2 = inch ** 2
+ft2 = foot ** 2
+um3 = micrometer ** 3
+µm3 = micrometer ** 3
+nm3 = nanometer ** 3
+mm3 = millimeter ** 3
+cm3 = centimeter ** 3
+dm3 = decimeter ** 3
+m3 = meter ** 3
+km3 = kilometer ** 3
+in3 = inch ** 3
+ft3 = foot ** 3
+
+# --- Flow ------------------------------------------------------------------------------------
+lpm = liter / minute
+lph = liter / hour
+gpm = gallon / minute
+cfm = foot ** 3 / minute
+
+# --- Pressure ---------------------------------------------------------------------------------
+mmWC = 9.80665 * pascal
+mmH2O = 9.80665 * pascal
+kPa = 1000 * pascal
+MPa = 1000000 * pascal
+
+# --- Length shorthand --------------------------------------------------------------------------
+thou = 0.0254 * millimeter
+mil = 0.0254 * millimeter
+
+# --- Dimensionless ratios -------------------------------------------------------------------
+ppm = 1e-6 = parts_per_million
+ppb = 1e-9 = parts_per_billion

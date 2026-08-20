@@ -1,0 +1,63 @@
+{
+  "$comment": [
+    "FR-9.5 -- the gold set is distributed as URLs, content hashes and annotation layers.",
+    "NO SOURCE DOCUMENT IS REDISTRIBUTED. The datasheets below are ABB's, published openly",
+    "by ABB and copyright ABB; scripts/fetch_reference_data.sh reconstructs them from ABB's",
+    "own server and verifies each sha256 before use.",
+    "",
+    "An annotation is a value, a page, and word boxes -- facts about where a number is",
+    "printed. It is not the document, and it is not enough to reconstruct one.",
+    "",
+    "Regenerate with: .venv/Scripts/python.exe ecosystem/tools/build_gold.py",
+    "Verify with:     errata-r3 gold verify"
+  ],
+  "schema_version": "1.0.0",
+  "gold_set": "errata-gold/1.0.0",
+  "built_utc": "2026-08-20",
+  "layout_version": "spike-layout/1.0.0",
+  "gold_version": "spike-gold/1.0.0",
+  "records": 1426,
+  "documents": [
+    {
+      "document": "abb-s200-2CDC002142D0207",
+      "url": "https://library.e.abb.com/public/cd9dbd4aef619f03c1257e2f00448bbb/2CDC002142D0207.pdf",
+      "sha256": "07b267e711236a27934be66d72e84d009284dcb4fc6a40862c32be8315d560df",
+      "bytes": 2234536,
+      "pages": 16,
+      "licence": "Copyright ABB. Published openly by the manufacturer. NOT REDISTRIBUTED -- this repository stores the URL and content hash only (FR-9.5); the fetch script reconstructs the file from ABB's own server.",
+      "annotation_file": "data/gold/annotations/abb-s200-2CDC002142D0207.jsonl",
+      "records": 1426
+    },
+    {
+      "document": "abb-s200muc-1SXP403008B0202",
+      "url": "https://library.e.abb.com/public/53ac189cddb24a168c4ec4cbbb4c4632/1SXP403008B0202.pdf",
+      "sha256": "0f6d9ee30f4605df2443ce1cc608e399992ea34326be60a214c5a7fc5e255000",
+      "bytes": 1347576,
+      "pages": 9,
+      "licence": "Copyright ABB. Published openly by the manufacturer. NOT REDISTRIBUTED -- this repository stores the URL and content hash only (FR-9.5); the fetch script reconstructs the file from ABB's own server.",
+      "annotation_file": "data/gold/annotations/abb-s200muc-1SXP403008B0202.jsonl",
+      "records": 0
+    }
+  ],
+  "annotations": [
+    {
+      "file": "data/gold/annotations/abb-s200-2CDC002142D0207.jsonl",
+      "sha256": "e54f92632ebc79523fe90aa6f67add78e2e24461745907936f0e87dd400cbdb2",
+      "records": 1426
+    },
+    {
+      "file": "data/gold/annotations/abb-s200muc-1SXP403008B0202.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "records": 0
+    }
+  ],
+  "splits": [
+    {
+      "split": "hard-tail",
+      "file": "data/gold/splits/hard-tail.json",
+      "sha256": "99216acbd108dc72cecce4c9b470fc4356fb0d9980aeb58c2b9f1dd1cf893cd8",
+      "records": 275
+    }
+  ],
+  "labelling_caveat": "GOLD IS DOCUMENT-DERIVED, NOT EXPERT-LABELLED. The value is the text printed in an ordering-table cell and the evidence is the word boxes of that text, read mechanically from table structure. That is faithful, and it is not a domain expert's judgement; it shares gate 1's weakness that the same author wrote the labeller and the thing being measured. An independent pass would strengthen it and has not been done."
+}

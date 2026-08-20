@@ -1,0 +1,272 @@
+# Material equivalence classes.
+#
+# Every group here is a claim that a set of designations name one material. Each carries a `source`
+# naming the standard that makes the equivalence true, because an equivalence without a citation is
+# an opinion, and this library's whole job is to not have opinions.
+#
+# Contributing: one group, its aliases, its source, and a fixture pair in
+# bench/suites/equivalence/. That is the smallest useful PR to this repository (§9.4).
+
+version: "materials/1.1.0"
+
+groups:
+  # --- Austenitic stainless steels ------------------------------------------------------------
+  - id: steel/stainless/304
+    canonical: "AISI 304 austenitic stainless steel"
+    broader: [steel/stainless, steel]
+    source: "EN 10088-1 (1.4301); ASTM A240; ISO 3506-1 (A2); JIS G4303 (SUS304)"
+    aliases:
+      - "304"
+      - "304 SS"
+      - "SS 304"
+      - "SS304"
+      - "304SS"
+      - "AISI 304"
+      - "type 304"
+      - "1.4301"
+      - "X5CrNi18-10"
+      - "SUS304"
+      - "S30400"
+      - "UNS S30400"
+      - "18/8"
+      - "18-8"
+      - "A2"
+      - "A2-70"
+      - "A2-80"
+    caveats:
+      A2: >-
+        A2 is the ISO 3506 fastener property-class group covering the 304 family (304, 304L,
+        321, 347). The equivalence holds for fastener material callouts; for wrought product
+        it under-specifies the grade.
+      "18/8": >-
+        18/8 and 18-8 are trade names for the 18% Cr / 8% Ni austenitic family and are used
+        loosely for 302, 304 and 305.
+
+  - id: steel/stainless/304L
+    canonical: "AISI 304L low-carbon austenitic stainless steel"
+    broader: [steel/stainless/304, steel/stainless, steel]
+    source: "EN 10088-1 (1.4307); ASTM A240"
+    aliases: ["304L", "304 L", "SS 304L", "1.4307", "1.4306", "X2CrNi18-9", "S30403", "UNS S30403"]
+
+  - id: steel/stainless/316
+    canonical: "AISI 316 molybdenum-bearing austenitic stainless steel"
+    broader: [steel/stainless, steel]
+    source: "EN 10088-1 (1.4401); ASTM A240; ISO 3506-1 (A4); JIS G4303 (SUS316)"
+    aliases:
+      - "316"
+      - "316 SS"
+      - "SS 316"
+      - "SS316"
+      - "316SS"
+      - "AISI 316"
+      - "type 316"
+      - "1.4401"
+      - "X5CrNiMo17-12-2"
+      - "SUS316"
+      - "S31600"
+      - "UNS S31600"
+      - "A4"
+      - "A4-70"
+      - "A4-80"
+      - "marine grade stainless"
+    caveats:
+      A4: >-
+        A4 is the ISO 3506 fastener property-class group covering the 316 family (316, 316L,
+        316Ti). The equivalence holds for fastener material callouts; for wrought product it
+        under-specifies the grade.
+      "marine grade stainless": >-
+        A trade description, not a standard designation. Commonly 316/316L but occasionally
+        used for duplex grades.
+
+  # Finding 10. 1.4404 and 1.4435 were two ALIASES OF ONE GROUP, so the comparator called them a
+  # flat equivalence. They are different EN grades with different specified envelopes -- 1.4404 is
+  # Ni 10.0-13.0 / Mo 2.0-2.5, 1.4435 is Ni 12.5-15.0 / Mo 2.5-3.0 (EN 10088; verified 2026-08-19
+  # via SteelNumber and mill datasheets). The Mo bands do not nest: a bar meeting 1.4435 at Mo 2.8
+  # fails 1.4404's ceiling. Modelled as two children of the 316L family so that "316L" against
+  # either is still granularity, while the two grades against each other disagree.
+  - id: steel/stainless/316L
+    canonical: "AISI 316L low-carbon molybdenum-bearing austenitic stainless steel"
+    broader: [steel/stainless/316, steel/stainless, steel]
+    source: "EN 10088-1; ASTM A240"
+    aliases: ["316L", "316 L", "SS 316L", "S31603", "UNS S31603", "SUS316L"]
+
+  - id: steel/stainless/316L/1.4404
+    canonical: "EN 1.4404 (X2CrNiMo17-12-2) low-carbon molybdenum-bearing austenitic stainless steel"
+    broader: [steel/stainless/316L, steel/stainless/316, steel/stainless, steel]
+    source: "EN 10088-1/-2/-3: 1.4404, Cr 16.5-18.5, Ni 10.0-13.0, Mo 2.00-2.50"
+    aliases: ["1.4404", "X2CrNiMo17-12-2"]
+
+  - id: steel/stainless/316L/1.4435
+    canonical: "EN 1.4435 (X2CrNiMo18-14-3) high-molybdenum low-ferrite austenitic stainless steel"
+    broader: [steel/stainless/316L, steel/stainless/316, steel/stainless, steel]
+    source: "EN 10088-1/-2/-3: 1.4435, Cr 17.0-19.0, Ni 12.5-15.0, Mo 2.50-3.00"
+    aliases: ["1.4435", "X2CrNiMo18-14-3"]
+
+  - id: steel/stainless/321
+    canonical: "AISI 321 titanium-stabilised austenitic stainless steel"
+    broader: [steel/stainless, steel]
+    source: "EN 10088-1 (1.4541); ASTM A240"
+    aliases: ["321", "321 SS", "1.4541", "X6CrNiTi18-10", "S32100"]
+
+  - id: steel/stainless/430
+    canonical: "AISI 430 ferritic stainless steel"
+    broader: [steel/stainless, steel]
+    source: "EN 10088-1 (1.4016); ASTM A240"
+    aliases: ["430", "430 SS", "1.4016", "X6Cr17", "S43000"]
+
+  # --- Carbon and alloy steels ----------------------------------------------------------------
+  - id: steel/carbon/grade_8.8
+    canonical: "Property class 8.8 carbon steel fastener"
+    broader: [steel/carbon, steel]
+    facet: mechanical_class
+    source: "ISO 898-1"
+    aliases: ["8.8", "class 8.8", "grade 8.8", "property class 8.8"]
+
+  - id: steel/carbon/grade_10.9
+    canonical: "Property class 10.9 alloy steel fastener"
+    broader: [steel/carbon, steel]
+    facet: mechanical_class
+    source: "ISO 898-1"
+    aliases: ["10.9", "class 10.9", "grade 10.9", "property class 10.9"]
+
+  - id: steel/carbon/grade_12.9
+    canonical: "Property class 12.9 alloy steel fastener"
+    broader: [steel/carbon, steel]
+    facet: mechanical_class
+    source: "ISO 898-1"
+    aliases: ["12.9", "class 12.9", "grade 12.9"]
+
+  - id: steel/carbon/S235
+    canonical: "S235JR structural steel"
+    broader: [steel/carbon, steel]
+    facet: base_grade
+    source: "EN 10025-2 (1.0038)"
+    aliases: ["S235", "S235JR", "1.0038", "St37-2", "A283C"]
+
+  # Finding 9. These were ONE group, with "zinc plated steel" as an alias of hot-dip galvanised and
+  # a caveat explaining that the two are different coatings. The caveat mechanism only annotates --
+  # it never reaches the verdict -- so the comparator returned a flat semantic equivalence and the
+  # difference travelled through the pipeline invisibly. A coating that lasts 5-25 microns' worth of
+  # service being silently equated with one that lasts 45-85 is a corrosion-performance defect, and
+  # it is the one class of error this product exists to catch. Split into two sibling groups sharing
+  # the `coating` facet, so they compare and disagree.
+  - id: steel/coating/hot_dip_galvanised
+    canonical: "Hot-dip galvanised steel"
+    broader: [steel]
+    facet: coating
+    source: "ISO 1461 (hot dip galvanized coatings on fabricated iron and steel articles)"
+    aliases: ["galvanised steel", "galvanized steel", "HDG", "hot dip galvanised", "hot-dip galvanised", "hot dip galvanized", "hot-dip galvanized"]
+
+  - id: steel/coating/zinc_electroplated
+    canonical: "Zinc-electroplated steel"
+    broader: [steel]
+    facet: coating
+    source: "ISO 4042 (fasteners -- electroplated coating systems); ASTM B633"
+    aliases: ["zinc plated steel", "zinc-plated steel", "zinc plated", "zinc-plated", "electroplated zinc", "zinc electroplated", "electro-galvanised", "electro-galvanized", "electrogalvanised", "electrogalvanized"]
+
+  # --- Aluminium ---------------------------------------------------------------------------------
+  - id: aluminium/6061-T6
+    canonical: "Aluminium 6061-T6"
+    broader: [aluminium/6061, aluminium]
+    source: "EN 573-3 (EN AW-6061); ASTM B221"
+    aliases: ["6061-T6", "6061 T6", "AL6061-T6", "EN AW-6061 T6", "AA6061-T6"]
+
+  - id: aluminium/6061
+    canonical: "Aluminium 6061"
+    broader: [aluminium]
+    source: "EN 573-3 (EN AW-6061); UNS A96061"
+    aliases: ["6061", "AL6061", "AA6061", "EN AW-6061", "A96061"]
+
+  - id: aluminium/6082
+    canonical: "Aluminium 6082"
+    broader: [aluminium]
+    source: "EN 573-3 (EN AW-6082); 3.2315"
+    aliases: ["6082", "AL6082", "EN AW-6082", "3.2315"]
+
+  - id: aluminium/5052
+    canonical: "Aluminium 5052"
+    broader: [aluminium]
+    source: "EN 573-3 (EN AW-5052); UNS A95052"
+    aliases: ["5052", "AL5052", "EN AW-5052", "A95052"]
+
+  # --- Copper alloys -------------------------------------------------------------------------------
+  - id: copper/brass/CW614N
+    canonical: "Free-cutting brass CuZn39Pb3"
+    broader: [copper/brass, copper]
+    source: "EN 12164 (CW614N); ASTM B16 (C38500)"
+    aliases: ["CW614N", "CuZn39Pb3", "C38500", "free cutting brass", "CZ121", "2.0401"]
+
+  - id: copper/Cu-ETP
+    canonical: "Electrolytic tough pitch copper"
+    broader: [copper]
+    source: "EN 13601 (CW004A); ASTM B187 (C11000)"
+    aliases: ["Cu-ETP", "CW004A", "C11000", "ETP copper", "E-Cu58", "2.0065"]
+
+  # --- Polymers ------------------------------------------------------------------------------------
+  - id: polymer/PA66
+    canonical: "Polyamide 66"
+    broader: [polymer/PA, polymer]
+    source: "ISO 1874-1"
+    aliases: ["PA66", "PA 66", "nylon 66", "nylon 6/6", "polyamide 66", "PA6.6"]
+
+  - id: polymer/PA6
+    canonical: "Polyamide 6"
+    broader: [polymer/PA, polymer]
+    source: "ISO 1874-1"
+    aliases: ["PA6", "PA 6", "nylon 6", "polyamide 6"]
+
+  - id: polymer/PC
+    canonical: "Polycarbonate"
+    broader: [polymer]
+    source: "ISO 7391-1"
+    aliases: ["PC", "polycarbonate", "Makrolon", "Lexan"]
+    caveats:
+      Makrolon: "A trade name for a polycarbonate family, not a grade designation."
+      Lexan: "A trade name for a polycarbonate family, not a grade designation."
+
+  - id: polymer/ABS
+    canonical: "Acrylonitrile butadiene styrene"
+    broader: [polymer]
+    source: "ISO 2580-1"
+    aliases: ["ABS", "acrylonitrile butadiene styrene"]
+
+  - id: polymer/PBT
+    canonical: "Polybutylene terephthalate"
+    broader: [polymer]
+    source: "ISO 7792-1"
+    aliases: ["PBT", "polybutylene terephthalate", "Ultradur", "Crastin"]
+
+  - id: polymer/PVC
+    canonical: "Polyvinyl chloride"
+    broader: [polymer]
+    source: "ISO 1163-1"
+    aliases: ["PVC", "polyvinyl chloride", "uPVC", "PVC-U"]
+
+  - id: polymer/PTFE
+    canonical: "Polytetrafluoroethylene"
+    broader: [polymer]
+    source: "ISO 12086-1"
+    aliases: ["PTFE", "polytetrafluoroethylene", "Teflon"]
+    caveats:
+      Teflon: "A trade name covering PTFE, FEP, PFA and ETFE. Ambiguous as a material designation."
+
+  # --- Elastomers -----------------------------------------------------------------------------------
+  - id: elastomer/NBR
+    canonical: "Nitrile butadiene rubber"
+    broader: [elastomer]
+    source: "ISO 1629"
+    aliases: ["NBR", "nitrile", "Buna-N", "nitrile rubber", "acrylonitrile butadiene rubber"]
+
+  - id: elastomer/EPDM
+    canonical: "Ethylene propylene diene monomer rubber"
+    broader: [elastomer]
+    source: "ISO 1629"
+    aliases: ["EPDM", "ethylene propylene diene"]
+
+  - id: elastomer/FKM
+    canonical: "Fluoroelastomer"
+    broader: [elastomer]
+    source: "ISO 1629"
+    aliases: ["FKM", "FPM", "Viton", "fluoroelastomer", "fluorocarbon rubber"]
+    caveats:
+      Viton: "A trade name for a family of FKM grades with differing fluorine content."

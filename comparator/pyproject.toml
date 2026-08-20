@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-comparator"
+version = "0.1.0"
+description = "Classifies how a catalog value and an independently re-derived value disagree. The component the product is won or lost on."
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "The Errata Authors" }]
+
+dependencies = [
+    "errata-valuesem>=0.1.0",
+    "errata-spec>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_comparator = ["config/*.yaml"]

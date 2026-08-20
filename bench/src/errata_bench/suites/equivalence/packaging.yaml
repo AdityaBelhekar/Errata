@@ -1,0 +1,157 @@
+# Equivalence suite -- packaging frames (FR-0.1).
+#
+# The highest-severity family and the one with the sharpest asymmetry. `Each` against `Box of 10`
+# must always be caught: it prices the line at a tenth of cost and returns a punchout requisition
+# the buyer's ERP accepts without complaint. `Box of 10` against `Pack of 10` must never be
+# flagged: the container noun differs and the commercial fact does not.
+
+suite: equivalence
+family: packaging
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: packaging_uom
+    label: Packaging unit of measure
+    kinds: [packaging]
+
+cases:
+  # -- spelling variants of one frame ------------------------------------------------------------
+  - id: pkg-001
+    a: "Each"
+    b: "EA"
+    expect: equivalent
+    source: "UN/ECE Rec 20 code EA"
+
+  - id: pkg-002
+    a: "EA"
+    b: "PCE"
+    expect: equivalent
+    source: >-
+      UN/ECE Rec 20 code EA "each". PCE, by contrast, is not a UN/CEFACT code at all -- it is
+      absent from Rec 20 Rev 17 and from Rec 21 (verified 2026-08-19 against both lists). Rec 20's
+      code for "piece" is H87; PCE is a UN/EDIFACT-era trade abbreviation, carried in
+      ontology/packaging.yaml as an alias of EA rather than as a standard code. The
+      equivalence being tested is trade usage against the standard code, which is what the
+      ontology asserts and what a distributor feed actually contains.
+
+  - id: pkg-003
+    a: "Piece"
+    b: "1 EA"
+    expect: equivalent
+    source: "Explicit quantity of one against the implied default"
+
+  - id: pkg-004
+    a: "Stk"
+    b: "Each"
+    expect: equivalent
+    source: "German feeds ship Stück / Stk for the piece unit"
+
+  - id: pkg-005
+    a: "Box of 10"
+    b: "BOX/10"
+    expect: equivalent
+    source: "Separator variant"
+
+  - id: pkg-006
+    a: "10/PK"
+    b: "Pack of 10"
+    expect: equivalent
+    source: "Quantity-first and quantity-last spellings"
+
+  - id: pkg-007
+    a: "Box of 10"
+    b: "Pack of 10"
+    expect: equivalent
+    source: "Interchangeable container nouns at equal quantity"
+    rationale: >-
+      Labelled equivalent on purpose. The multiplier is the commercial fact; flagging the noun
+      burns a review for nothing.
+
+  - id: pkg-008
+    a: "Box (25)"
+    b: "25 per box"
+    expect: equivalent
+    source: "Parenthesised and prepositional spellings"
+
+  - id: pkg-009
+    a: "Carton of 100"
+    b: "CT/100"
+    expect: equivalent
+    source: >-
+      UN/ECE Rec 21 code CT "Carton". In Rec 20 Rev 17 the same two letters carry status X
+      with the description "Use UN/ECE Recommendation 21" (verified 2026-08-19). Rec 20 lists the
+      container nouns only to redirect them; Rec 21 is where package types are defined.
+
+  - id: pkg-010
+    a: "Dozen"
+    b: "Box of 12"
+    expect: equivalent
+    source: "Dozen carries an implicit quantity of 12"
+    expect_alternatives: [contradiction]
+    rationale: >-
+      Dual-labelled. The quantities match and the containers are interchangeable, but a merchandiser
+      may treat DZ and BX as distinct order units. Recorded as a judgment call rather than settled.
+
+  # -- the packaging-frame error ------------------------------------------------------------------
+  - id: pkg-101
+    a: "Each"
+    b: "Box of 10"
+    expect: contradiction
+    source: "Phase 1: catch this wrong once and you will never get another meeting"
+    rationale: "Must be SEV-1 and must never be missed."
+
+  - id: pkg-102
+    a: "EA"
+    b: "PK/25"
+    expect: contradiction
+    source: "Piece against a pack of 25"
+
+  - id: pkg-103
+    a: "Box of 10"
+    b: "Box of 25"
+    expect: contradiction
+    source: "Same container, different count"
+
+  - id: pkg-104
+    a: "10/PK"
+    b: "100/PK"
+    expect: contradiction
+    source: "Order-of-magnitude pack error"
+
+  - id: pkg-105
+    a: "Pair"
+    b: "Each"
+    expect: contradiction
+    source: >-
+      UN/ECE Rec 20 code PR "pair" -- an active Rec 20 unit of measure, verified 2026-08-19.
+      Note the collision worth knowing about: PR in Rec 21 is "Receptacle, plastic". The
+      quantity-of-two reading is the Rec 20 one, which is the correct frame for an order unit.
+
+  - id: pkg-106
+    a: "Roll"
+    b: "Each"
+    expect: contradiction
+    source: "A continuous-length container against a piece count"
+
+  # -- under-specified containers -------------------------------------------------------------------
+  - id: pkg-201
+    a: "Box"
+    b: "Box of 10"
+    expect: granularity
+    source: "The container is named but the count is not"
+    rationale: >-
+      Unspecified, not one. Defaulting a bare container to a quantity of one is exactly how a
+      packaging-frame error gets created by the tool that is supposed to find it.
+
+  - id: pkg-202
+    a: "Box of 10"
+    b: "Box"
+    expect: agreement_specific
+    source: "The catalog states the count the evidence omits"
+
+  - id: pkg-203
+    a: "Box"
+    b: "Each"
+    expect: contradiction
+    source: "A bulk container against a piece unit, whatever the count"

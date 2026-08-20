@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-scale"
+version = "0.1.0"
+description = "Errata R2: catalog-scale audit -- groundable fraction, tiered execution, error-signature clustering, a triage router whose factors are inspectable, and batch reversal as a query over an append-only ledger."
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "The Errata Authors" }]
+
+dependencies = [
+    "errata-spec>=0.1.0",
+    "errata-valuesem>=0.1.0",
+    "errata-comparator>=0.1.0",
+    "errata-audit>=0.1.0",
+    "pydantic>=2.7",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+errata-scale = "errata_scale.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_scale = ["config/*.yaml", "demo/*.csv", "demo/*.yaml"]

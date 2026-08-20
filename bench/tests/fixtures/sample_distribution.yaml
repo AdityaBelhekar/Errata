@@ -1,0 +1,10 @@
+name: fixture-distributor-2026
+provenance: empirical
+source: "test fixture -- not a real catalog export, hand-built for bench/tests/test_coverage.py"
+notes:
+  - numbers were picked by hand for test determinism; they are not a measurement of any real catalog
+classes:
+  - {class_id: EC0001, sku_count: 40, parent_id: EG01, label: "Class one"}
+  - {class_id: EC0002, sku_count: 40, parent_id: EG01, label: "Class two"}
+  - {class_id: EC0003, sku_count: 3, parent_id: EG02, label: "Class three"}
+  - {class_id: EC0004, sku_count: 3, parent_id: EG02, label: "Class four"}

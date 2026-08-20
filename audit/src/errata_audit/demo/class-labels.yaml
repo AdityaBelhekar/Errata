@@ -1,0 +1,96 @@
+# FR-2.2's labelled set for class resolution -- top-1 and top-5 accuracy are reported against it.
+#
+# READ THE CAVEAT BEFORE QUOTING A NUMBER FROM THIS FILE.
+#
+# The queries are descriptive product strings of the kind a catalog's short description carries.
+# The two ABB families named in them (S200, S200 M UC) are taken from the datasheets in this
+# repository, which were fetched and hash-registered; the rest are generic trade phrasings and are
+# NOT claimed to be any manufacturer's exact wording. Nothing here asserts a product that was not
+# looked at.
+#
+# `class_id: null` means the resolver MUST abstain. Those cases matter more than the hits: FR-2.3
+# says an abstention appears in the Declined bucket with a reason rather than as a silent default
+# class, and a resolver that never abstains has simply moved its errors somewhere less visible.
+
+labelled_by: >-
+  The author of the resolver. This is the same conflict of interest FR-0.1 identifies for the
+  equivalence suite, and it has the same remedy -- independent dual-labelling -- which has not been
+  done. Treat the rates as a regression signal, not as evidence for a customer.
+
+caveat: >-
+  24 cases, single-labelled by the implementer, against a 4-class allow-list. A four-way choice is
+  an easy problem and the numbers will look good; the interesting rows are the abstentions and the
+  wrong answers, not the rate.
+
+cases:
+  # --- Miniature circuit breaker (EC000042) -------------------------------------------------
+  - query: "ABB S201M-B16UC miniature circuit breaker 1 pole"
+    class_id: EC000042
+  - query: "miniature circuit breaker 16 A characteristic C 1 pole"
+    class_id: EC000042
+  - query: "MCB 3 pole 32 A DIN rail mounted"
+    class_id: EC000042
+  - query: "installation automat B10 one pole line protection"
+    class_id: EC000042
+  - query: "ABB S204M-B63UC four pole miniature circuit breaker"
+    class_id: EC000042
+  - query: "miniature circuit breaker 6 kA breaking capacity DIN rail"
+    class_id: EC000042
+  - query: "line safety switch 1P+N 10 A curve B"
+    class_id: EC000042
+
+  # --- Residual current circuit breaker (EC000003) ------------------------------------------
+  - query: "residual current circuit breaker 30 mA type A two pole"
+    class_id: EC000003
+  - query: "RCCB 40 A 300 mA four pole earth fault protection"
+    class_id: EC000003
+  - query: "residual current device without overcurrent protection 25 A"
+    class_id: EC000003
+  - query: "earth leakage protection RCCB type AC 63 A"
+    class_id: EC000003
+  - query: "fault current circuit breaker 30 mA 2 pole"
+    class_id: EC000003
+
+  # --- Selective main line circuit breaker (EC001047) ---------------------------------------
+  - query: "selective main line circuit breaker 63 A three pole"
+    class_id: EC001047
+  - query: "SLS selective main switch 50 A E characteristic"
+    class_id: EC001047
+  - query: "selective main line protection breaker for meter panel"
+    class_id: EC001047
+
+  # --- Miniature circuit breaker, plug model (EC000271) -------------------------------------
+  - query: "miniature circuit breaker plug model with socket"
+    class_id: EC000271
+  - query: "plug in MCB screw plug model 16 A"
+    class_id: EC000271
+
+  # --- Must abstain -- FR-2.3 ---------------------------------------------------------------
+  - query: "circuit breaker"
+    class_id: null
+    why: >-
+      The bare trade term names four of the four in-scope classes equally. A resolver that picks
+      one is guessing, and every attribute afterwards is judged against a schema that may not
+      apply.
+  - query: "breaker"
+    class_id: null
+    why: "Same ambiguity, less information."
+  - query: "protection device DIN rail"
+    class_id: null
+    why: "Describes the mounting, not the device."
+  - query: "LED floodlight 50 W IP65"
+    class_id: null
+    why: >-
+      Out of the R1 scope entirely (FR-2.4). Must decline as out of distribution rather than
+      resolve to the least-bad circuit-protection class.
+  - query: "M8 x 1.25 hexagon head screw A4-70"
+    class_id: null
+    why: "Out of scope; shares no vocabulary with any in-scope class."
+  - query: "busbar terminal 25 mm2"
+    class_id: null
+    why: >-
+      An EG000020 neighbour that is not in the allow-list. The right answer is a decline, not the
+      nearest allow-listed class.
+  - query: "surge protective device type 2"
+    class_id: null
+    why: "Adjacent product family, deliberately not in R1 scope."

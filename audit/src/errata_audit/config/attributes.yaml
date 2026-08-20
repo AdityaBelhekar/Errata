@@ -1,0 +1,104 @@
+# The R1 attribute map: which catalog columns are audited, and what each one is.
+#
+# Every `etim_feature` below was read out of ETIM 10.0 ALL-SECTORS (ETIMFEATURE.csv /
+# ETIMARTCLASSFEATUREMAP.csv, released 2024-12-05, ODC-By) on 2026-08-20, and a test asserts that
+# each id still exists in the loaded release and is declared by the class that claims it. That test
+# is not ceremony: `errata_valuesem`'s own ontology carried EF000094 for the tripping
+# characteristic, and EF000094 does not exist in ETIM 10.0 at all (finding N11).
+#
+# `column_headers` are the datasheet header patterns this attribute may be read from. They are
+# regexes rather than literals because a header is typeset, not typed: "Rated current I n A" is
+# what PyMuPDF makes of "Rated current I_n [A]" and the subscript is lost. Matching loosely on the
+# header while requiring an exact row match is the right way round -- a wrong header costs a
+# decline, a wrong row costs a false accusation.
+#
+# `unit_from_header` is the unit ETIM declares for the feature. It is applied ONLY when the matched
+# column header states it (`header_unit_pattern`), and the header cell is then carried as evidence
+# alongside the value cell (FR-7.3). This is the mechanism FR-4.3 describes: `16` in a cell is not
+# a fact, `16` under a column headed "Rated current In A" is. Composing the two is grounding, and
+# it is why the header box is rendered in the console rather than merely printed.
+
+version: "errata-attributes/1.0.0"
+
+attributes:
+  - key: rated_current
+    label: Rated current
+    etim_feature: EF000227
+    classes: [EC000042, EC000003, EC000271, EC001047]
+    kinds: [QUANTITY]
+    unit_from_header: A
+    header_unit_pattern: '(?:^|[^A-Za-z])A(?:$|[^A-Za-z])'
+    column_headers:
+      - '(?i)rated\s+current'
+    value_pattern: '^\d{1,3}(?:[.,]\d+)?$'
+    specificity: 0.35
+    note: >-
+      On the safety-class list (errata_spec.SAFETY_CLASS_ATTRIBUTES): never auto-resolved, and
+      acceptance needs a second named adjudicator (FR-8.9).
+
+  - key: poles
+    label: Number of poles
+    etim_feature: EF008618
+    classes: [EC000042]
+    kinds: [TERM]
+    vocabulary: poles
+    column_headers:
+      - '(?i)number\s+of\s+poles'
+    value_pattern: '^[1-4]$'
+    specificity: 0.25
+    note: >-
+      Read through the `poles` vocabulary so that "1", "1P" and "single pole" are one value. The
+      merged-cell case lives here: the ABB ordering tables state the pole count once for a block of
+      twenty rows, and it is resolved by cell geometry (errata_audit.tables), never by carrying the
+      last value forward.
+
+  - key: packaging_uom
+    label: Packing unit
+    etim_feature: ""
+    # The published gold set (data/gold/annotations, hashed in data/gold/manifest.json) froze this
+    # attribute's key as `packing_unit` before this map existed. The hash means the name cannot be
+    # changed there; the alias means it still resolves to ONE identity rather than quietly becoming
+    # a second attribute the day something clusters across both (finding N15).
+    aliases: [packing_unit]
+    classes: [EC000042, EC000003, EC000271, EC001047]
+    kinds: [PACKAGING]
+    unit_from_header: pcs
+    header_unit_pattern: '(?i)pcs|pieces'
+    column_headers:
+      - '(?i)packing\s+unit'
+    value_pattern: '^\d{1,3}$'
+    specificity: 0.30
+    note: >-
+      ETIM declares no packing-unit feature on these classes -- checked, and left empty rather than
+      mapped to something adjacent. The attribute is audited anyway because "Each vs Box of N" is
+      the highest-severity disagreement in the taxonomy (PACKAGING_FRAME_ERROR, always SEV-1) and
+      it is a trade-data field, not a technical one. `etim_feature: ""` is the honest record of
+      that: the attribute URI falls back to `customer:packaging_uom`.
+
+  - key: weight_kg
+    label: Weight
+    etim_feature: ""
+    classes: [EC000042, EC000003, EC000271, EC001047]
+    kinds: [QUANTITY]
+    unit_from_header: kg
+    header_unit_pattern: '(?i)\bkg\b'
+    column_headers:
+      - '(?i)weight'
+    value_pattern: '^\d+([.,]\d+)?$'
+    specificity: 0.90
+
+  - key: order_code
+    label: Order code
+    etim_feature: ""
+    classes: [EC000042, EC000003, EC000271, EC001047]
+    kinds: []
+    column_headers:
+      - '(?i)order\s+code'
+    value_pattern: '^[0-9A-Z]{8,}$'
+    specificity: 0.95
+    note: >-
+      Deliberately in the map even though `errata_valuesem` has no grammar for an order code and
+      will refuse it. The refusal is the point: FR-6.2 says there are no silent skips anywhere in
+      the pipeline, so an attribute the value layer cannot read appears in the Declined bucket with
+      `value_outside_known_grammar` and a reviewer can see that it was looked at. An audit that
+      quietly dropped the columns it could not parse would report a coverage it had not earned.

@@ -1,0 +1,118 @@
+# Equivalence suite -- IEC 60529 ingress protection (FR-0.1).
+#
+# The whole file turns on one distinction: X is not zero. IP6X says the enclosure is dust-tight and
+# says nothing about water. IP60 says it was tested against water and offers none. A comparator
+# that reads X as 0 converts an unspecified digit into a failed one and reports a defect that does
+# not exist.
+
+suite: equivalence
+family: ingress
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: degree_of_protection
+    label: Degree of protection (IP)
+    kinds: [ingress_protection]
+
+cases:
+  - id: ing-001
+    a: "IP67"
+    b: "IP 67"
+    expect: equivalent
+    source: "IEC 60529 spacing variant"
+
+  - id: ing-002
+    a: "IP67"
+    b: "IP-67"
+    expect: equivalent
+    source: "Punctuation variant"
+
+  - id: ing-003
+    a: "IP66/IP67"
+    b: "IP66/67"
+    expect: equivalent
+    source: "Elided prefix in the second rating"
+
+  - id: ing-004
+    a: "IP20"
+    b: "IP 20"
+    expect: equivalent
+    source: "IEC 60898-1 default enclosure rating for DIN-rail devices"
+
+  - id: ing-101
+    a: "IP67"
+    b: "IP65"
+    expect: contradiction
+    source: "IEC 60529: temporary immersion against water jets"
+
+  - id: ing-102
+    a: "IP67"
+    b: "IP54"
+    expect: contradiction
+    source: "IEC 60529: both digits differ"
+
+  # Direction is load-bearing throughout this suite. `a` is always the catalog and `b` always the
+  # evidence, so "catalog vaguer than the datasheet" (granularity -- a finding) and "catalog
+  # sharper than the datasheet" (agreement_specific -- not a finding) are different cases and both
+  # are tested.
+  - id: ing-103
+    a: "IP20"
+    b: "IP2X"
+    expect: agreement_specific
+    source: "IP2X leaves the liquids digit unspecified; IP20 states it as zero"
+    rationale: >-
+      The catalog is the more specific side here, so this is not a catalog defect. IP20's zero is
+      the IEC 60529 default rather than an over-claim.
+
+  - id: ing-111
+    a: "IP2X"
+    b: "IP20"
+    expect: granularity
+    source: "The same pair with the sides swapped"
+    rationale: >-
+      Now the catalog is the vaguer side, and the finding is under-specification. If both
+      directions produced the same verdict, the comparator would not be reading direction at all.
+
+  - id: ing-104
+    a: "IP67"
+    b: "IP6X"
+    expect: agreement_specific
+    source: "The catalog specifies a digit the evidence leaves as X"
+
+  - id: ing-105
+    a: "IPX4"
+    b: "IP54"
+    expect: granularity
+    source: "IPX4 leaves the solids digit unspecified"
+
+  - id: ing-106
+    a: "IPX4"
+    b: "IP6X"
+    expect: undetermined
+    source: "Each leaves a different digit unspecified; neither reading dominates"
+
+  - id: ing-107
+    a: "IP69K"
+    b: "IP69"
+    expect: contradiction
+    source: "IEC 60529 / ISO 20653: the K suffix is part of the rating"
+    expect_alternatives: [granularity]
+
+  - id: ing-108
+    a: "IP66/IP67"
+    b: "IP67"
+    expect: agreement_specific
+    source: "The catalog declares every rating the evidence does, and one more"
+
+  - id: ing-109
+    a: "IP66/IP67"
+    b: "IP54/IP55"
+    expect: contradiction
+    source: "Entirely disjoint rating sets"
+
+  - id: ing-110
+    a: "IP44"
+    b: "IP54"
+    expect: contradiction
+    source: "IEC 60529: solids digit differs"

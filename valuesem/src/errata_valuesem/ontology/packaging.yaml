@@ -1,0 +1,161 @@
+# Packaging frames.
+#
+# This is the highest-severity attribute family in the product. Phase 1's finding was blunt: get a
+# unit of measure wrong once and "you will never get another meeting." A catalog that says `Each`
+# where the manufacturer ships `Box of 10` prices the item at a tenth of cost, allocates phantom
+# inventory, and returns a requisition line the buyer's ERP will accept without complaint.
+#
+# The quantity multiplier is the fact. The container noun is mostly not: `Box of 10` and
+# `Pack of 10` describe the same commercial fact and must not be flagged against each other, while
+# `Box of 10` and `Box of 25` must be.
+
+# ------------------------------------------------------------------------------------------------
+# PROVENANCE OF THE CODE LETTERS -- read before adding one.
+#
+# Verified 2026-08-19 against the machine-readable UN/ECE Rec 20 code list (Rev 17, 2021) published
+# at github.com/datasets/unece-units-of-measure, 2136 entries, column `CommonCode`.
+#
+# Rec 20 and Rec 21 are DIFFERENT recommendations and this file uses both:
+#
+#   * Rec 20 (units of measure) supplies the quantity-bearing codes -- EA "each", CEN "hundred",
+#     MIL "thousand", DZN "dozen", H87 "piece".
+#   * Rec 21 (types of cargo, packages and packaging materials) supplies every container noun --
+#     BX box, PK pack, CT carton, BG bag, CS case, TU tube, RO roll, RL reel. Rec 20 lists all of
+#     these with status `X` and the description "Use UN/ECE Recommendation 21". Citing them as
+#     Rec 20 codes -- as this file and model.py previously did -- is a mis-citation.
+#
+# Three code letters were simply wrong before this was checked, and all three had been asserted
+# confidently: CQ is "cartridge" in Rec 20/21, not "hundred" (that is CEN); RL is "reel", not
+# "roll" (that is RO); DZ is not a Rec 20 code at all (dozen is DZN). None changed a verdict --
+# the aliases carried the behaviour and the codes were internal labels -- which is precisely why
+# nobody noticed. See HANDOFF.md section 7.
+# ------------------------------------------------------------------------------------------------
+
+version: "packaging/1.1.0"
+
+uoms:
+  - code: EA
+    canonical: "Each"
+    default_quantity: 1
+    bulk: false
+    aliases:
+      - "each"
+      - "ea"
+      - "ea."
+      - "pce"
+      - "pc"
+      - "pcs"
+      - "piece"
+      - "pieces"
+      - "unit"
+      - "units"
+      - "single"
+      - "stk"
+      - "stück"
+      - "st"
+      - "item"
+      - "C62"
+
+  - code: PR
+    canonical: "Pair"
+    default_quantity: 2
+    bulk: false
+    aliases: ["pair", "pr", "pairs"]
+
+  - code: BX
+    canonical: "Box"
+    default_quantity: null
+    bulk: true
+    aliases: ["box", "bx", "boxes", "karton"]
+
+  - code: PK
+    canonical: "Pack"
+    default_quantity: null
+    bulk: true
+    aliases: ["pack", "pk", "packet", "pkt", "package", "pkg", "packs"]
+
+  - code: CT
+    canonical: "Carton"
+    default_quantity: null
+    bulk: true
+    aliases: ["carton", "ct", "ctn", "cartons"]
+
+  - code: BG
+    canonical: "Bag"
+    default_quantity: null
+    bulk: true
+    aliases: ["bag", "bg", "bags", "sack"]
+
+  # Rec 21 separates RL "reel" from RO "roll". This ontology deliberately treats them as ONE
+  # packaging frame: for cable and tape the noun varies by vendor while the commercial fact does
+  # not, and this file's whole doctrine is that the quantity multiplier is the fact and the
+  # container noun mostly is not. The merge is a decision, not an oversight -- if a customer ever
+  # needs reel and roll to disagree, split this entry and put {RO, RL} in interchangeable_containers
+  # so the split does not manufacture contradictions.
+  - code: RO
+    canonical: "Roll"
+    default_quantity: null
+    bulk: true
+    aliases: ["roll", "ro", "rl", "reel", "spool", "coil", "drum"]
+
+  - code: SET
+    canonical: "Set"
+    default_quantity: null
+    bulk: true
+    aliases: ["set", "kit", "assembly"]
+
+  - code: CS
+    canonical: "Case"
+    default_quantity: null
+    bulk: true
+    aliases: ["case", "cs"]
+
+  - code: TU
+    canonical: "Tube"
+    default_quantity: null
+    bulk: true
+    aliases: ["tube", "tu", "sleeve"]
+
+  # Rec 20 code is DZN. "dz"/"doz" are kept as trade-usage aliases, not as standard codes.
+  - code: DZN
+    canonical: "Dozen"
+    default_quantity: 12
+    bulk: true
+    aliases: ["dozen", "dzn", "dz", "doz"]
+
+  # The single-letter UN/ECE codes for hundred (C) and thousand (M) are deliberately NOT aliases
+  # here. "1 M" is a metre far more often than it is a thousand pieces, and a packaging parser that
+  # claims it would turn a length field into a pack quantity -- the exact §3.3 packaging-frame
+  # error this file exists to catch, manufactured by the tool itself.
+  # "cq" is NOT an alias here: CQ is "cartridge" in Rec 20/21. Mapping it to Hundred would turn a
+  # cartridge into a pack of 100 -- a 100x price error, the exact failure this file exists to catch.
+  - code: CEN
+    canonical: "Hundred"
+    default_quantity: 100
+    bulk: true
+    aliases: ["hundred", "per hundred", "cen"]
+
+  - code: MIL
+    canonical: "Thousand"
+    default_quantity: 1000
+    bulk: true
+    aliases: ["thousand", "per thousand", "mil"]
+
+# Container nouns whose difference is commercially immaterial when the quantity matches.
+# `Box of 10` against `Pack of 10` is the same fact in two words; flagging it burns a review for
+# nothing. `Each` against any bulk container is never in this set.
+interchangeable_containers:
+  - [BX, PK, CT, CS, BG, TU]
+
+# Surface patterns, tried in order. Each yields (uom alias, quantity).
+patterns:
+  - regex: '^(?P<uom>[A-Za-z\.]+)\s*(?:of|/|-|:)?\s*(?P<qty>\d+(?:\.\d+)?)$'
+    note: "Box of 10 / BOX/10 / PK-25 / pack:100"
+  - regex: '^(?P<qty>\d+(?:\.\d+)?)\s*(?:/|per|in a|in|x)\s*(?P<uom>[A-Za-z\.]+)$'
+    note: "10/PK / 25 per box / 100 x bag"
+  - regex: '^(?P<uom>[A-Za-z\.]+)\s*\(\s*(?P<qty>\d+(?:\.\d+)?)\s*\)$'
+    note: "Box (10)"
+  - regex: '^(?P<qty>\d+(?:\.\d+)?)\s*(?P<uom>[A-Za-z\.]+)$'
+    note: "10 EA / 1 PCE"
+  - regex: '^(?P<uom>[A-Za-z\.]+)$'
+    note: "Each / EA / Box -- quantity from the uom default, or unspecified for bulk"

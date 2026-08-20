@@ -1,0 +1,899 @@
+# Adversarial equivalence suite -- units family (FR-0.1 hardening pass).
+#
+# The base units.yaml suite passes 100% of its 39 cases. Per the harness's own caveat, that is weak
+# evidence: a suite written alongside the code it grades encodes the same blind spots twice. Every
+# case below was driven through the real pipeline (errata_valuesem.normalize / compare and
+# errata_comparator.compare_attribute) before the label was written down, and several expose real
+# defects rather than confirming existing behaviour. Where the comparator disagrees with the label
+# here, that disagreement is the point -- it is reported, not silently "fixed" by relabelling.
+#
+# Two flagship findings live in this file:
+#   1. Tolerance-SHAPE blindness (unt-h010/h012/h013): two explicit tolerances that describe
+#      genuinely different acceptance windows -- but merely overlap rather than differ disjointly
+#      -- are declared flatly EQUIVALENT. A part can pass one spec and fail the other; the tool
+#      says nothing.
+#   2. barg/bara and AWG/H7 (unt-h033-h040): the unit registry does not know gauge-vs-absolute
+#      pressure suffixes, AWG wire gauge, or ISO 286 fit-tolerance-grade notation at all, so every
+#      such pair -- right or catastrophically wrong -- silently abstains. The abstention is
+#      content-blind: it fires identically whether the two sides agree or contradict.
+#
+# A third, previously-undocumented defect (unt-h026/h027) was found while probing prefix traps:
+# any SI-prefixed area unit that industrial.txt does not explicitly hand-define (um2, km2, nm2, ...)
+# is computed by Pint with the WRONG scaling factor, because the prefix is applied linearly to the
+# "m2" alias instead of being squared. 1 um2 is silently treated as numerically equal to 1 mm2 --
+# a factor of 1,000,000 -- in both directions.
+
+suite: equivalence
+family: units
+version: "0.1.0"
+
+defaults:
+  attribute:
+    key: nominal_dimension
+    label: Dimension
+    kinds: [quantity, quantity_set, range]
+
+cases:
+  # == 1. Metric/imperial rounding-boundary traps =================================================
+  # 1 in = 25.4 mm exactly (ISO 31 / ISO 80000-3). Every value below is derived from that single
+  # exact fact; the question in each case is whether the *rounded* metric side's implied-precision
+  # band still contains the exact conversion.
+  - id: unt-h001
+    a: "1/4 in"
+    b: "6.35 mm"
+    expect: equivalent
+    source: "1 in = 25.4 mm exactly; 0.25 in = 6.35 mm exactly"
+    rationale: "Exact fraction against the exact conversion, no rounding involved at all."
+
+  - id: unt-h002
+    a: "1/4 in"
+    b: "6.4 mm"
+    expect: equivalent
+    source: "0.25 in = 6.35 mm exactly; '6.4 mm' (1 dp) asserts 6.35..6.45 mm"
+    rationale: >-
+      The written-precision band touches the exact conversion at its lower edge. A reviewer would
+      accept this as the same value rounded to one decimal place, not a defect.
+
+  - id: unt-h003
+    a: "1/4 in"
+    b: "6.3 mm"
+    expect: equivalent
+    source: "0.25 in = 6.35 mm exactly; '6.3 mm' (1 dp) asserts 6.25..6.35 mm"
+    rationale: >-
+      Touches the exact conversion at the *upper* edge this time -- the boundary case in the other
+      direction from unt-h002, deliberately placed next to it.
+
+  - id: unt-h004
+    a: "1/4 in"
+    b: "6.2 mm"
+    expect: contradiction
+    source: "0.25 in = 6.35 mm exactly; '6.2 mm' (1 dp) asserts 6.15..6.25 mm, which excludes 6.35 mm"
+    rationale: >-
+      One step past unt-h003's boundary. This is what a genuine rounding/typo error in a catalog
+      conversion looks like, and it must not be waved through just because its neighbours are fine.
+
+  - id: unt-h005
+    a: "3/32 in"
+    b: "2.4 mm"
+    expect: equivalent
+    source: "3/32 in = 2.38125 mm exactly; '2.4 mm' (1 dp) asserts 2.35..2.45 mm"
+
+  - id: unt-h006
+    a: "3/32 in"
+    b: "2.38 mm"
+    expect: equivalent
+    source: "3/32 in = 2.38125 mm exactly; '2.38 mm' (2 dp) asserts 2.375..2.385 mm"
+    rationale: "A tight boundary case at two decimal places rather than one."
+
+  - id: unt-h007
+    a: "3/32 in"
+    b: "2.3 mm"
+    expect: contradiction
+    source: "3/32 in = 2.38125 mm exactly; '2.3 mm' asserts 2.25..2.35 mm, which excludes 2.38125 mm"
+
+  - id: unt-h008
+    a: "3/8 in"
+    b: "9.53 mm"
+    expect: equivalent
+    source: "3/8 in = 9.525 mm exactly; '9.53 mm' (2 dp) asserts 9.525..9.535 mm"
+    rationale: "Touches the exact conversion at its lower edge -- the tight boundary in this family."
+
+  - id: unt-h009
+    a: "3/8 in"
+    b: "9.4 mm"
+    expect: contradiction
+    source: "3/8 in = 9.525 mm exactly; '9.4 mm' asserts 9.35..9.45 mm, which excludes 9.525 mm"
+
+  # == 2. Tolerance-SHAPE blindness (flagship finding) =============================================
+  # Two explicit tolerances are compared by asking only "do the asserted intervals overlap", never
+  # "are these the same interval". That is the right question when one side wrote a number and the
+  # other didn't (precision.py's stated purpose); it is the wrong question when BOTH sides wrote an
+  # explicit tolerance and the tolerances are shaped differently.
+  - id: unt-h010
+    a: "10 +/-0.2 mm"
+    b: "10 +0.2/-0.1 mm"
+    expect: contradiction
+    source: >-
+      Interval arithmetic on the stated tolerances: symmetric +/-0.2 mm gives an acceptance window
+      of [9.8, 10.2] mm; asymmetric +0.2/-0.1 mm gives [9.9, 10.2] mm. A part machined at 9.85 mm
+      passes the first specification and fails the second -- these are not interchangeable
+      specifications despite sharing a nominal value and an upper bound.
+    rationale: >-
+      FLAGSHIP CASE. The comparator's own overlap-permissive design (precision.py: "overlap, not
+      containment") treats any two explicit tolerances whose bands merely intersect as flatly
+      EQUIVALENT once both sides carry a tolerance, because the a/b tolerance-presence branch only
+      fires when exactly one side has a stated tolerance. Two *different* tolerance shapes that both
+      happen to carry one are never checked against each other. Predicted and confirmed: the
+      comparator returns EQUIVALENT here, which is a real missed quality-window discrepancy.
+
+  - id: unt-h011
+    a: "9.9 .. 10.2 mm"
+    b: "10 +0.2/-0.1 mm"
+    expect: equivalent
+    source: >-
+      A range of 9.9 to 10.2 mm and a nominal 10 mm with tolerance +0.2/-0.1 both assert the
+      identical closed interval [9.9, 10.2] mm -- the same fact, written as explicit endpoints on
+      one side and as nominal-plus-asymmetric-tolerance on the other.
+    rationale: >-
+      FLAGSHIP CASE, the true-equivalence twin of unt-h010. Predicted and confirmed: the comparator
+      does not check whether the range's bounds and the quantity's tolerance-derived bounds are
+      *identical* -- it only checks whether the quantity's interval falls inside the range's
+      interval (precision.py containment, not equality), so it reports GRANULARITY_MISMATCH
+      ("b falls inside the range") on two notations of the exact same interval. This is a false
+      positive: a reviewer would see nothing to flag here at all.
+
+  - id: unt-h012
+    a: "10 mm +/-2%"
+    b: "10 +/-0.3 mm"
+    expect: contradiction
+    source: >-
+      2% of 10 mm is 0.2 mm, giving an acceptance window of [9.8, 10.2] mm; the explicit absolute
+      tolerance of +/-0.3 mm gives [9.7, 10.3] mm -- a materially wider window than the percentage
+      figure states.
+    rationale: >-
+      A second instance of the unt-h010 pattern: [9.8, 10.2] is a strict subset of [9.7, 10.3], so
+      the two overlap completely, and the comparator reports EQUIVALENT rather than surfacing that
+      the two published tolerances imply different manufacturing acceptance criteria.
+
+  - id: unt-h013
+    a: "230 V +/-10%"
+    b: "230 +/-15 V"
+    expect: contradiction
+    source: >-
+      10% of 230 V is 23 V, giving an acceptance window of [207, 253] V; the explicit absolute
+      tolerance of +/-15 V gives [215, 245] V -- a narrower window nested inside the percentage
+      figure's window.
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity]
+    rationale: >-
+      The same tolerance-shape blindness on a SAFETY_CLASS_ATTRIBUTES field (rated_voltage). A
+      supply that only guarantees +/-15 V (6.5%) is being silently equated with a spec that only
+      promises +/-10% (23 V) -- the tool reports EQUIVALENT and a real regulatory-relevant
+      discrepancy in stated tolerance goes unflagged.
+
+  - id: unt-h014
+    a: "0.95 .. 1.05 bar"
+    b: "1 bar +/-5%"
+    expect: equivalent
+    source: >-
+      5% of 1 bar is 0.05 bar, so '1 bar +/-5%' asserts the closed interval [0.95, 1.05] bar --
+      identical to the stated range.
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity, range]
+    rationale: >-
+      The unt-h011 pattern reproduced on a different attribute (pressure) to show it is systemic,
+      not a one-off: a RANGE and a relative-percentage-toleranced QUANTITY that assert the
+      identical interval get GRANULARITY_MISMATCH instead of AGREEMENT, because containment is
+      checked but exact-interval-equality is not.
+
+  # == 3. ISO 286 fit/tolerance-grade notation =====================================================
+  - id: unt-h015
+    a: "10 H7"
+    b: "10.000 .. 10.015 mm"
+    expect: equivalent
+    source: >-
+      [UNVERIFIED - needs checking] ISO 286-1/2: for a 10 mm nominal hole in the >6-10 mm size
+      range, grade IT7 is commonly tabulated as 15 micrometres, and H places the entire tolerance
+      above the nominal (EI = 0), giving a band of 10.000 to 10.015 mm. Recalled from standard
+      machinist fit tables, not re-derived from the ISO 286-1 fundamental-tolerance formula here --
+      flagged rather than asserted with full confidence.
+    rationale: >-
+      "H7" is not a unit the registry knows, so this refuses with UNKNOWN_UNIT regardless of
+      whether the cited micron band is exactly right -- the comparator cannot check any
+      drawing-vs-datasheet fit-tolerance claim at all. A genuine coverage gap on a very common
+      mechanical-drawing notation.
+
+  - id: unt-h016
+    a: "10 H7"
+    b: "9.98 .. 9.995 mm"
+    expect: contradiction
+    source: >-
+      [UNVERIFIED - needs checking] The stated range (9.98..9.995 mm, entirely below nominal) looks
+      like a shaft tolerance in the g/f family, not an H7 hole tolerance (which per unt-h015 sits at
+      or above nominal). If so this pair describes two different fits and should contradict.
+    rationale: >-
+      Included beside unt-h015 to show the abstention is content-blind: a wrong fit-tolerance
+      datasheet value abstains identically to a correct one. The same UNKNOWN_UNIT refusal fires
+      here regardless of whether the numbers are actually right or catastrophically wrong -- the
+      tool offers zero protection on this attack surface either way.
+
+  # == 4. Unit prefix traps (current / voltage / dimension / frequency / pressure) ================
+  - id: unt-h017
+    a: "6kA"
+    b: "6 A"
+    expect: contradiction
+    source: "SI prefix kilo = 1000; 6 kA = 6000 A. IEC 60898-1 breaking-capacity class."
+    attribute:
+      key: breaking_capacity
+      label: Breaking capacity
+      kinds: [quantity]
+    rationale: >-
+      MAXIMUM-SEVERITY TRAP. A decimal/prefix shift on a breaking-capacity rating is exactly the
+      fire-risk-adjacent failure mode the research brief calls out. No space between magnitude and
+      unit, so this also exercises the tight-token-spacing path of the grammar.
+
+  - id: unt-h018
+    a: "630mA"
+    b: "630 A"
+    expect: contradiction
+    source: "SI prefix milli = 0.001; 630 mA = 0.63 A, a 1000x difference from 630 A"
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+
+  - id: unt-h019
+    a: "630 mA"
+    b: "0.63 A"
+    expect: equivalent
+    source: "630 mA = 0.63 A exactly"
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: "Control case beside unt-h018: the correct conversion must still resolve silently."
+
+  - id: unt-h020
+    a: "0.5mm"
+    b: "0.5cm"
+    expect: contradiction
+    source: "0.5 cm = 5 mm, a 10x difference from 0.5 mm"
+
+  - id: unt-h021
+    a: "4.7kV"
+    b: "4700 V"
+    expect: equivalent
+    source: "SI prefix kilo = 1000; 4.7 kV = 4700 V exactly"
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity]
+
+  - id: unt-h022
+    a: "50 Hz"
+    b: "50 kHz"
+    expect: contradiction
+    source: "SI prefix kilo = 1000; 50 kHz = 50000 Hz, a 1000x difference from a line-frequency rating"
+    attribute:
+      key: rated_frequency
+      label: Rated frequency
+      kinds: [quantity, quantity_set, range]
+
+  - id: unt-h023
+    a: "1 kPa"
+    b: "1 MPa"
+    expect: contradiction
+    source: "SI prefixes: 1 kPa = 1000 Pa, 1 MPa = 1000000 Pa -- a 1000x difference"
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+
+  - id: unt-h024
+    a: "250 kPa"
+    b: "25 bar"
+    expect: contradiction
+    source: "1 bar = 100000 Pa exactly; 250 kPa = 2.5 bar, a 10x difference from 25 bar (the earlier text said 100x, which is wrong arithmetic)"
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+
+  - id: unt-h025
+    a: "5 bar"
+    b: "5 mbar"
+    expect: contradiction
+    source: "SI prefix milli = 0.001; 5 mbar = 0.005 bar, a 1000x difference from 5 bar"
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+    rationale: "mbar is a common gauge-reading unit; verifies it isn't confused with bar."
+
+  # == 5. Cross-section SI-prefix registry bug (newly discovered, not in the brief) ===============
+  # industrial.txt hand-defines mm2/cm2/dm2/m2/in2/ft2 as `<length-unit> ** 2`, which is correct.
+  # Any OTHER SI prefix of "m2" that Pint synthesises on the fly (um2, km2, nm2, ...) is computed by
+  # applying the prefix's linear ratio directly to the "m2" alias's reference value instead of
+  # squaring it -- so "microm2" comes out as 1e-6 * (1 m2) = 1e-6 m2, which numerically equals
+  # 1 mm2, instead of the physically correct 1e-12 m2. Verified directly against pint:
+  # `ureg.Quantity(1,'mm2').to('microm2')` returns `1.0 microm2` (should be 1000000.0 microm2).
+  - id: unt-h026
+    a: "1.5 mm2"
+    b: "1500000 um2"
+    expect: equivalent
+    source: "1 mm = 1000 um, so 1 mm2 = 1,000,000 um2 (the linear ratio squared, because area scales as length^2); 1.5 mm2 = 1,500,000 um2 exactly"
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: >-
+      NEWLY DISCOVERED DEFECT. Confirmed via direct pint probing: parse_unit('um2') resolves to
+      'microm2', and the registry converts 1 mm2 to 'microm2' as 1.0 (not 1000000.0) -- the SI
+      prefix is applied linearly instead of squared for any area unit industrial.txt does not
+      explicitly hand-define. This case (the physically correct equivalence) is predicted and
+      confirmed to come back CONTRADICTION -- a false positive on a conductor cross-section field,
+      the same attribute family as the base suite's uni-208 (IEC 60228).
+
+  - id: unt-h027
+    a: "2 mm2"
+    b: "2 um2"
+    expect: contradiction
+    source: "2 um2 = 2e-6 mm2, a factor of 1,000,000 smaller than 2 mm2 -- a catastrophic conductor-undersizing error if these were meant to be the same rating"
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: >-
+      The dangerous direction of the same bug: because the registry treats 'um2' as numerically
+      equal to 'mm2', a million-fold cross-section error (2 mm2 quoted as 2 um2 or vice versa) is
+      predicted and confirmed to come back EQUIVALENT_UNIT_FRAME -- silently invisible to review.
+
+  # == 6. Temperature: point vs delta ================================================================
+  - id: unt-h028
+    a: "70 degC"
+    b: "158 degF"
+    expect: equivalent
+    source: "Affine point conversion: F = C * 9/5 + 32; 70 * 9/5 + 32 = 158 exactly"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+    rationale: "The brief's requested clean point-temperature control case, verified by direct arithmetic."
+
+  - id: unt-h029
+    a: "1 degC"
+    b: "33.8 degF"
+    expect: equivalent
+    source: "Affine point conversion: F = C * 9/5 + 32; 1 * 9/5 + 32 = 33.8 exactly"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+
+  - id: unt-h030
+    a: "85 degC"
+    b: "180 degF"
+    expect: contradiction
+    source: "Affine point conversion: F = C * 9/5 + 32; 85 * 9/5 + 32 = 185, not 180 -- a 5 degF (~2.8 degC) discrepancy"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+    rationale: >-
+      A genuine conversion/decimal-slip error placed beside unt-h028/029's correct conversions --
+      confirms the comparator does not just wave through anything degF-shaped.
+
+  - id: unt-h031
+    a: "80 degC"
+    b: "144 degF"
+    expect: equivalent
+    source: >-
+      A temperature RISE (delta), not a point reading: delta_F = delta_C * 9/5, with NO +32
+      offset, because a rise/differential has no absolute reference point to offset. 80 K of rise
+      converts to 144 degF of rise exactly. (IEC 60034-1 defines motor insulation-class temperature
+      RISE limits in degC/K; the specific class limit is not asserted here, only the linear
+      delta-conversion arithmetic, which is unconditionally true for any rise value.)
+    attribute:
+      key: temperature_rise
+      label: Winding temperature rise
+      kinds: [quantity]
+    rationale: >-
+      FLAGSHIP CASE, the "vice versa" direction the brief warned about. The grammar has no way to
+      mark a Quantity as a delta rather than a point -- Quantity carries no such flag, and
+      precision.interval_in always calls convert_point (the affine +32 formula) regardless of what
+      the attribute actually means. Predicted and confirmed: '80 degC' vs '144 degF' comes back
+      CONTRADICTION (comparing 79.5..80.5 degC against the affine-converted 61.9..62.5 degC),
+      because the comparator silently applies the POINT formula to what this attribute defines as a
+      DELTA. A real false positive -- a spurious contradiction raised against a genuinely matching
+      pair -- on any temperature-rise or insulation-class field.
+
+  - id: unt-h032
+    a: "-25 .. 70 degC"
+    b: "-40 .. 158 degF"
+    expect: undetermined
+    expect_alternatives: [granularity]
+    source: >-
+      -40 degF = -40 degC exactly (the C/F crossover point) and 158 degF = 70 degC exactly, so
+      '-40..158 degF' names the same nominal range as '-40..70 degC', which properly contains
+      '-25..70 degC'.
+    attribute:
+      key: temperature_rating
+      label: Operating temperature range
+      kinds: [range]
+    rationale: >-
+      A genuinely subtle, verified-correct edge case rather than a bug: '70 degC' (2 significant
+      figures, implied +/-0.5 degC) and '158 degF' (3 significant figures, implied +/-0.5 degF,
+      which converts to a narrower +/-0.2778 degC) do not carry the same implied precision even
+      though their central values match exactly. That mismatch pushes the converted upper bound
+      (70.2778 degC) fractionally below the Celsius side's own upper bound (70.5 degC), so strict
+      range-containment fails by 0.22 degC and the comparator abstains as 'overlap without
+      containment' rather than declaring containment. This is defensible, careful behaviour, not a
+      defect -- included to document the interaction between per-frame written precision and
+      cross-frame range comparison, matching the base suite's uni-306 precedent for range
+      containment.
+
+  # == 7. Gauge vs absolute pressure (flagship finding) ============================================
+  - id: unt-h033
+    a: "10 barg"
+    b: "10 bara"
+    expect: contradiction
+    source: >-
+      Standard atmosphere = 1.01325 bar exactly (definition). 'barg' is gauge pressure (relative to
+      atmosphere); 'bara' is absolute pressure. 10 barg = ~11.01 bar absolute, while 10 bara is
+      10 bar absolute by definition -- these name different physical pressures despite sharing the
+      numeral 10.
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+    rationale: >-
+      FLAGSHIP CASE. 'barg' and 'bara' are not in the unit registry at all (parse_unit raises
+      UnknownUnit for both). Predicted and confirmed: the comparator abstains as UNDETERMINED
+      rather than flagging the genuine physical contradiction -- it cannot even represent the
+      gauge/absolute distinction, so it provides zero protection on this attack surface. This is
+      the highest-severity finding in the pressure attack surface named in the brief.
+
+  - id: unt-h034
+    a: "6 barg"
+    b: "6 bar"
+    expect: undetermined
+    source: >-
+      Unqualified 'bar' does not, by itself, declare a gauge-or-absolute convention. Treating a
+      bare 'bar' figure as implicitly gauge (a common but not universal industrial convention)
+      would be a guess this library is not entitled to make without a documented attribute-level
+      policy.
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+    rationale: >-
+      A documented judgment call: unlike unt-h033 (both sides explicit and in conflict), here only
+      one side states a frame at all, so declining is the honest answer. 'barg' still fails to
+      parse, so the comparator abstains -- this happens to be the right call for the wrong reason
+      (a genuine unknown-unit refusal, not a reasoned judgment that the frame is ambiguous), but the
+      externally observable outcome matches what a competent reviewer would also choose here.
+
+  - id: unt-h035
+    a: "10 bara"
+    b: "9 barg"
+    expect: equivalent
+    source: >-
+      Standard atmosphere = 1.01325 bar exactly. 10 bara - 1.01325 bar (atmosphere) = 8.98675 barg,
+      which rounds to 9 barg at the precision both sides chose to write -- the same physical
+      pressure expressed in the two frames.
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+    rationale: >-
+      The registry gap cuts both ways: this is a legitimately equivalent pair once gauge/absolute
+      conversion is applied correctly, yet it abstains identically to unt-h033's genuine
+      contradiction and unt-h034's genuine ambiguity. The abstention carries zero information about
+      which of these three very different situations actually holds.
+
+  # == 8. AWG vs mm2 (cross-section) ================================================================
+  - id: unt-h036
+    a: "AWG 10"
+    b: "5.26 mm2"
+    expect: equivalent
+    source: >-
+      AWG conductor diameter: d(n) = 0.005 * 92^((36-n)/39) inch (standard American Wire Gauge
+      definition). For n=10: d = 0.005 * 92^(26/39) in = 0.1019 in = 2.588 mm; cross-sectional area
+      = (pi/4) * d^2 = 5.261 mm2, matching the standard AWG conductor table value cited here as
+      5.26 mm2. Computed directly from the defining formula, not recalled from memory alone.
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: >-
+      'AWG' is entirely absent from the unit registry (UNKNOWN_UNIT / NO_GRAMMAR_MATCH depending on
+      word order). Predicted and confirmed: this abstains as UNDETERMINED, so the comparator cannot
+      check any AWG-labelled wire size against a metric cross-section at all -- a real coverage
+      gap on a very common North American catalog notation.
+
+  - id: unt-h037
+    a: "10 AWG"
+    b: "5.26 mm2"
+    expect: equivalent
+    source: "Same derivation as unt-h036; reversed word order ('10 AWG' rather than 'AWG 10')."
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: "Confirms the gap in unt-h036 is not an artifact of one particular notation order."
+
+  - id: unt-h038
+    a: "AWG 10"
+    b: "8.37 mm2"
+    expect: contradiction
+    source: >-
+      8.37 mm2 is the standard cross-section of AWG 8, not AWG 10 (whose correct value is
+      5.26 mm2, unt-h036). Computed via the same AWG formula: n=8 gives d=0.1286 in=3.265 mm,
+      area=(pi/4)*d^2=8.37 mm2. Two full gauge sizes off is a real wire-size mislabelling.
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: >-
+      The dangerous direction: predicted and confirmed to abstain identically to unt-h036's correct
+      pairing. A genuine two-gauge-size conductor error is exactly as invisible to this comparator
+      as a correct conversion -- the abstention carries no signal either way.
+
+  # == 9. Value SETS vs RANGES =====================================================================
+  - id: unt-h039
+    a: "230/400 V"
+    b: "230-400 V"
+    expect: undetermined
+    source: >-
+      Slash notation names a SET of alternative supply voltages (IEC 60038 phase/line-to-line
+      nameplate convention); hyphen notation names a continuous RANGE. These are structurally
+      different claims about the product -- a device rated for exactly 230 V or 400 V is not the
+      same claim as a device rated for anywhere from 230 to 400 V.
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity, quantity_set, range]
+    rationale: >-
+      Verified: QUANTITY_SET against RANGE has no cross-kind handler in compare.py, so this falls
+      through to the generic "different semantic families" abstention. That is the correct,
+      conservative outcome -- it neither falsely equates a set with a range nor guesses which one
+      the catalog author intended. A control case confirming the comparator does NOT collapse these
+      two structurally different notations into one.
+
+  - id: unt-h040
+    a: "50/60 Hz"
+    b: "50-60 Hz"
+    expect: undetermined
+    source: "Same SET-vs-RANGE distinction as unt-h039, applied to line frequency."
+    attribute:
+      key: rated_frequency
+      label: Rated frequency
+      kinds: [quantity, quantity_set, range]
+
+  - id: unt-h041
+    a: "230V / 400V"
+    b: "230/400 V"
+    expect: equivalent
+    source: "Same two-voltage set (230 V, 400 V); one side states the unit on each value, the other states it once for the pair."
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity, quantity_set]
+    rationale: >-
+      Verified: the SLASHNUMS grammar rule requires digits immediately either side of the slash, so
+      '230V / 400V' (a unit token intervening before the slash) does not match it and the whole
+      string fails to parse at all (NO_GRAMMAR_MATCH). Predicted and confirmed UNDETERMINED. A
+      real coverage gap: a very natural way to spell a dual-voltage rating is invisible to the SET
+      grammar, which only accepts the tightly-packed 'N/M unit' form.
+
+  - id: unt-h042
+    a: "110/230 V"
+    b: "110/230/400 V"
+    expect: equivalent
+    source: >-
+      Every voltage the catalog names (110 V, 230 V) is confirmed present in the evidence's set of
+      three; the catalog simply names a subset of what the evidence documents.
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity_set]
+    rationale: >-
+      A documented judgment call: the catalog's narrower two-voltage claim is not factually wrong
+      about the voltages it does name, even though the evidence documents an additional 400 V
+      rating it omits. This mirrors the codebase's consistent convention (also seen in the generic
+      Threaded/NPT subsumption logic) that a narrower, non-overclaiming catalog statement resolves
+      silently rather than being treated as a defect. Verified: the comparator agrees
+      (A_MORE_SPECIFIC / no finding).
+
+  - id: unt-h043
+    a: "10/16/20 A"
+    b: "16/20/25 A"
+    expect: undetermined
+    source: "The two sets share 16 A and 20 A but neither is a subset of the other (10 A and 25 A are each unique to one side)."
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity_set]
+    rationale: "The three-alternative analogue of the base suite's uni-305 partial-overlap case, on a different attribute."
+
+  # == 10. Per-unit / per-phase notation ============================================================
+  - id: unt-h044
+    a: "16 A"
+    b: "16 A/phase"
+    expect: equivalent
+    source: >-
+      On a 3-phase device, '/phase' clarifies that the stated current is the per-line rating --
+      the same numeric fact as a bare current rating on a device where per-phase is the only
+      sensible reading. Judgment call: treated as the same fact, not a materially different rating,
+      absent any indication the bare figure meant a summed/total value.
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: >-
+      Verified: 'A/phase' is not resolvable as a unit (UNITTOK matches the whole token, then
+      parse_unit rejects 'A/phase' outright), so this abstains as UNDETERMINED rather than reaching
+      the semantic question at all. A coverage gap on a common three-phase notation, independent of
+      whether the judgment call above is the right one.
+
+  - id: unt-h045
+    a: "10 A"
+    b: "10 A per phase"
+    expect: equivalent
+    source: "Same reasoning as unt-h044, spelled out in words rather than with a slash."
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: >-
+      Verified: 'per phase' does not fit the grammar's QUAL/UNITTOK vocabulary at all, so the whole
+      string fails to parse (NO_GRAMMAR_MATCH) rather than merely losing the qualifier.
+
+  # == 11. Max vs nominal vs typical qualifiers =====================================================
+  - id: unt-h046
+    a: "230 V nom"
+    b: "230 V"
+    expect: equivalent
+    source: "The 'nom' qualifier describes how the number was characterised; it does not change the asserted magnitude"
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity]
+
+  - id: unt-h047
+    a: "100 W typ"
+    b: "100 W max"
+    expect: equivalent
+    source: >-
+      Common datasheet convention: absent a stated distribution, a typical figure and a maximum
+      figure that agree numerically are not treated as conflicting claims about the same rating.
+    rationale: >-
+      A control case confirming intended, documented design (compare.py's _ADVISORY_QUALIFIERS: two
+      differing advisory qualifiers never manufacture a disagreement on their own). Included to show
+      this is deliberate behaviour, not an accidental gap, before the reader assumes every
+      qualifier mismatch in this file is a bug.
+
+  - id: unt-h048
+    a: "<= 40 degC"
+    b: "40 degC max"
+    expect: equivalent
+    source: "The <= comparator and the word 'max' both describe an upper-bound qualifier on the same magnitude"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+
+  - id: unt-h049
+    a: "<= 40 degC"
+    b: ">= 40 degC"
+    expect: contradiction
+    source: "An upper-bound qualifier and a lower-bound qualifier on the same magnitude describe opposing constraints"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+    rationale: "The CMP-operator analogue of the base suite's uni-210 (which uses the word forms max/min)."
+
+  - id: unt-h050
+    a: ">10 A"
+    b: "10 A min"
+    expect: equivalent
+    source: "The > comparator and the word 'min' both map to a lower-bound qualifier in this grammar"
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: >-
+      Worth flagging in the rationale even though labelled equivalent: '>10 A' strictly excludes
+      10 A itself (an open bound) while '10 A min' conventionally includes it (a closed bound). The
+      qualifier-based comparison has no notion of open vs. closed bounds at all, so this distinction
+      is invisible to it either way -- included as a documented observation, not scored as a defect
+      here, since the two are close enough in practice that a reviewer would not flag them either.
+
+  # == 12. Thousands-separator / decimal-comma ambiguity across attributes =========================
+  - id: unt-h051
+    a: "6,000 A"
+    b: "6000 A"
+    expect: undetermined
+    source: >-
+      A comma before exactly three digits is 1000x ambiguous: en-locale '6,000' = 6000, de-locale
+      '6,000' = 6. Without a declared decimal_separator the honest answer is to decline.
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: >-
+      The base suite's uni-403 tests this exact ambiguity on rated_voltage; this repeats it on
+      rated_current (also a SAFETY_CLASS_ATTRIBUTES field) to confirm the refusal is not
+      attribute-specific.
+
+  - id: unt-h052
+    a: "1,5 A"
+    b: "1.5 A"
+    expect: equivalent
+    source: "German decimal comma; unambiguous because fewer than three digits follow the comma"
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+
+  - id: unt-h053
+    a: "37,5 degC"
+    b: "37.5 degC"
+    expect: equivalent
+    source: "German decimal comma; unambiguous because fewer than three digits follow the comma"
+    attribute:
+      key: temperature_rating
+      label: Max operating temperature
+      kinds: [quantity]
+
+  # == 13. Mixed fractions and sign handling (dimension) ============================================
+  - id: unt-h054
+    a: "1 1/2 in"
+    b: "38.1 mm"
+    expect: equivalent
+    source: "1.5 in = 38.1 mm exactly"
+    rationale: "Mixed-fraction grammar (whole number plus a fraction), not yet exercised by the base suite."
+
+  - id: unt-h055
+    a: "1 1/2 in"
+    b: "38 mm"
+    expect: equivalent
+    source: "1.5 in = 38.1 mm exactly; '38 mm' asserts 37.5..38.5 mm, which contains 38.1 mm"
+
+  - id: unt-h056
+    a: "1 1/2 in"
+    b: "37 mm"
+    expect: contradiction
+    source: "1.5 in = 38.1 mm exactly; '37 mm' asserts 36.5..37.5 mm, which excludes 38.1 mm"
+
+  - id: unt-h057
+    a: "-0.5 mm"
+    b: "0.5 mm"
+    expect: contradiction
+    source: "A sign-flip error: -0.5 mm and 0.5 mm assert disjoint intervals on opposite sides of zero"
+    rationale: "Confirms the grammar's SIGN token is load-bearing and not silently dropped in comparison."
+
+  # == 14. Additional prefix/scale breadth (frequency, dimension) ===================================
+  - id: unt-h058
+    a: "0.4 kHz"
+    b: "400 Hz"
+    expect: equivalent
+    source: "SI prefix kilo = 1000; 0.4 kHz = 400 Hz exactly"
+    attribute:
+      key: rated_frequency
+      label: Rated frequency
+      kinds: [quantity]
+
+  - id: unt-h059
+    a: "1500 mm"
+    b: "150 m"
+    expect: contradiction
+    source: "1500 mm = 1.5 m, a 100x difference from 150 m"
+
+  - id: unt-h060
+    a: "1.5 MPa"
+    b: "1500 kPa"
+    expect: equivalent
+    source: "SI prefixes: 1.5 MPa = 1,500,000 Pa = 1500 kPa exactly"
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+
+  - id: unt-h061
+    a: "110/230/400 V"
+    b: "400/230/110 V"
+    expect: equivalent
+    source: "A set of three alternative supply voltages is unordered"
+    attribute:
+      key: rated_voltage
+      label: Rated voltage
+      kinds: [quantity_set]
+    rationale: "The three-element analogue of the base suite's uni-304 (which tests a two-element set)."
+
+  # == 15. Reinforcement: gauge/absolute and cross-section bugs generalise beyond bar/mm2 ==========
+  - id: unt-h062
+    a: "10 psig"
+    b: "10 psia"
+    expect: contradiction
+    source: >-
+      Standard atmosphere = 14.696 psi. 'psig' is gauge pressure, 'psia' is absolute pressure;
+      10 psig = ~24.7 psia, while 10 psia is 10 psi absolute by definition -- different physical
+      pressures.
+    attribute:
+      key: pressure_rating
+      label: Pressure rating
+      kinds: [quantity]
+    rationale: >-
+      Reinforces unt-h033 across a second gauge/absolute unit family: 'psig' and 'psia' are also
+      absent from the registry (both UNKNOWN_UNIT), so this abstains identically rather than
+      flagging the physical contradiction. The gap is not bar-specific -- it is a missing concept
+      (gauge vs. absolute) rather than a missing spelling.
+
+  - id: unt-h063
+    a: "100uA"
+    b: "100 mA"
+    expect: contradiction
+    source: "SI prefixes: 100 uA (micro) = 0.0001 A; 100 mA (milli) = 0.1 A -- a 1000x difference"
+    attribute:
+      key: rated_current
+      label: Rated current
+      kinds: [quantity]
+    rationale: >-
+      A micro/milli confusion on a leakage- or standby-current field -- the same class of error as
+      unt-h017's kA/A trap, one prefix step down and in the other direction.
+
+  - id: unt-h064
+    a: "0.001 mm2"
+    b: "1000 um2"
+    expect: equivalent
+    source: "1 mm2 = 1,000,000 um2 exactly (length ratio squared); 0.001 mm2 = 1000 um2 exactly"
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: >-
+      Reinforces unt-h026 at a different magnitude. Predicted and confirmed CONTRADICTION: the same
+      linear-instead-of-squared prefix bug fires here too, independent of which side carries the
+      larger raw number.
+
+  - id: unt-h065
+    a: "AWG 12"
+    b: "3.31 mm2"
+    expect: equivalent
+    source: >-
+      AWG conductor diameter d(n) = 0.005 * 92^((36-n)/39) inch. For n=12: d = 0.005 * 92^(24/39) in
+      = 0.0809 in = 2.054 mm; area = (pi/4) * d^2 = 3.31 mm2, the standard AWG 12 conductor table
+      value. Computed directly from the defining formula.
+    attribute:
+      key: conductor_cross_section
+      label: Conductor cross-section
+      kinds: [quantity]
+    rationale: "A third AWG gauge (after unt-h036/037's AWG 10) confirming the coverage gap is general, not one specific size."
+
+  - id: unt-h066
+    a: "-40 degC"
+    b: "-40 degF"
+    expect: equivalent
+    source: "The Celsius/Fahrenheit crossover point: F = C * 9/5 + 32 gives -40 = -40 * 9/5 + 32 exactly"
+    attribute:
+      key: temperature_rating
+      label: Min operating temperature
+      kinds: [quantity]
+    rationale: "The one point where the affine point-conversion formula and a naive 1:1 reading coincide -- worth a dedicated control so a future reader cannot mistake it for evidence the formula is linear."
+
+  - id: unt-h067
+    a: "-20 degC"
+    b: "-10 degF"
+    expect: contradiction
+    source: "Affine point conversion: F = C * 9/5 + 32; -20 degC = -4 degF exactly, not -10 degF -- a 6 degF (~3.3 degC) discrepancy"
+    attribute:
+      key: temperature_rating
+      label: Min operating temperature
+      kinds: [quantity]
+    rationale: "A below-zero conversion error, placed beside unt-h066's exact crossover control."

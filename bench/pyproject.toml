@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-bench"
+version = "0.1.0"
+description = "Errata evaluation harness: the R0 kill tests, the equivalence suite, and the public benchmark axes ExtractBench does not score."
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "The Errata Authors" }]
+
+dependencies = [
+    "errata-comparator>=0.1.0",
+    "errata-valuesem>=0.1.0",
+    "errata-spec>=0.1.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+errata-r0 = "errata_bench.cli:main"
+errata-demo = "errata_bench.demo.run:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+errata_bench = ["suites/**/*.yaml", "suites/**/*.json", "demo/*.yaml"]
