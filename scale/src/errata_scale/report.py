@@ -41,6 +41,14 @@ def render_text(run: CatalogRun, *, top: int = 15, banner: str = "") -> str:
         "",
         run.cost.text(),
         "",
+        # NFR-5. Printed immediately after the work-unit table, because the whole point of the
+        # work-unit table is a commercial argument and a commercial argument with no currency in
+        # it is a shape without a price. Absent only for a run assembled by hand in a test.
+        *(
+            [run.priced.text(), ""]
+            if run.priced is not None
+            else []
+        ),
         "FINDINGS",
         f"  queue rows                   {run.findings:,}",
         f"    from T0 (feed structure)   {run.structural_findings:,}",
@@ -90,6 +98,12 @@ def render_json(run: CatalogRun, *, top: int = 50) -> str:
             "manifest": run.manifest(),
             "groundable_fraction_report": run.groundable.as_dict(),
             "cost_report": run.cost.as_dict(),
+            "priced_cost": run.priced.as_dict() if run.priced is not None else None,
+            "versus_extractbench": (
+                run.priced.versus_extractbench()
+                if run.priced is not None
+                else None
+            ),
             "findings": {
                 "total": run.findings,
                 "t0_structural": run.structural_findings,

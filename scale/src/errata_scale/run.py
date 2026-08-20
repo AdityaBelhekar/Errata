@@ -49,6 +49,7 @@ from errata_audit.audit import AUDIT_VERSION
 from errata_audit.classify import ClassScope
 from errata_spec import Redline, ResolutionPolicy, builtin_policy
 
+from .costing import PricedCost, Timer, price_run
 from .feedindex import FeedIndex, index_feed
 from .groundable import GroundableFractionReport, GroundingStatus, inventory
 from .ids import batch_id
@@ -85,6 +86,9 @@ class CatalogRun:
     audit_version: str = AUDIT_VERSION
     structural_version: str = STRUCTURAL_VERSION
     notes: tuple[str, ...] = ()
+    priced: PricedCost | None = None
+    """NFR-5 -- measured seconds, modelled money. ``None`` only for a run assembled by hand
+    in a test; every run through :func:`run_catalog` carries one."""
 
     # -- the numbers -------------------------------------------------------------------------
 
@@ -244,7 +248,9 @@ def run_catalog(
 
     ground = inventory(records, supplied, catalog=catalog_path.name)
 
-    structural = run_structural(records, feed, attributes=attributes)
+    timer = Timer()
+    with timer.measure(Tier.T0_STRUCTURAL):
+        structural = run_structural(records, feed, attributes=attributes)
 
     audits: list[SkuAudit] = []
     layers: dict[str, object] = {}
@@ -263,27 +269,28 @@ def run_catalog(
             document = by_name.get(named) or only
             if document is None:
                 continue
-            if document.sha256 not in layers:
-                layers[document.sha256] = extract_layer(
-                    document.path, document_sha256=document.sha256
+            with timer.measure(Tier.T1_GROUNDED):
+                if document.sha256 not in layers:
+                    layers[document.sha256] = extract_layer(
+                        document.path, document_sha256=document.sha256
+                    )
+                    tables[document.sha256] = extract_tables(
+                        document.path, document_sha256=document.sha256
+                    )
+                audits.append(
+                    audit_sku(
+                        record,
+                        document,
+                        etim=etim,
+                        scope=scope,
+                        attributes=attributes,
+                        calibration=calibration,
+                        policy=policy,
+                        layer=layers[document.sha256],  # type: ignore[arg-type]
+                        tables=tables[document.sha256],  # type: ignore[arg-type]
+                        propagation=propagation,
+                    )
                 )
-                tables[document.sha256] = extract_tables(
-                    document.path, document_sha256=document.sha256
-                )
-            audits.append(
-                audit_sku(
-                    record,
-                    document,
-                    etim=etim,
-                    scope=scope,
-                    attributes=attributes,
-                    calibration=calibration,
-                    policy=policy,
-                    layer=layers[document.sha256],  # type: ignore[arg-type]
-                    tables=tables[document.sha256],  # type: ignore[arg-type]
-                    propagation=propagation,
-                )
-            )
 
     tier_of: dict[str, str] = {}
     redlines: list[Redline] = []
@@ -297,7 +304,14 @@ def run_catalog(
             redlines.append(outcome.redline)
             tier_of[str(outcome.redline.redline_id)] = Tier.T1_GROUNDED.value
 
-    clusters = cluster_signatures(redlines, tier_of=tier_of)
+    # T2's counter-evidence search happens INSIDE audit_sku, behind `comparison.raises_finding`,
+    # so its seconds are already inside the T1 measurement above and cannot be separated without
+    # threading the timer through errata_audit -- which would mean the product importing the
+    # thing that prices it. The cost report says so rather than reporting a T2 of zero seconds as
+    # though the tier were free. Clustering and routing ARE the deep tier's own work over the
+    # findings, and they are measured here.
+    with timer.measure(Tier.T2_DEEP):
+        clusters = cluster_signatures(redlines, tier_of=tier_of)
     triage = route(
         redlines,
         clusters,
@@ -313,6 +327,17 @@ def run_catalog(
         ground=ground,
         queue_rows=len(triage.entries),
         attributes_examined=structural.attributes_examined,
+    )
+
+    # NFR-5. Pages, not documents: ExtractBench's reference point is 8.1 cents per PAGE, and a
+    # per-document figure compared against it would be wrong by however many pages a datasheet
+    # has (sixteen, for the ABB S200).
+    pages = sum(getattr(layer, "page_count", 0) for layer in layers.values())
+    priced = price_run(
+        cost,
+        timer,
+        pages_processed=pages,
+        machine=_machine_description(),
     )
 
     identifier = str(
@@ -335,6 +360,7 @@ def run_catalog(
         audits=tuple(audits),
         triage=triage,
         cost=cost,
+        priced=priced,
         policy_version=policy.version_tag,
         attribute_map_version=attributes.version,
         etim_release=etim.release if etim is not None else "",
@@ -346,6 +372,20 @@ def run_catalog(
         ReviewQueue(triage, ledger=ledger, batch_id=identifier).record_batch(run.manifest())
 
     return run
+
+
+def _machine_description() -> str:
+    """What the seconds were measured on. A second on a laptop is not a second on a build agent.
+
+    Recorded with the number rather than alongside it, because a measured duration whose machine
+    is unknown is not reproducible and NFR-5 asks for a *measured* cost.
+    """
+    import platform
+
+    return (
+        f"{platform.system()} {platform.release()} / {platform.machine()} / "
+        f"Python {platform.python_version()}"
+    )
 
 
 def _cost_report(

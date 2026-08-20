@@ -1,0 +1,103 @@
+# NFR-5 -- the rate card. Published third-party list prices, each with its source and the date it
+# was read.
+#
+# THIS FILE IS THE ASSUMPTION LAYER. Everything in `errata_scale.costing` that is denominated in
+# money is measured seconds and measured counts multiplied by a number in here. Nothing in this
+# repository has ever run in production and there is no invoice behind any of it, so the numbers
+# below are list prices for a workload nobody has run at scale, and every report that uses them
+# says so on its face.
+#
+# The rule that keeps this file honest: `errata_scale.costing.Rate` REFUSES a rate with no source
+# or no date. A price nobody can check is a number this codebase will not multiply anything by.
+#
+# What the money is actually for. The claim under test is FR-8.7's -- "cost tracks errors, not
+# rows" -- which is a statement about the SHAPE of the curve. Double every rate below and T2 still
+# does not grow with catalog size. The absolute figures are an order of magnitude with a method
+# attached; the shape is the result.
+
+rate_card_id: "errata-rates/2026-08-21"
+currency: USD
+
+# NFR-5 names this as the T1 reference point. It lives HERE rather than being imported from
+# `errata_bench`, where the constant also exists, because `errata_scale` is the product and
+# `errata_bench` is its scorer -- audit/tests/test_boundaries.py forbids the product importing the
+# thing that grades it, and a cost report reaching across that line for a comparison figure would
+# be the first crack in it. Two copies of one number is the lesser problem; the test below pins
+# them equal so they cannot drift.
+reference_cents_per_page: 8.1
+reference_source: >-
+  ExtractBench, arXiv 2607.29677, Table 3 p.9 -- cost per page for the best-performing extraction
+  system evaluated. Read on 2026-08-20.
+
+rates:
+  compute_second:
+    # AWS Fargate rather than EC2 on purpose: Fargate bills per second with a one-minute minimum,
+    # which is the same unit `costing.Timer` measures in. Pricing an intermittent batch job at an
+    # hourly instance rate would either round every run up to an hour or silently assume the
+    # machine is doing something else the rest of the time.
+    #
+    # Sized at 1 vCPU + 2 GiB, which is what the R2 run over 10,001 records actually fits in.
+    #   vCPU:   $0.04048 per vCPU-hour
+    #   memory: $0.004445 per GB-hour, x 2 GiB
+    #   total:  (0.04048 + 0.008890) / 3600 = $0.0000137139 per second = 0.00137139 cents/second
+    cents: 0.00137139
+    per: second
+    source: >-
+      AWS Fargate on-demand pricing, Linux/x86, us-east-1: $0.04048 per vCPU-hour and $0.004445
+      per GB-hour. https://aws.amazon.com/fargate/pricing/ -- computed here for 1 vCPU + 2 GiB.
+    read_on: "2026-08-21"
+
+  reviewer_second:
+    # DECLARED BUT NEVER MULTIPLIED BY ANYTHING. T3 is priced at zero in `costing.price_run`,
+    # because pricing a queue row needs reviewer-seconds-per-row and FR-9.3 reports NOT MEASURED:
+    # no reviewer has ever been timed. The rate sits here so that the day a timing exists, the
+    # number it is multiplied by is one somebody sourced rather than one invented in the same
+    # commit as the measurement.
+    #
+    # It is also a FLOOR and should be read as one. BLS 43-9021 is a data-entry keyer. The
+    # reviewer this product requires is an electrical domain expert who can look at "16 A" under
+    # a tripping characteristic and know whether it is wrong -- a materially more expensive
+    # person. Using the cheaper occupation makes every future T3 estimate an understatement,
+    # which is the direction an unmeasured number should err in a document that argues for the
+    # product.
+    #   $18.17/hour / 3600 = $0.005047/second = 0.5047 cents/second
+    cents: 0.5047
+    per: second
+    source: >-
+      US Bureau of Labor Statistics, Occupational Employment and Wage Statistics, occupation
+      43-9021 Data Entry Keyers, national median hourly wage $18.17 (May 2023 estimates).
+      https://www.bls.gov/oes/2023/may/oes439021.htm -- a FLOOR, not the right occupation; see
+      the note above.
+    read_on: "2026-08-21"
+
+  model_input_token:
+    # Zero, and zero is the correct measured value today: no tier calls a paid model. FR-2.2's
+    # LLM selector is an interface with no implementation and R1 says so on every run.
+    #
+    # Present rather than absent so that the day one is wired in, the cost report has somewhere
+    # to put the number instead of quietly continuing to report a compute-only total. `Rate`
+    # requires a source even for this, which is why it names the absence rather than shrugging.
+    cents: 0.0
+    per: token
+    source: >-
+      No model is called by any tier. errata_audit ships an LLM selector INTERFACE with no
+      implementation (FR-2.2), so the measured model spend of every run to date is exactly zero.
+      Replace this with the provider's published per-token price on the commit that wires one in.
+    read_on: "2026-08-21"
+
+caveats:
+  - >-
+    THE REFERENCE POINT IS NOT LIKE-FOR-LIKE UNLESS YOU MAKE IT SO. ExtractBench's 8.1 cents/page
+    is the cost of extracting from every page of every document. Errata opens a document only for
+    the groundable fraction -- 2.77% of the R2 demonstration catalog -- so a per-page comparison
+    that ignores the denominator flatters Errata by roughly 36x. The cost report prints cost per
+    page PROCESSED and cost per CATALOG RECORD side by side for this reason.
+  - >-
+    NO EGRESS, STORAGE, ORCHESTRATION OR IDLE COST IS MODELLED. A real deployment pays for the
+    blob store the documents land in, the queue, and the hours the service is up and doing
+    nothing. This rate card prices the work, not the system around it, and the true bill is
+    therefore higher than anything computed from it.
+  - >-
+    SECONDS WERE MEASURED ON ONE MACHINE. The cost report names it. Fargate vCPU performance is
+    not the machine a developer measured on, so the seconds and the rate come from two different
+    worlds; this is the largest single source of error in the total and it is not quantified.
