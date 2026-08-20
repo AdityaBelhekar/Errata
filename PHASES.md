@@ -18,11 +18,11 @@ one is code, one is data acquisition, one is deadlocked on R1 — and collapsing
 | | Phase | Release | Blocker type | Status |
 |---|---|---|---|---|
 | **P0** | Environment & reproducibility | — | none | ✅ **DONE** (this session) |
-| **P1** | Gate 1 hardening — make the number quotable | R0 | effort | 🟢 **11 of 12 closed**; 1.12 blocked on standards access |
+| **P1** | Gate 1 hardening — make the number quotable | R0 | effort | 🟢 **11 of 12 closed**; 1.12 blocked on standards access, 1.2 needs a person |
 | **P2** | Gate 3 — calibration coverage | R0 | **external data** | ⏸️ **D-1 taken** — deferred, data request ready to send |
 | **P3** | Grounding spike → Gate 2 | R0/R1 | **circular dependency** | ✅ **DONE** — gate 2 MEASURED, **ASYMMETRY NOT CONFIRMED** |
 | **P4** | Single-SKU audit + console | R1 | gated on P1–P3 | ✅ **DONE** — entered on waiver **D-3** (gate 3 unmeasured); 933 tests |
-| **P5** | Catalog-scale audit | R2 | gated on P4 **and on gate 3, which D-3 does NOT waive** | ⬜ |
+| **P5** | Catalog-scale audit | R2 | gated on P4 **and on gate 3, which D-3 does NOT waive** | ✅ **DONE** — 9 of 9 requirements; **exit criterion half open (D-4)** — the corpus is not public |
 | **P6** | Benchmark + ecosystem | R3 | gated on P5 | ✅ **DONE** — 9 requirements met or honestly declined; **exit criterion half open (D-5)** |
 | **P7** | Commercial | R4 | out of PRD scope | ⬜ |
 
@@ -156,7 +156,7 @@ defensible, R0 has zero measured gates rather than one, and P2/P3 are building o
 | # | Task | Source | Effort |
 |---|---|---|---|
 | 1.1 ✅ | **Citation-audit `threads_hard.yaml`** — 114 cases, the largest suite file, **never audited**; its authoring agent died mid-run | `PROGRESS` #16 | High |
-| 1.2 🟢 | **Independent dual-labelling** — *partially closed without a human*: `errata-r0 corroborate` adjudicates the suite against **four external standards** (UCUM 2.2, ISO 261:1998, **NBS Handbook H28 — public domain, the way around ASME B1.1's paywall**, ETIM 10.0). **111 cases judged, 100% agreement, zero disagreements**, coverage 6.2% → 17.8% as sources were added. It settles facts, not taxonomy. `materials` and `terms` still have no usable open source; the report prints what each would cost. The packet and kappa arithmetic remain for the rest, and that still needs a person |
+| 1.2 🟢 | **Independent dual-labelling** — *partially closed without a human*: `errata-r0 corroborate` adjudicates the suite against **four external standards** (UCUM 2.2, ISO 261:1998, **NBS Handbook H28 — public domain, the way around ASME B1.1's paywall**, ETIM 10.0). **138 cases judged, 100% agreement, zero disagreements**, coverage 6.2% → 17.8% → **22.1%** as sources were added. It settles facts, not taxonomy. `terms` was reached on 21 August 2026 via **ETIM's EF000889 release-characteristic value list** — the family had been written off by generalising from ETIM's *class synonym* map, which is a different artifact; container nouns were reached via **UN/CEFACT Rec 21**. `materials` still has no usable open source, and a re-check on the same date found only distributor tables, one of which inverts the flagship equivalence (EN 1.4301 ↔ UNS S31600; it is 304/S30400). The report prints what each would cost. The packet and kappa arithmetic remain for the rest, and that still needs a person |
 | 1.3 ✅ | Close `expect_alternatives` laundering — `pkg-h026/h031/h035`, `pkg-010` attach a second label so a known SEV-1 defect scores PASS | `PROGRESS` #17 | Low |
 | 1.4 ✅ | Restore 11 dual-labelled cases excluded from both supporting denominators | `PROGRESS` #18 | Medium |
 | 1.5 ✅ | Rule on 6 reported label findings — sharpest is `mat-h063` (`"18-8"` vs `"S30400"` labelled equivalent, but 18-8 is a *family* covering 302/303/304/305; generic ≡ specific is a silent false negative) | `PROGRESS` #19 | Medium |
