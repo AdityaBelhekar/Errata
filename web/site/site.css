@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERRATA — site.css
+   The public surface: the hero room, the acts, the cards.
+
+   Room I is carried over from the FE-1 comp intact. It is CSS and DOM, with no
+   canvas, because FE-1's gate was "judge the direction before a shader exists"
+   and it passed. Keeping it means the landing page satisfies L-7 — the page
+   works with the canvas deleted — by construction rather than by fallback:
+   there is no canvas to delete.
+
+   The shader version (§11.3) renders the false plate into a second scene
+   through a render target, so the mirror genuinely shows something else. This
+   does the same thing the only way static CSS can: two plates in the DOM whose
+   text differs. Same lie, cheaper mechanism.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The room ──────────────────────────────────────────────────────────── */
+
+.act { position: relative; }
+
+.act--hero {
+  min-height: calc(100svh - 56px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+  background: var(--bg-void);
+}
+
+/* L-5: light must be motivated. There is ONE lamp in this room — high and to
+   the left, out of frame, raking across the plate. Every gradient here is that
+   lamp's falloff; none of it is ambient prettiness. The test is whether a
+   photographer could stand in this room and take this picture. */
+.act--hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 18% -10%, var(--room-key) 0%, transparent 62%),
+    radial-gradient(140% 120% at 50% 120%, var(--room-floor) 0%, transparent 70%);
+  pointer-events: none;
+}
+:root { --room-key: rgba(255, 255, 255, .55); --room-floor: rgba(20, 18, 14, .10); }
+[data-theme="dark"] { --room-key: rgba(214, 226, 240, .085); --room-floor: rgba(0, 0, 0, .55); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --room-key: rgba(214, 226, 240, .085); --room-floor: rgba(0, 0, 0, .55); }
+}
+
+.stage { position: relative; z-index: 2; display: grid; place-items: center; padding: var(--s-56) var(--grid-margin) var(--s-32); }
+.plate-assembly { position: relative; width: min(520px, 82vw); }
+
+/* THE PLATE — anodized aluminium, raking key from upper-left. Square corners:
+   this is a manufactured object, not a card. */
+.plate {
+  position: relative;
+  padding: var(--s-16) var(--s-24);
+  background: linear-gradient(104deg, var(--plate-hi) 0%, var(--plate-mid) 38%, var(--plate-lo) 72%, var(--plate-mid) 100%);
+  border: var(--w-hair) solid var(--plate-edge);
+  border-radius: var(--r-paper);
+  box-shadow: inset 0 var(--w-hair) 0 var(--plate-lift), inset 0 -1px 0 var(--plate-contact);
+  color: var(--plate-ink);
+}
+:root {
+  --plate-hi: oklch(.905 .006 250); --plate-mid: oklch(.845 .006 250); --plate-lo: oklch(.790 .006 250);
+  --plate-edge: rgba(20, 18, 14, .28); --plate-lift: rgba(255, 255, 255, .85);
+  --plate-contact: rgba(20, 18, 14, .22); --plate-ink: oklch(.290 .010 250);
+  --plate-etch-lo: rgba(255, 255, 255, .75); --plate-etch-hi: rgba(20, 18, 14, .35);
+}
+[data-theme="dark"] {
+  --plate-hi: oklch(.560 .008 250); --plate-mid: oklch(.430 .008 250); --plate-lo: oklch(.330 .008 250);
+  --plate-edge: rgba(255, 255, 255, .16); --plate-lift: rgba(255, 255, 255, .22);
+  --plate-contact: rgba(0, 0, 0, .55); --plate-ink: oklch(.930 .004 250);
+  --plate-etch-lo: rgba(255, 255, 255, .16); --plate-etch-hi: rgba(0, 0, 0, .60);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --plate-hi: oklch(.560 .008 250); --plate-mid: oklch(.430 .008 250); --plate-lo: oklch(.330 .008 250);
+    --plate-edge: rgba(255, 255, 255, .16); --plate-lift: rgba(255, 255, 255, .22);
+    --plate-contact: rgba(0, 0, 0, .55); --plate-ink: oklch(.930 .004 250);
+    --plate-etch-lo: rgba(255, 255, 255, .16); --plate-etch-hi: rgba(0, 0, 0, .60);
+  }
+}
+
+/* Etched type. L-6: real DOM text at device resolution, with the engraving cut
+   by two offset shadows — the lamp is upper-left, so the lower-right edge
+   catches the light and the upper-left falls into shadow. */
+.plate-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-24); }
+.plate-row + .plate-row { margin-top: var(--s-12); padding-top: var(--s-12); border-top: var(--w-hair) solid var(--plate-etch-hi); }
+.plate-key { color: color-mix(in oklch, var(--plate-ink) 62%, transparent); }
+.plate-val {
+  font-family: var(--f-data);
+  font-size: clamp(20px, 3vw, 30px);
+  letter-spacing: .0042em;
+  font-variant-numeric: tabular-nums slashed-zero lining-nums;
+  text-shadow: -1px -1px 0 var(--plate-etch-hi), 1px 1px 0 var(--plate-etch-lo);
+}
+.plate-brand { display: flex; justify-content: space-between; margin-bottom: var(--s-12); color: color-mix(in oklch, var(--plate-ink) 52%, transparent); }
+
+.waterline { height: var(--w-hair); background: var(--plate-edge); opacity: .55; }
+
+/* THE REFLECTION THAT LIES. Mirrored, sheared, damped, faded — and reading
+   different values. The shear is 0.9°, under the threshold at which a viewer
+   names it and over the threshold at which they feel it. That gap is the whole
+   beat: the wrongness surfaces before it can be articulated. */
+/* The reflection only has to show enough to reveal that two of the three values
+   are wrong. Clipped to a well, because a full-height mirror doubles the hero
+   and pushed its own call to action below the fold on a 1000px laptop — a hero
+   whose invitation you have to scroll to find is a hero that failed. */
+.reflection-well {
+  overflow: hidden;
+  max-height: min(190px, 19vh);
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+
+.reflection {
+  --decohere: .34;
+  /* Mirror IN PLACE. `transform-origin: top center` reflects across the
+     element's TOP edge, which throws the content upward and draws it over the
+     real plate rather than under the waterline — it was doing exactly that
+     since FE-1, and went unnoticed because nothing clipped it and the two
+     plates overlapped almost exactly. Clipping the reflection to a well made
+     it obvious: the well sat at y=330 and the content rendered at y=132, so
+     the clip removed all of it.
+
+     The default origin (centre) mirrors the content within its own box, which
+     is where a reflection actually goes. */
+  transform: scaleY(-1) skewX(calc(-0.9deg * var(--decohere)));
+  /* Bright enough to READ. The reflection carries the whole argument of the
+     hero — two of its three values are wrong — and an earlier pass had it at
+     0.38 opacity, double-masked, blurred, on a near-black ground: present in
+     the DOM and invisible on the screen. A hero whose point you cannot see is
+     not a subtle hero, it is a broken one.
+
+     The fade now happens ONCE, in .reflection-well. Two compounding masks were
+     most of why this disappeared. */
+  opacity: calc(.52 + .20 * (1 - var(--decohere)));
+  filter: blur(calc(.3px + 1.1px * var(--decohere)));
+  pointer-events: none;
+  user-select: none;
+}
+.reflection .plate { box-shadow: none; border-color: transparent; }
+.reflection .plate-val { text-shadow: none; }
+
+/* Scroll pulls the reflection apart — `--decohere` is the same uniform the
+   shader build drives (§11.3, amplitude 0.002 → 0.09). Here it is a scroll-
+   driven CSS animation: no scroll listener, no rAF, no library, and it is
+   inert under reduced motion because the platform makes it so. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reflection {
+      animation: decohere linear both;
+      animation-timeline: view();
+      animation-range: entry 40% cover 90%;
+    }
+    @keyframes decohere { from { --decohere: .10; } to { --decohere: .92; } }
+  }
+}
+@property --decohere { syntax: "<number>"; inherits: true; initial-value: .34; }
+
+/* ── The hero line ─────────────────────────────────────────────────────
+   §8.6: centred EXACTLY ONCE on the entire site, and this is that once. */
+.hero {
+  position: relative; z-index: 3;
+  text-align: center;
+  padding: 0 var(--grid-margin) var(--s-56);
+  display: grid; justify-items: center; gap: var(--s-16);
+}
+/* d-1 is 168px and there is exactly one per site (§5.5). It is also capped
+   against viewport HEIGHT, not only width: on a 1680x1000 laptop the width
+   clamp alone produced a two-line hero 304px tall and pushed the sub-line and
+   both buttons off-screen. A type scale that only knows about width is only
+   half a responsive type scale. */
+.hero-line { color: var(--text-1); max-width: 16ch; font-size: min(var(--t-d1-size), 13vh); }
+.hero-line .degraded { font-family: var(--f-degraded); }
+.hero-sub { color: var(--text-3); max-width: 48ch; }
+.hero-actions { display: flex; gap: var(--s-12); flex-wrap: wrap; justify-content: center; }
+
+/* ── The hero at short viewports ───────────────────────────────────────
+   A laptop is 800px tall, not 1000, and at 800 the composition above still ran
+   40px past the fold — so the buttons the hero exists to offer were the part
+   that fell off. Rather than shrink one element until it fits, the room is
+   RECOMPOSED: tighter margins, a shallower reflection, a smaller display cut.
+   That is what a designer does with less wall, and it is the difference
+   between responsive type and a responsive layout. */
+@media (max-height: 900px) {
+  .stage { padding: var(--s-32) var(--grid-margin) var(--s-16); }
+  .plate { padding: var(--s-12) var(--s-16); }
+  .plate-row + .plate-row { margin-top: var(--s-8); padding-top: var(--s-8); }
+  .plate-val { font-size: clamp(18px, 2.4vw, 24px); }
+  .reflection-well { max-height: min(140px, 14vh); }
+  .hero-line { font-size: min(var(--t-d1-size), 11vh); }
+  .hero { gap: var(--s-12); padding-bottom: var(--s-32); }
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+
+.cards { display: grid; gap: var(--s-16); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card {
+  display: grid; gap: var(--s-8); align-content: start;
+  background: var(--surface-1);
+  border: var(--w-hair) solid var(--edge-hair);
+  border-radius: var(--r-control);
+  padding: var(--s-24);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-1);
+  transition: border-color var(--m-fast) var(--ease-out), background-color var(--m-fast) var(--ease-out);
+}
+a.card:hover { border-color: var(--edge-strong); background: var(--surface-2); }
+
+.closing { max-width: 40ch; }
+
+/* ── Section reveals ───────────────────────────────────────────────────
+   Scroll-driven, by the platform. §10.3: opacity and an 8px rise, never a
+   scale, never a rotate. Under reduced motion the rule does not apply at all,
+   so content is simply present — a designed alternative rather than a disabled
+   animation. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .poche > h2, .cards > .card, .table-wrap {
+      animation: rise var(--m-reveal) var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 60%;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+}
+
+.site-footer { padding-block: var(--s-56); color: var(--text-3); }

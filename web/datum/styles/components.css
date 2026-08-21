@@ -1,0 +1,577 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATUM — components.css
+   FE-2 · design development. Twenty core components.
+   Blueprint §13. Every component ships default / hover / focus-visible /
+   active / disabled / loading / error / empty, in both themes, plus a
+   reduced-motion variant. Where a state has no meaning for a component
+   (a checkbox has no "empty"), the states gallery says so in words rather
+   than leaving a hole.
+
+   Conventions used throughout:
+     · state is an attribute, never a colour class  — `data-state="loading"`
+     · every duration and curve comes from the motion scale (§10.1–10.2)
+     · every colour comes from the semantic layer; no literals (LAW §17)
+     · radius: 0 on paper, 3px on controls, 999px never (§8.6)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ 01 · BUTTON ══════════════════════════════════════════════════════════
+   Primary is --text-1 on --surface-3 with a 1px lift. NEVER signal-filled:
+   signal means dispute, not "click me" (§13.1). That one rule is most of what
+   keeps this system from reading as a dashboard. */
+
+.btn {
+  --btn-h: 36px;
+  display: inline-flex; align-items: center; gap: var(--s-8);
+  height: var(--btn-h);
+  padding-inline: var(--s-16);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-family: var(--f-text);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: .0042em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift);
+  transition:
+    background-color var(--m-fast) var(--ease-out),
+    border-color     var(--m-fast) var(--ease-out),
+    color            var(--m-fast) var(--ease-out);
+}
+.btn--lg { --btn-h: 44px; padding-inline: var(--s-24); font-size: 15px; }
+.btn:hover:not(:disabled):not([data-state="loading"]) { background: var(--surface-2); border-color: var(--edge-strong); }
+.btn:active:not(:disabled) { background: var(--surface-3); box-shadow: none; transform: translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  color: var(--text-disabled); background: var(--surface-1);
+  border-color: var(--edge-hair); box-shadow: none; cursor: not-allowed;
+}
+
+/* Secondary: no fill. The page ground shows through. */
+.btn--quiet { background: transparent; border-color: var(--edge-hair); box-shadow: none; }
+.btn--quiet:hover:not(:disabled) { background: var(--surface-1); border-color: var(--edge-strong); }
+
+/* Destructive is the one place signal touches a control, and even here it is
+   an edge and a word — never a fill. A filled crimson button would claim the
+   button *is* the dispute. */
+.btn--destructive { color: var(--signal-text); border-color: var(--signal); }
+.btn--destructive:hover:not(:disabled) { background: var(--signal-wash); }
+
+/* Loading: the label stays put and a hairline rail runs beneath it. Nothing
+   moves the button's box, because a button that changes width on click loses
+   the pointer that pressed it. */
+.btn[data-state="loading"] { cursor: progress; position: relative; overflow: hidden; color: var(--text-2); }
+.btn[data-state="loading"]::after {
+  content: ""; position: absolute; left: 0; bottom: 0; height: var(--w-reveal);
+  width: 40%; background: var(--text-3);
+  animation: rail 1200ms linear infinite;
+}
+@keyframes rail { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+
+/* Reduced motion: the rail stops and the button says so in text instead. */
+@media (prefers-reduced-motion: reduce) {
+  .btn[data-state="loading"]::after { animation: none; width: 100%; opacity: .5; }
+}
+
+.btn[data-state="error"] { border-color: var(--signal); color: var(--signal-text); }
+
+/* ═══ 02 · ICON BUTTON ═════════════════════════════════════════════════════
+   32px box, 44px hit area (§13.1 + WCAG 2.2 SC 2.5.8 target size). The hit
+   area is a pseudo-element so the visual box stays 32px. */
+.icon-btn {
+  position: relative;
+  display: inline-grid; place-items: center;
+  width: 32px; height: 32px;
+  border: var(--w-hair) solid transparent;
+  border-radius: var(--r-control);
+  background: transparent; color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--m-fast) var(--ease-out), color var(--m-fast) var(--ease-out);
+}
+.icon-btn::before { content: ""; position: absolute; inset: -6px; }
+.icon-btn:hover:not(:disabled) { background: var(--surface-1); color: var(--text-1); }
+.icon-btn:active:not(:disabled) { background: var(--surface-3); }
+.icon-btn:disabled { color: var(--text-disabled); cursor: not-allowed; }
+.icon-btn[aria-pressed="true"] { background: var(--surface-3); color: var(--text-1); border-color: var(--edge-hair); }
+
+/* ═══ 03 · INPUT ═══════════════════════════════════════════════════════════ */
+.field { display: block; }
+.field > .field-label { display: block; color: var(--text-2); margin-bottom: var(--s-8); }
+.field > .field-hint  { display: block; color: var(--text-3); margin-top: var(--s-8); }
+.field > .field-error { display: block; color: var(--signal-text); margin-top: var(--s-8); }
+
+.input {
+  width: 100%; height: 36px;
+  padding-inline: var(--s-12);
+  background: var(--surface-2);
+  color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  font-family: var(--f-data); font-size: 14px;
+  font-variant-numeric: tabular-nums slashed-zero;
+  transition: border-color var(--m-fast) var(--ease-out), background-color var(--m-fast) var(--ease-out);
+}
+.input::placeholder { color: var(--text-3); font-family: var(--f-text); }
+.input:hover:not(:disabled) { border-color: var(--edge-strong); background: var(--surface-2); }
+.input:focus-visible { border-color: var(--signal); }
+.input:disabled { color: var(--text-disabled); background: var(--surface-1); cursor: not-allowed; }
+.input[aria-invalid="true"] { border-color: var(--signal); background: var(--signal-wash); }
+.input[data-state="loading"] { color: var(--text-3); cursor: progress; }
+
+textarea.input { height: auto; min-height: 96px; padding: var(--s-12); line-height: 1.5; resize: vertical; }
+
+/* ═══ 04 · SELECT ══════════════════════════════════════════════════════════
+   Native element, our skin. The custom listbox (full ARIA combobox) lands in
+   FE-7 where it has real data to hold; shipping a fake one now would be a
+   component without a job. */
+.select {
+  appearance: none;
+  width: 100%; height: 36px;
+  padding-inline: var(--s-12) var(--s-32);
+  background: var(--surface-2); color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  font-family: var(--f-text); font-size: 14px;
+  cursor: pointer;
+}
+.select-wrap { position: relative; display: block; }
+.select-wrap::after {
+  content: ""; position: absolute; right: var(--s-12); top: 50%;
+  width: 6px; height: 6px; margin-top: -4px;
+  border-right: var(--w-hair) solid var(--text-3);
+  border-bottom: var(--w-hair) solid var(--text-3);
+  transform: rotate(45deg); pointer-events: none;
+}
+.select:disabled { color: var(--text-disabled); background: var(--surface-1); cursor: not-allowed; }
+
+/* ═══ 05 · CHECKBOX ════════════════════════════════════════════════════════ */
+.check {
+  display: inline-flex; align-items: flex-start; gap: var(--s-12);
+  cursor: pointer; color: var(--text-1);
+}
+.check > input { position: absolute; opacity: 0; width: 16px; height: 16px; margin: 0; }
+.check > .box {
+  flex: 0 0 auto; width: 16px; height: 16px; margin-top: 3px;
+  border: var(--w-reveal) solid var(--text-3);
+  border-radius: 2px; background: transparent;
+  display: grid; place-items: center;
+  transition: border-color var(--m-instant) var(--ease-out), background-color var(--m-instant) var(--ease-out);
+}
+.check > .box::after {
+  content: ""; width: 8px; height: 4px;
+  border-left: var(--w-reveal) solid var(--surface-2);
+  border-bottom: var(--w-reveal) solid var(--surface-2);
+  transform: rotate(-45deg) scale(0); transform-origin: center;
+  transition: transform var(--m-instant) var(--ease-out);
+}
+.check > input:checked + .box { background: var(--text-1); border-color: var(--text-1); }
+.check > input:checked + .box::after { transform: rotate(-45deg) scale(1); }
+.check > input:hover:not(:disabled) + .box { border-color: var(--text-1); }
+.check > input:focus-visible + .box { outline: var(--w-reveal) solid var(--focus-ring); outline-offset: var(--w-reveal); }
+.check > input:disabled ~ * { color: var(--text-disabled); }
+.check > input:disabled + .box { border-color: var(--text-disabled); }
+.check > input[aria-invalid="true"] + .box { border-color: var(--signal); }
+.check > input:indeterminate + .box { background: var(--text-1); border-color: var(--text-1); }
+.check > input:indeterminate + .box::after {
+  width: 8px; height: 0; border-bottom: var(--w-reveal) solid var(--surface-2);
+  border-left: 0; transform: none;
+}
+
+/* ═══ 06 · RADIO ═══════════════════════════════════════════════════════════ */
+.radio { display: inline-flex; align-items: flex-start; gap: var(--s-12); cursor: pointer; }
+.radio > input { position: absolute; opacity: 0; width: 16px; height: 16px; margin: 0; }
+.radio > .dot {
+  flex: 0 0 auto; width: 16px; height: 16px; margin-top: 3px;
+  border: var(--w-reveal) solid var(--text-3);
+  border-radius: 50%;                      /* the one legitimate circle: a radio is a radio */
+  display: grid; place-items: center;
+  transition: border-color var(--m-instant) var(--ease-out);
+}
+.radio > .dot::after {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-1); transform: scale(0);
+  transition: transform var(--m-instant) var(--ease-out);
+}
+.radio > input:checked + .dot { border-color: var(--text-1); }
+.radio > input:checked + .dot::after { transform: scale(1); }
+.radio > input:focus-visible + .dot { outline: var(--w-reveal) solid var(--focus-ring); outline-offset: var(--w-reveal); }
+.radio > input:disabled + .dot { border-color: var(--text-disabled); }
+.radio > input:disabled ~ * { color: var(--text-disabled); }
+
+/* ═══ 07 · TOGGLE ══════════════════════════════════════════════════════════
+   Binary settings only. Never for filters (§13.1) — a filter that cannot be
+   read at a glance as "on for this value" is a toggle pretending to be a
+   choice. Square-ended, because 999px never. */
+.toggle { display: inline-flex; align-items: center; gap: var(--s-12); cursor: pointer; }
+.toggle > input { position: absolute; opacity: 0; }
+.toggle > .track {
+  width: 36px; height: 20px;
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  background: var(--surface-3);
+  position: relative;
+  transition: background-color var(--m-instant) var(--ease-out);
+}
+.toggle > .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: var(--text-3);
+  border-radius: 1px;
+  transition: transform var(--m-instant) var(--ease-out), background-color var(--m-instant) var(--ease-out);
+}
+.toggle > input:checked + .track { background: var(--surface-2); }
+.toggle > input:checked + .track::after { transform: translateX(16px); background: var(--text-1); }
+.toggle > input:focus-visible + .track { outline: var(--w-reveal) solid var(--focus-ring); outline-offset: var(--w-reveal); }
+.toggle > input:disabled + .track { opacity: .5; cursor: not-allowed; }
+
+/* ═══ 08 · TABS ════════════════════════════════════════════════════════════
+   Underline 2px, slides at --m-base, roving tabindex (handled in JS). */
+.tabs { border-bottom: var(--w-hair) solid var(--edge-hair); display: flex; gap: var(--s-24); position: relative; }
+.tab {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  padding: var(--s-12) 0;
+  color: var(--text-3); font-family: var(--f-text); font-size: 14px; font-weight: 500;
+  position: relative;
+  transition: color var(--m-fast) var(--ease-out);
+}
+.tab:hover:not(:disabled) { color: var(--text-1); }
+.tab[aria-selected="true"] { color: var(--text-1); }
+.tab[aria-selected="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: var(--w-reveal); background: var(--text-1);
+}
+.tab:disabled { color: var(--text-disabled); cursor: not-allowed; }
+
+/* ═══ 09 · TOOLTIP ═════════════════════════════════════════════════════════
+   400ms delay, 6px offset, never on touch. Delay is implemented in CSS so it
+   survives without JS; the accessible name still comes from aria-describedby. */
+.tip { position: relative; display: inline-block; }
+.tip > .tip-body {
+  position: absolute; bottom: calc(100% + 6px); left: 0;
+  padding: var(--s-4) var(--s-8);
+  background: var(--surface-3); color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--m-fast) var(--ease-out) var(--d-tip),
+              visibility 0s linear calc(var(--d-tip) + var(--m-fast));
+}
+.tip:hover > .tip-body, .tip:focus-within > .tip-body {
+  opacity: 1; visibility: visible; transition-delay: var(--d-tip), var(--d-tip);
+}
+@media (hover: none) { .tip > .tip-body { display: none; } }
+
+/* ═══ 10 · TOAST ═══════════════════════════════════════════════════════════
+   Bottom-left, stacks to 3, auto-dismiss 6s, pause on hover, role="status". */
+.toast-region { position: fixed; left: var(--s-24); bottom: var(--s-24); display: grid; gap: var(--s-8); z-index: 60; }
+.toast {
+  min-width: 280px; max-width: 380px;
+  padding: var(--s-12) var(--s-16);
+  background: var(--surface-2); color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-2);
+  display: grid; grid-template-columns: 1fr auto; gap: var(--s-16); align-items: start;
+}
+.toast[data-state="error"] { border-left: var(--w-reveal) solid var(--signal); }
+.toast[data-state="loading"] .toast-title::after { content: " …"; color: var(--text-3); }
+
+/* ═══ 11 · MODAL ═══════════════════════════════════════════════════════════ */
+.scrim {
+  position: fixed; inset: 0; background: var(--p-scrim);
+  display: grid; place-items: center; padding: var(--s-24); z-index: 70;
+}
+.modal {
+  width: min(560px, 100%);
+  background: var(--surface-2); color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-3);
+}
+.modal-head { padding: var(--s-24) var(--s-24) var(--s-16); border-bottom: var(--w-hair) solid var(--edge-hair); }
+.modal-body { padding: var(--s-24); }
+.modal-foot { padding: var(--s-16) var(--s-24); border-top: var(--w-hair) solid var(--edge-hair); display: flex; gap: var(--s-8); justify-content: flex-end; }
+
+/* ═══ 12 · DRAWER ══════════════════════════════════════════════════════════ */
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%);
+  background: var(--surface-1); color: var(--text-1);
+  border-left: var(--w-hair) solid var(--edge-strong);
+  box-shadow: var(--shadow-3);
+  display: grid; grid-template-rows: auto 1fr auto;
+  transform: translateX(100%);
+  transition: transform var(--m-slow) var(--ease-out);
+  z-index: 65;
+}
+.drawer[data-open="true"] { transform: translateX(0); }
+@media (prefers-reduced-motion: reduce) {
+  .drawer { transform: none; opacity: 0; visibility: hidden; }
+  .drawer[data-open="true"] { opacity: 1; visibility: visible; }
+}
+
+/* ═══ 13 · MENU ════════════════════════════════════════════════════════════ */
+.menu {
+  min-width: 220px; padding: var(--s-4);
+  background: var(--surface-2);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-2);
+}
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-16);
+  width: 100%; padding: var(--s-8) var(--s-12);
+  background: none; border: 0; border-radius: 2px;
+  color: var(--text-1); font-family: var(--f-text); font-size: 14px;
+  cursor: pointer; text-align: left;
+}
+.menu-item:hover:not(:disabled), .menu-item[data-active="true"] { background: var(--surface-3); }
+.menu-item:disabled { color: var(--text-disabled); cursor: not-allowed; }
+.menu-item > kbd { font-family: var(--f-data-micro); font-size: 10px; color: var(--text-3); letter-spacing: .14em; }
+.menu-sep { height: var(--w-hair); background: var(--edge-hair); margin: var(--s-4) 0; }
+
+/* ═══ 14 · DATA TABLE ══════════════════════════════════════════════════════
+   Sticky head, hairline rows, tabular numerals (LAW). Hover on a data row is
+   background ONLY — never lift, never shadow, never move (§10.3). A row that
+   jumps under the cursor makes a reader lose the line they were checking. */
+.table-wrap { overflow-x: auto; border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-control); background: var(--surface-1); }
+.table { width: 100%; border-collapse: collapse; font-family: var(--f-data); }
+.table thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-1);
+  border-bottom: var(--w-hair) solid var(--edge-strong);
+  padding: var(--s-12) var(--s-16);
+  text-align: left; color: var(--text-3);
+  font-family: var(--f-data-micro); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .10em; font-weight: 400;
+  white-space: nowrap;
+}
+.table tbody td {
+  padding: var(--s-12) var(--s-16);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+  font-size: 12px; line-height: 1.417; letter-spacing: .0077em;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums slashed-zero lining-nums;
+}
+.table tbody tr:hover td { background: var(--surface-3); }
+.table tbody tr[aria-selected="true"] td { background: var(--surface-3); }
+.table .num, .table th.num { text-align: right; }
+
+/* Cell.Value — never rounded beyond source precision (L-4). The rule cannot be
+   enforced by CSS; it is enforced by lint-tokens.py's sibling check in FE-8 and
+   by review. What CSS can do is make an unrounded value legible. */
+.cell-value { font-family: var(--f-data); font-variant-numeric: tabular-nums slashed-zero; }
+
+/* Cell.Disputed — signal arrives as a PLANE, with a 2px edge on the datum side
+   (§6.8). Never as a dot, never as a 1px border. */
+.table tbody tr[data-state="disputed"] td { background: var(--signal-wash); }
+.table tbody tr[data-state="disputed"] td:first-child {
+  box-shadow: inset var(--w-reveal) 0 0 var(--signal);
+}
+.table tbody tr[data-state="disputed"]:hover td { background: var(--signal-wash-2); }
+.cell-struck { text-decoration: line-through; text-decoration-thickness: var(--w-hair); color: var(--text-3); }
+
+.table tbody tr[data-state="settled"] td:first-child { box-shadow: inset var(--w-reveal) 0 0 var(--settled); }
+
+/* Table states: loading (skeleton rails), empty, error. */
+.table[data-state="loading"] td { color: transparent; }
+.table[data-state="loading"] td > * { visibility: hidden; }
+.table[data-state="loading"] td::after {
+  content: ""; display: block; height: 10px; width: 68%;
+  background: var(--edge-hair); border-radius: 1px;
+}
+.table-empty, .table-error {
+  padding: var(--s-56) var(--s-24); text-align: center; color: var(--text-3);
+  display: grid; gap: var(--s-8); justify-items: center;
+}
+.table-error { color: var(--signal-text); }
+
+/* ═══ 15 · CONFIDENCE ══════════════════════════════════════════════════════
+   Five segments, achromatic on purpose. Calibration should not shout (§13.2).
+   A confidence bar in green/amber/red would be the product telling you how to
+   feel about a number it has just asked you to check yourself. */
+.confidence { display: inline-flex; align-items: center; gap: var(--s-8); }
+.confidence-bar { display: inline-flex; gap: 2px; }
+.confidence-seg { width: 10px; height: 12px; background: var(--edge-hair); }
+.confidence-seg[data-on="true"] { background: var(--text-2); }
+.confidence-value { color: var(--text-2); }
+.confidence[data-state="empty"] .confidence-seg { background: var(--edge-hair); }
+.confidence[data-state="empty"] .confidence-value { color: var(--text-3); }
+
+/* ═══ 16 · PROVENANCE TAG ══════════════════════════════════════════════════
+   Institution + identifier + retrieved date, in `micro`, hanging in the margin.
+   §7.4 makes provenance a LAW; this is the component that discharges it. */
+.provenance { color: var(--text-3); display: block; }
+.provenance > .prov-id { color: var(--text-2); }
+.provenance[data-state="empty"]::after { content: "provenance missing"; color: var(--signal-text); }
+
+/* ═══ 17 · DIFF PAIR ═══════════════════════════════════════════════════════
+   THE signature data component (§13.2): the catalog value in Redaction 50 above
+   the evidence value in Redaction 0. The reader watches an unverified claim
+   resolve into a grounded one, in type, without a legend. */
+.diff-pair { display: grid; gap: var(--s-4); }
+.diff-claim {
+  font-family: var(--f-degraded);
+  font-size: 28px; line-height: 1.1; letter-spacing: -.0061em;
+  color: var(--text-3);
+  text-decoration: line-through;
+  text-decoration-thickness: var(--w-hair);
+  text-decoration-color: var(--signal);
+}
+.diff-evidence {
+  font-family: var(--f-clean);
+  font-size: 28px; line-height: 1.1; letter-spacing: -.0061em;
+  color: var(--text-1);
+}
+.diff-pair > .diff-note { color: var(--text-3); }
+.diff-pair[data-state="settled"] .diff-claim { text-decoration-color: var(--settled); }
+.diff-pair[data-state="empty"] .diff-evidence { color: var(--text-3); font-family: var(--f-void); }
+
+/* ═══ 18 · DOCUMENT VIEW ═══════════════════════════════════════════════════
+   Real DOM. Never an image-only render — spans must be selectable (L-6).
+   Paper in both themes (L-2). The 2px reveal on the datum side (L-3). */
+.document {
+  background: var(--evidence-bg);
+  color: var(--evidence-text);
+  border-radius: var(--r-paper);
+  border-left: var(--w-reveal) solid var(--signal);
+  border-top: var(--w-hair) solid var(--evidence-edge);
+  border-right: var(--w-hair) solid var(--evidence-edge);
+  border-bottom: var(--w-hair) solid var(--evidence-edge);
+  padding: var(--s-32);
+  font-family: var(--f-text);
+}
+.document h1, .document h2, .document h3 { font-family: var(--f-text); }
+.document table { width: 100%; border-collapse: collapse; font-family: var(--f-data); font-size: 12px; }
+.document th, .document td { padding: var(--s-8) var(--s-12); border-bottom: var(--w-hair) solid var(--evidence-edge); text-align: left; }
+.document[data-state="loading"] { color: transparent; }
+.document[data-state="empty"] { display: grid; place-items: center; min-height: 200px; color: var(--p-bone-700); }
+
+/* SpanHighlight — ice field, signal underline, offsets alongside in micro. */
+.span-hl {
+  background: var(--span-field);
+  box-shadow: inset 0 -2px 0 var(--span-rule);
+  padding: 0 .12em;
+  cursor: help;
+}
+.span-hl:focus-visible { outline: var(--w-reveal) solid var(--signal); outline-offset: 1px; }
+
+/* ═══ 19 · SECTION OPENER ══════════════════════════════════════════════════
+   Number in poché, rule on the datum side, opener in Redaction 20. */
+.section-opener { position: relative; padding-top: var(--s-24); border-top: var(--w-hair) solid var(--edge-hair); }
+.section-opener > .num { color: var(--text-3); display: block; margin-bottom: var(--s-16); }
+
+/* ═══ 20 · THEME TOGGLE ════════════════════════════════════════════════════
+   Three-state: system / light / dark. Mono label. Top-right of the header
+   (§6.6). A radiogroup, not a switch, because there are three options and a
+   switch that has three positions is a lie about its own affordance. */
+.theme-toggle {
+  display: inline-flex;
+  border: var(--w-hair) solid var(--edge-hair);
+  border-radius: var(--r-control);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+.theme-toggle > button {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  padding: var(--s-4) var(--s-8);
+  color: var(--text-3);
+  font-family: var(--f-data-micro); font-size: 10px;
+  text-transform: uppercase; letter-spacing: .14em;
+  transition: background-color var(--m-fast) var(--ease-out), color var(--m-fast) var(--ease-out);
+}
+.theme-toggle > button + button { border-left: var(--w-hair) solid var(--edge-hair); }
+.theme-toggle > button:hover { color: var(--text-1); }
+.theme-toggle > button[aria-checked="true"] { background: var(--surface-3); color: var(--text-1); }
+
+/* ═══ CHROME — header, footer, HUD ═════════════════════════════════════════
+   Counted as layout rather than as components; they carry no state of their
+   own beyond what the page gives them. */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-24);
+  padding: var(--s-16) var(--grid-margin);
+  background: var(--bg-void);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+}
+.wordmark { font-family: var(--f-data-micro); font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--text-1); }
+.site-footer { border-top: var(--w-hair) solid var(--edge-hair); padding-block: var(--s-56); color: var(--text-3); }
+
+.hud { position: fixed; z-index: 40; color: var(--text-3); pointer-events: none; }
+.hud--tl { top: var(--s-24); left: var(--s-24); }
+.hud--tr { top: var(--s-24); right: var(--s-24); text-align: right; }
+.hud--bl { bottom: var(--s-24); left: var(--s-24); }
+.hud--br { bottom: var(--s-24); right: var(--s-24); text-align: right; }
+
+/* ═══ 21 · QUEUE ROW — added after the FE system review ════════════════════
+   FR-7.5 (P0): "Queue rows render as a sentence — values, source location,
+   shared-pattern count, downstream propagation — never a bare confidence
+   percentage. No UI surface displays a raw confidence score as the primary
+   signal."
+
+   Component 14's queue example violated that: it ranked by a right-aligned
+   `Conf.` column. Blueprint §13.2 specified it and the PRD forbids it; the PRD
+   wins. Logged as defect C-2 in docs/frontend/FE-SYSTEM-REVIEW.md.
+
+   The row is prose because the requirement is prose. It also carries FR-8.4's
+   four blast-radius factors SEPARATELY — "each factor must be independently
+   inspectable in the UI", and a reviewer shown one opaque score has been given
+   a number, not a reason — and FR-8.5's computed cluster size.
+
+   Confidence is not absent from the product. It is absent from the QUEUE, and
+   lives on the record detail where a reviewer has the evidence in front of
+   them. That distinction is the whole of FR-7.5. */
+
+.queue { display: grid; gap: var(--w-hair); background: var(--edge-hair); border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-control); overflow: hidden; }
+
+.queue-row {
+  display: grid; gap: var(--s-8);
+  padding: var(--s-16);
+  background: var(--surface-1);
+  border-left: var(--w-reveal) solid transparent;
+  text-align: left; width: 100%;
+  font: inherit; color: inherit; cursor: pointer;
+  transition: background-color var(--m-fast) var(--ease-out);
+}
+/* Background only. Never lift, never move (§10.3) — and here it matters twice
+   over, because FR-9.3 is timing the human reading this row. */
+.queue-row:hover { background: var(--surface-3); }
+.queue-row[aria-current="true"] { background: var(--surface-3); }
+
+/* Signal arrives as a plane with a 2px edge on the datum side, or not at all
+   (§6.8). A disputed row is the plane. */
+.queue-row[data-state="disputed"] { background: var(--signal-wash); border-left-color: var(--signal); }
+.queue-row[data-state="disputed"]:hover { background: var(--signal-wash-2); }
+.queue-row[data-state="declined"] { border-left-color: var(--edge-strong); }
+.queue-row[data-state="settled"]  { border-left-color: var(--settled); }
+.queue-row[data-state="awaiting-second"] { border-left-color: var(--signal); background: var(--surface-1); }
+
+/* The sentence. Mono marks a machine fact inside prose — §5.6's one permitted
+   mixing, and the product's grammar. */
+.queue-sentence {
+  font-family: var(--f-text);
+  font-size: 15px; line-height: 1.6; letter-spacing: .0028em;
+  color: var(--text-1);
+  max-width: 72ch;
+  text-wrap: pretty;
+}
+.queue-sentence .sku,
+.queue-sentence .val,
+.queue-sentence .loc { font-family: var(--f-data); font-size: .933em; letter-spacing: .0042em;
+  font-variant-numeric: tabular-nums slashed-zero lining-nums; }
+.queue-sentence .was { color: var(--text-3); text-decoration: line-through;
+  text-decoration-thickness: var(--w-hair); text-decoration-color: var(--signal); }
+
+/* FR-8.4 — the four factors, separately, never multiplied into a score on the
+   row. The product of them is the sort key; the factors are the reason. */
+.blast { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); color: var(--text-3); }
+.blast > span { display: inline-flex; gap: var(--s-4); align-items: baseline; }
+.blast .f { color: var(--text-2); font-family: var(--f-data-micro);
+  font-variant-numeric: tabular-nums slashed-zero; }
+.blast [data-safety="true"] .f { color: var(--signal-text); }
+
+/* Abstention is a distinct type in the schema, not a null (errata_spec). It is
+   a distinct row state here for the same reason: R1 declines on the majority of
+   records, so "declined" is the product's ordinary behaviour and must not read
+   as an empty state. */
+.queue-row[data-state="declined"] .queue-sentence { color: var(--text-2); }
+.queue-row[data-state="declined"] .declined-why { color: var(--text-3); }

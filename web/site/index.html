@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — your catalog is a reflection</title>
+<meta name="description" content="A verification layer for industrial product data. It grades data. It does not create data.">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    if (new URLSearchParams(location.search).get('nogl') === '1')
+      document.documentElement.setAttribute('data-gl', 'off');
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="../datum/styles/tokens.css">
+<link rel="stylesheet" href="../datum/styles/type.css">
+<link rel="stylesheet" href="../datum/styles/base.css">
+<link rel="stylesheet" href="../datum/styles/components.css">
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="site.css">
+</head>
+
+<body class="datum-field">
+
+<a class="skip-link t-body" href="#main">Skip to content</a>
+<div class="datum" aria-hidden="true"></div>
+
+<nav class="site-nav" aria-label="Primary">
+  <a class="wordmark" href="./" aria-current="page">ERRATA</a>
+  <div class="nav-links t-micro">
+    <a href="#gap">The gap</a>
+    <a href="#method">Method</a>
+    <a href="#errata">Errata</a>
+    <a href="../console/">Console</a>
+    <a href="../datum/">Design system</a>
+  </div>
+  <div class="theme-toggle" data-theme-toggle>
+    <button type="button" data-mode="system">Sys</button>
+    <button type="button" data-mode="light">Light</button>
+    <button type="button" data-mode="dark">Dark</button>
+  </div>
+</nav>
+
+<main id="main">
+
+  <!-- ═══ ACT I · THE REFLECTION THAT LIES ═══════════════════════════════
+       The one full-fidelity room from FE-1, in its place on the page.
+       No canvas: the shader version is FE-5, and this composition is what
+       FE-1's gate approved without one — so the page is complete with
+       ?nogl=1 by construction, not by fallback (L-7). -->
+  <section class="act act--hero" aria-labelledby="hero-line">
+    <div class="stage">
+      <figure class="plate-assembly">
+        <div class="plate" aria-label="Rating plate, as manufactured">
+          <div class="plate-brand t-micro"><span>Type 4C-M · SERIES II</span><span>MADE IN EU</span></div>
+          <div class="plate-row"><span class="plate-key t-col">Ingress</span><span class="plate-val">IP66</span></div>
+          <div class="plate-row"><span class="plate-key t-col">Rated voltage</span><span class="plate-val">400 V</span></div>
+          <div class="plate-row"><span class="plate-key t-col">Rated current</span><span class="plate-val">16 A</span></div>
+        </div>
+
+        <div class="waterline" aria-hidden="true"></div>
+
+        <div class="reflection-well" aria-hidden="true">
+        <div class="reflection">
+          <div class="plate">
+            <div class="plate-brand t-micro"><span>Type 4C-M · SERIES II</span><span>MADE IN EU</span></div>
+            <div class="plate-row"><span class="plate-key t-col">Ingress</span><span class="plate-val">IP54</span></div>
+            <div class="plate-row"><span class="plate-key t-col">Rated voltage</span><span class="plate-val">400 V</span></div>
+            <div class="plate-row"><span class="plate-key t-col">Rated current</span><span class="plate-val">10 A</span></div>
+          </div>
+        </div>
+        </div>
+
+        <figcaption class="u-sr-only">
+          A rating plate reads IP66, 400 V, 16 A. Its reflection reads IP54, 400 V, 10 A.
+          Two of the three values disagree with the object they claim to reflect.
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="hero">
+      <h1 id="hero-line" class="hero-line t-d1">Your catalog is a <span class="degraded">reflection</span>.</h1>
+      <p class="hero-sub t-meta">We checked it against the thing it claims to reflect.</p>
+      <div class="hero-actions">
+        <a class="btn btn--lg" href="../console/">Open the console</a>
+        <a class="btn btn--lg btn--quiet" href="#gap">What is the gap?</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ THE GAP ══════════════════════════════════════════════════════ -->
+  <section class="shell rhythm-m poche" id="gap">
+    <span class="poche-mark t-micro">01</span>
+    <h2 class="t-d3">Extraction is solved. Evidence is not.</h2>
+
+    <div class="claim-evidence" style="margin-top:var(--s-40)">
+      <div class="claim u-stack-24">
+        <p class="t-lead">
+          From ExtractBench, measured on the same system — LlamaExtract Agentic Plus.
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Metric</th><th class="num">Score</th></tr></thead>
+            <tbody>
+              <tr><td>Value F1 — does it get the answer right?</td><td class="num">95.6%</td></tr>
+              <tr data-state="disputed"><td>Word-level grounding F1 @ IoU 0.5 — can it point at the words?</td><td class="num">46.4</td></tr>
+              <tr><td>Systems returning no evidence at all</td><td class="num">8 of 14</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="t-body-s u-dimmer">
+          Read out of Table 3, p.9 of the paper on 20 August 2026. The paper prints one decimal
+          place; an earlier draft carried <span class="fact">46.43</span>, which is a precision the
+          source does not contain. Corrected for the same reason FR-9.1 exists — a figure quoted to
+          a digit nobody published is the beginning of a number nobody can check.
+        </p>
+
+        <p class="t-body u-dim">
+          Errata lives in the 49-point gap. It ingests a catalog <em>and</em> the source documents
+          behind it, independently re-derives every attribute, grounds each value to a word-level
+          span, calibrates its own confidence, and emits a ranked list of records where the catalog
+          and the evidence disagree — with the evidence attached.
+        </p>
+      </div>
+
+      <div class="evidence u-stack-16">
+        <div class="document">
+          <div class="t-col" style="color:var(--p-bone-700)">Source · rating plate, page 2</div>
+          <table style="margin-top:var(--s-16)">
+            <tbody>
+              <tr><th>Ingress protection</th><td><span class="span-hl">IP66</span></td></tr>
+              <tr><th>Rated voltage</th><td><span class="span-hl">400 V</span></td></tr>
+              <tr><th>Rated current</th><td><span class="span-hl">16 A</span></td></tr>
+            </tbody>
+          </table>
+          <p class="t-micro" style="margin-top:var(--s-16);color:var(--p-bone-700)">
+            Span offsets 1184–1188 · 1204–1209 · 1226–1230
+          </p>
+        </div>
+        <p class="t-micro u-dimmer">
+          Paper is paper in both themes (L-2). Toggle the theme: the room inverts, the evidence
+          does not.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ METHOD ═══════════════════════════════════════════════════════ -->
+  <section class="shell rhythm-m poche" id="method">
+    <span class="poche-mark t-micro">02</span>
+    <h2 class="t-d3">It grades data. It does not create data.</h2>
+    <p class="t-lead" style="margin-top:var(--s-24)">
+      The output is a redline addressed to a human, and it carries the case against itself.
+    </p>
+
+    <div class="cards" style="margin-top:var(--s-40)">
+      <article class="card">
+        <span class="t-col u-dimmer">Claims, not values</span>
+        <p class="t-body-s u-dim">Nothing stores “the value of attribute X”. It stores immutable assertions <em>about</em> that value, each with its evidence, its extractor fingerprint and its calibrated confidence.</p>
+      </article>
+      <article class="card">
+        <span class="t-col u-dimmer">Abstentions are a type</span>
+        <p class="t-body-s u-dim">Not a null, not an empty string. A type the downstream code cannot mistake for a value — because on this corpus, declining is the <em>majority</em> behaviour.</p>
+      </article>
+      <article class="card">
+        <span class="t-col u-dimmer">Redlines, not writes</span>
+        <p class="t-body-s u-dim">No code path reaches a customer’s PIM. Accepting a correction writes a claim to Errata’s own append-only ledger saying a human accepted it (ADR-001).</p>
+      </article>
+      <article class="card">
+        <span class="t-col u-dimmer">Two signatures</span>
+        <p class="t-body-s u-dim">Safety-class attributes need a second named adjudicator. Single-signature acceptance is impossible <em>by construction</em> — the schema refuses it (FR-8.9).</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ═══ THE QUEUE ════════════════════════════════════════════════════ -->
+  <section class="shell rhythm-m poche">
+    <span class="poche-mark t-micro">03</span>
+    <h2 class="t-d3">A queue that reads as a sentence.</h2>
+    <p class="t-body u-dim" style="margin-top:var(--s-24);max-width:62ch">
+      Never a bare confidence percentage (FR-7.5). Each row carries the four blast-radius factors
+      separately, because a reviewer shown one score has been given a number, not a reason.
+    </p>
+
+    <div class="queue" style="margin-top:var(--s-32)">
+      <div class="queue-row" data-state="disputed">
+        <span class="queue-sentence"><span class="sku">S201M-B16UC</span> says rated current is <span class="val was">61&nbsp;A</span>. <span class="loc">Page&nbsp;8</span>, column “Rated current I n A” says <span class="val">16&nbsp;A</span>.</span>
+        <span class="blast t-micro">
+          <span data-safety="true">Safety class<span class="f">×25</span></span>
+          <span>Revenue weight<span class="f">1</span></span>
+          <span>Blast radius<span class="f">25</span></span>
+          <span>Expected review value<span class="f">12.5</span></span>
+        </span>
+      </div>
+      <div class="queue-row" data-state="declined">
+        <span class="queue-sentence"><span class="sku">S201M-B16UC</span> claims a packaging unit of <span class="val">10&nbsp;pcs</span>. <strong>We did not check it.</strong></span>
+        <span class="declined-why t-micro">Declined — <span class="fact">value_outside_known_grammar</span>. A value picked by tie-break becomes a confident accusation two steps later.</span>
+      </div>
+    </div>
+    <p class="t-micro u-dimmer" style="margin-top:var(--s-16)">
+      Both rows are real output from an audit of <span class="fact">abb-s200-2CDC002142D0207.pdf</span>
+      against <span class="fact">var/scale/catalog.csv</span>. Nothing here is placeholder data (L-4).
+    </p>
+  </section>
+
+  <!-- ═══ ERRATA ═══════════════════════════════════════════════════════ -->
+  <section class="shell rhythm-m poche" id="errata">
+    <span class="poche-mark t-micro">04</span>
+    <h2 class="t-d3">Our own errata.</h2>
+    <p class="t-lead" style="margin-top:var(--s-24)">
+      A verification product that will not publish its own corrections is asking for a trust it has
+      not extended.
+    </p>
+
+    <div class="table-wrap" style="margin-top:var(--s-32)">
+      <table class="table">
+        <thead><tr><th>#</th><th>What was wrong</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr data-state="disputed"><td>G-1</td><td>Page rotation put every evidence box on the wrong part of the page. Latent in shipped code; could not fire on our corpus, certain to fire on a fold-out.</td><td>coordinate system</td></tr>
+          <tr data-state="disputed"><td>G-2</td><td>A 100%-image scan with an OCR layer reports 161,731 words and is never declined, so its evidence boxes would be visibly wrong.</td><td>text layer</td></tr>
+          <tr><td>E-1…E-4</td><td>Four colour tokens failed their own stated contrast targets. The design document asserted ratios nobody had computed.</td><td>design tokens</td></tr>
+          <tr><td>E-5</td><td>The tracking table contradicted the tracking curve on the previous page, below 20px.</td><td>typography</td></tr>
+          <tr><td>E-6</td><td>The palette’s hex column was a different colour from its OKLCH column — by up to 21/255.</td><td>palette</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="t-body-s u-dimmer" style="margin-top:var(--s-16)">
+      Every one was found by building the thing and measuring it, not by reading about it. The full
+      write-ups are in <span class="fact">docs/frontend/</span>.
+    </p>
+  </section>
+
+  <section class="shell rhythm-s">
+    <div class="closing">
+      <p class="t-d4">A dark mass, one raking light, warm paper, and a repair you are never allowed to stop seeing.</p>
+      <div class="hero-actions" style="margin-top:var(--s-32)">
+        <a class="btn btn--lg" href="../console/">Open the console</a>
+        <a class="btn btn--lg btn--quiet" href="../datum/">Read the design system</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="shell site-footer t-micro">
+  ERRATA · DATUM v1.0 · THE STILL WATER — nothing on this page is a shipped surface.
+  The WebGL procession (Rooms II–V) is FE-5/FE-6 and is not built; this page is what FE-1’s gate
+  approved without a shader, which is why it works with <span class="fact">?nogl=1</span> by
+  construction rather than by fallback.
+</footer>
+
+<script src="../datum/theme.js"></script>
+</body>
+</html>

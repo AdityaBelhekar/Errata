@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — your catalog is a reflection</title>
+<meta name="description" content="A verification layer for industrial product data. It grades data. It does not create data.">
+
+<!-- §6.6 LAW — theme and the no-canvas switch applied before first paint. No flash. -->
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    if (new URLSearchParams(location.search).get('nogl') === '1')
+      document.documentElement.setAttribute('data-gl', 'off');
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<a class="skip-link t-body" href="#procession">Skip the procession</a>
+
+<nav class="site-nav" aria-label="Primary">
+  <a class="wordmark" href="/web/landing/" aria-current="page">ERRATA</a>
+  <div class="nav-links t-micro">
+    <a href="/web/site/">The argument</a>
+    <a href="/web/console/">Console</a>
+    <a href="/web/datum/">Design system</a>
+    <a href="?nogl=1">No canvas</a>
+  </div>
+  <div class="theme-toggle" data-theme-toggle>
+    <button type="button" data-mode="system">Sys</button>
+    <button type="button" data-mode="light">Light</button>
+    <button type="button" data-mode="dark">Dark</button>
+  </div>
+</nav>
+
+<div id="root"></div>
+<div id="scroll-track" aria-hidden="true"></div>
+
+<script type="module" src="/src/main.tsx"></script>
+<script src="/web/datum/theme.js" defer></script>
+</body>
+</html>

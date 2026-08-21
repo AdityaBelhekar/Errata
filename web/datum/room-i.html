@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — Room I · the reflection that lies</title>
+<meta name="description" content="FE-1 schematic comp. Room I of the landing procession, rendered without a shader.">
+
+<!-- §6.6 LAW — theme applied before first paint. No flash. -->
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    if (new URLSearchParams(location.search).get('nogl') === '1')
+      document.documentElement.setAttribute('data-gl', 'off');
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/type.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="../site/shell.css">
+<!-- The room itself lives in site.css. It was duplicated here and in the landing
+     page, which is two definitions of one room and precisely the drift this project
+     keeps finding elsewhere. One definition, two surfaces. -->
+<link rel="stylesheet" href="../site/site.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROOM I — THE REFLECTION THAT LIES
+   FE-1 deliverable: one full-fidelity static comp, no shader.
+
+   The room is defined ONCE, in ../site/site.css, and shared with the landing
+   page. What remains below belongs to this page only: the annotation that
+   explains what the comp is for.
+
+   FE-1's gate was "judge the direction before a shader exists" (§18). There is
+   no canvas on this page, so L-7 holds by construction rather than by fallback.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.room { min-height: 100svh; }
+
+/* ── Annotation: the poché margin does real work ───────────────────────────
+   §8.4. Asset identifiers, span offsets and captions hang OUTSIDE the text
+   block. This is most of the difference between "webpage" and "monograph". */
+.annot { position: relative; z-index: 3; padding-bottom: var(--s-96); }
+.annot-note { color: var(--text-3); }
+.annot dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--s-8) var(--s-24); }
+.annot dt { color: var(--text-3); }
+.annot dd { color: var(--text-2); }
+
+/* ── The substitution notice ───────────────────────────────────────────────
+   Not decoration. See FE-1's gate report: the three specified faces are not in
+   this repository, so this comp is rendering in fallback. A reviewer judging
+   "the direction" is entitled to know which part of what they are looking at
+   is the direction and which part is a stand-in. */
+.substitution {
+  border-left: var(--w-reveal) solid var(--signal);
+  padding: var(--s-12) var(--s-16);
+  background: var(--signal-wash);
+  color: var(--text-2);
+  max-width: 62ch;
+}
+</style>
+</head>
+
+<body class="datum-field">
+
+<a class="skip-link t-body" href="#room">Skip to content</a>
+
+<!-- §8.1 LAW — the datum. Column 5 of 16, full height, every page. -->
+<div class="datum" aria-hidden="true"></div>
+
+<!-- HUD (§12.1). Fixed, `meta`, four corners. Reads as instrumentation, not as
+     chrome, because everything in it is a fact you could go and check. -->
+<div class="hud hud--tl t-meta">
+  ERRATA<br><span class="u-dimmer">Verification layer</span>
+</div>
+<div class="hud hud--tr t-meta" style="pointer-events:auto">
+  <div class="theme-toggle" data-theme-toggle>
+    <button type="button" data-mode="system">Sys</button>
+    <button type="button" data-mode="light">Light</button>
+    <button type="button" data-mode="dark">Dark</button>
+  </div>
+</div>
+<div class="hud hud--bl t-meta">
+  Act I / V<br><span class="u-dimmer">Approach</span>
+</div>
+<div class="hud hud--br t-meta">
+  ExtractBench 46.4 GF1<br><span class="u-dimmer">The 49-point gap</span>
+</div>
+
+<main id="room">
+
+  <section class="act act--hero room" aria-labelledby="hero-line">
+
+    <div class="stage">
+      <figure class="plate-assembly">
+
+        <!-- THE OBJECT. What the datasheet says, because the datasheet is a
+             photograph of this plate. -->
+        <div class="plate" aria-label="Rating plate, as manufactured">
+          <div class="plate-brand t-micro">
+            <span>Type 4C-M · SERIES II</span>
+            <span>MADE IN EU</span>
+          </div>
+          <div class="plate-row">
+            <span class="plate-key t-col">Ingress</span>
+            <span class="plate-val">IP66</span>
+          </div>
+          <div class="plate-row">
+            <span class="plate-key t-col">Rated voltage</span>
+            <span class="plate-val">400 V</span>
+          </div>
+          <div class="plate-row">
+            <span class="plate-key t-col">Rated current</span>
+            <span class="plate-val">16 A</span>
+          </div>
+        </div>
+
+        <div class="waterline" aria-hidden="true"></div>
+
+        <!-- THE REFLECTION. What the catalog says. Aria-hidden because a screen
+             reader user gets this told to them properly, in the caption below,
+             rather than as a mirrored duplicate they must decode. -->
+        <div class="reflection" aria-hidden="true">
+          <div class="plate">
+            <div class="plate-brand t-micro">
+              <span>Type 4C-M · SERIES II</span>
+              <span>MADE IN EU</span>
+            </div>
+            <div class="plate-row">
+              <span class="plate-key t-col">Ingress</span>
+              <span class="plate-val">IP54</span>
+            </div>
+            <div class="plate-row">
+              <span class="plate-key t-col">Rated voltage</span>
+              <span class="plate-val">400 V</span>
+            </div>
+            <div class="plate-row">
+              <span class="plate-key t-col">Rated current</span>
+              <span class="plate-val">10 A</span>
+            </div>
+          </div>
+        </div>
+
+        <figcaption class="u-sr-only">
+          A rating plate reads IP66, 400 V, 16 A. Its reflection reads IP54,
+          400 V, 10 A. Two of the three values disagree with the object they
+          claim to reflect.
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="hero">
+      <h1 id="hero-line" class="hero-line t-d1">
+        Your catalog is a <span class="degraded">reflection</span>.
+      </h1>
+      <p class="hero-sub t-meta">
+        We checked it against the thing it claims to reflect.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── ANNOTATION ─────────────────────────────────────────────────────── -->
+  <section class="shell annot rhythm-s">
+    <div class="claim-evidence">
+
+      <div class="claim poche u-stack-24">
+        <span class="poche-mark t-micro">I</span>
+
+        <h2 class="t-h2">What Room I is doing</h2>
+
+        <p class="t-lead">
+          The mirror is not showing you the plate. It is showing you a second
+          plate, and two of its three values are wrong.
+        </p>
+
+        <p class="t-body u-dim">
+          In the built version the reflection is a render target pointed at a
+          second scene, and the false plate tracks the pointer at
+          <span class="fact">0.84×</span> the real one — it <em>almost</em>
+          follows. Here it is two elements in the DOM with different text,
+          mirrored and sheared by
+          <span class="fact">0.9°</span> at the current decohere value of
+          <span class="fact">0.34</span>. Different mechanism, identical read,
+          and the read is what FE-1's gate is for: if the composition does not
+          hold in CSS it will not be rescued by a shader in FE-5.
+        </p>
+
+        <p class="t-body u-dim">
+          Every gradient on this page belongs to one lamp, standing high and to
+          the left, out of frame. That is law L-5, and the test for it is
+          whether a photographer could stand in this room and take this picture.
+        </p>
+
+        <div class="substitution t-body-s">
+          <strong>Type substitution notice.</strong> Redaction, Apfel Grotezk and
+          Sligoil are not in this repository — see
+          <span class="fact">web/datum/fonts/README.md</span>. Everything above
+          is rendering in its fallback stack, so the degradation axis
+          (§5.2) currently carries no visual difference between a verified and
+          an unverified claim. The scale, the tracking curve and the layout are
+          real; the faces are not yet. FE-1's gate report records this as open.
+        </div>
+      </div>
+
+      <div class="evidence u-stack-16">
+        <div class="document">
+          <div class="t-col" style="color:var(--p-bone-700)">Source · rating plate, page 2</div>
+          <table style="margin-top:var(--s-16)">
+            <tbody>
+              <tr><th>Ingress protection</th><td><span class="span-hl">IP66</span></td></tr>
+              <tr><th>Rated voltage</th><td><span class="span-hl">400 V</span></td></tr>
+              <tr><th>Rated current</th><td><span class="span-hl">16 A</span></td></tr>
+            </tbody>
+          </table>
+          <p class="t-micro" style="margin-top:var(--s-16);color:var(--p-bone-700)">
+            Span offsets 1184–1188 · 1204–1209 · 1226–1230
+          </p>
+        </div>
+
+        <div class="annot-note t-micro">
+          Paper is paper in both themes (L-2). Toggle the theme in the corner:
+          the room inverts, the evidence does not.
+        </div>
+
+        <div class="diff-pair" style="margin-top:var(--s-24)">
+          <span class="t-col u-dimmer">Rated current</span>
+          <span class="diff-claim">10 A</span>
+          <span class="diff-evidence">16 A</span>
+          <span class="diff-note t-micro">Catalog above · evidence below · DiffPair, §13.2</span>
+        </div>
+
+        <dl class="t-micro" style="margin-top:var(--s-24)">
+          <dt>Comp</dt><dd>FE-1 · Room I · static, no shader</dd>
+          <dt>Theme</dt><dd>Both. The room re-lights; the paper does not</dd>
+          <dt>Canvas</dt><dd>None on this page — L-7 by construction</dd>
+          <dt>Colour</dt><dd>Signal on 3 elements in this viewport (ceiling 4, §6.8)</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="shell site-footer t-micro">
+  ERRATA · DATUM v1.0 · THE STILL WATER — FE-1 schematic. Nothing on this page
+  is a shipped surface.
+</footer>
+
+<script src="theme.js"></script>
+</body>
+</html>

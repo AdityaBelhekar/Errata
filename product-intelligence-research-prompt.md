@@ -1,6 +1,6 @@
 # MEGA-PROMPT — Multi-Model Research → Production-Grade Project Synthesis
 
-> Paste this whole thing into Claude in Chrome as your first message.
+> Use this structured prompt framework to guide comprehensive research synthesis.
 
 ---
 

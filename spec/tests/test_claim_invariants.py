@@ -367,19 +367,19 @@ def test_naming_a_model_without_its_hashes_is_rejected() -> None:
     fields that make the output reproducible left at their defaults because nothing complained.
     """
     with pytest.raises(ValidationError, match="NFR-2"):
-        ExtractorFingerprint(name="llm-selector", version="1.0.0", model_id="claude-opus-5")
+        ExtractorFingerprint(name="llm-selector", version="1.0.0", model_id="llm-extractor-v1")
 
 
 def test_a_model_claim_with_every_hash_is_accepted() -> None:
     fingerprint = ExtractorFingerprint(
         name="llm-selector",
         version="1.0.0",
-        model_id="claude-opus-5",
+        model_id="llm-extractor-v1",
         prompt_sha256="a" * 64,
         params_sha256="b" * 64,
         decode_constraints_sha256="c" * 64,
     )
-    assert fingerprint.model_id == "claude-opus-5"
+    assert fingerprint.model_id == "llm-extractor-v1"
 
 
 def test_a_rule_based_claim_needs_no_hashes() -> None:

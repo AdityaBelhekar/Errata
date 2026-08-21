@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Errata — The Still Water</title>
+
+<!-- Zodiak + Switzer: Fontshare (Indian Type Foundry) · Geist Mono: Google -->
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=zodiak@300,301,400,401&f[]=switzer@400,500,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&display=swap">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DATUM — monochrome, one signal, one sun
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --black:#07080A;  --graphite:#0E1013;  --steel-800:#181B1F;
+  --steel-600:#3B4148; --steel-400:#7A8189; --steel-200:#B4BAC1;
+  --bone:#F4F1EB;   --paper:#EFEBE3;      --ink:#16181B;
+  --signal:#C42B38;                      /* the only colour in the building */
+  --ice:#DCE9F2;
+
+  --serif:'Zodiak','Zodiak-Fallback',Georgia,serif;
+  --sans:'Switzer','Switzer-Fallback',system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+
+  --pad:clamp(20px,4.6vw,68px);
+  --e:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--black);color:var(--bone);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:hidden;cursor:none}
+::selection{background:var(--signal);color:#fff}
+#scroll{height:860vh}                    /* Lenis drives this */
+
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;
+  transition:opacity .6s var(--e)}
+
+/* ── instrumentation frame ──────────────────────────────── */
+.hud{position:fixed;z-index:8;pointer-events:none;font-family:var(--mono);font-weight:400;
+  font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--steel-400);
+  line-height:1.7;font-variant-numeric:tabular-nums}
+.hud em{font-style:normal;color:var(--bone)}
+#tl{top:var(--pad);left:var(--pad)} #tr{top:var(--pad);right:var(--pad);text-align:right}
+#bl{bottom:var(--pad);left:var(--pad);display:flex;gap:16px;align-items:center}
+#br{bottom:var(--pad);right:var(--pad);text-align:right}
+#rail{width:88px;height:1px;background:rgba(255,255,255,.13);position:relative}
+#rail i{position:absolute;left:0;top:-1px;height:3px;width:0;background:var(--signal)}
+.rule{position:fixed;z-index:7;pointer-events:none;background:rgba(255,255,255,.05)}
+#rt{top:calc(var(--pad) + 30px);left:var(--pad);right:var(--pad);height:1px}
+#rb{bottom:calc(var(--pad) + 30px);left:var(--pad);right:var(--pad);height:1px}
+
+/* ── cursor ─────────────────────────────────────────────── */
+#ring{position:fixed;z-index:30;pointer-events:none;top:0;left:0;width:22px;height:22px;
+  margin:-11px 0 0 -11px;border:1px solid rgba(255,255,255,.45);border-radius:50%;
+  mix-blend-mode:difference;transition:width .45s var(--e),height .45s var(--e),
+  margin .45s var(--e),opacity .3s,border-color .45s}
+#ring.wide{width:64px;height:64px;margin:-32px 0 0 -32px;border-color:rgba(255,255,255,.22)}
+#ring.hide{opacity:0}
+
+/* ── acts ───────────────────────────────────────────────── */
+.act{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:0;will-change:opacity;
+  display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(12px,1.7vw,26px);
+  padding:0 var(--pad);align-content:center}
+.clip{display:block;overflow:hidden;padding-bottom:.06em}
+.clip>*{display:block;transform:translateY(110%);transition:transform 1.15s var(--e)}
+.act.on .clip>*{transform:none}
+.act.on .d1>*{transition-delay:.07s} .act.on .d2>*{transition-delay:.14s}
+.act.on .d3>*{transition-delay:.21s}
+
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--steel-400);display:flex;gap:12px;align-items:baseline}
+.tag b{color:var(--signal);font-weight:400}
+
+/* ACT I — restraint. One serif line, nothing else. */
+#a1{grid-template-columns:1fr;justify-items:center;text-align:center}
+#a1 h1{font-family:var(--serif);font-weight:300;font-size:clamp(40px,8.2vw,142px);
+  line-height:.92;letter-spacing:-.032em}
+#a1 h1 i{font-style:italic;font-weight:300}
+#a1 .k{font-family:var(--mono);font-size:10px;letter-spacing:.34em;color:var(--steel-400);
+  text-transform:uppercase;margin-bottom:clamp(24px,3.4vh,46px)}
+#a1 .s{font-family:var(--mono);font-size:11px;letter-spacing:.10em;color:var(--steel-200);
+  margin-top:clamp(26px,3.6vh,50px)}
+
+/* ACT II — copy left, real document right */
+#a2 .col{grid-column:1/span 4;align-self:center}
+#a2 h2{font-family:var(--serif);font-weight:300;font-size:clamp(26px,3.1vw,50px);
+  line-height:1.06;letter-spacing:-.022em;margin:26px 0 20px}
+#a2 h2 i{font-style:italic}
+#a2 p{font-family:var(--sans);font-weight:400;font-size:16px;line-height:1.62;
+  color:var(--steel-200);max-width:38ch}
+#a2 .hint{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--bone);margin-top:34px;display:flex;gap:11px;align-items:center}
+#a2 .hint u{width:24px;height:1px;background:var(--signal);text-decoration:none}
+
+/* ACT III */
+#a3 .col{grid-column:7/span 6;align-self:center}
+#a3 .n{font-family:var(--serif);font-weight:300;font-size:clamp(64px,9.6vw,168px);
+  line-height:.82;letter-spacing:-.05em;color:var(--bone);font-variant-numeric:tabular-nums}
+#a3 .n small{font-size:.30em;letter-spacing:-.01em;color:var(--signal);
+  vertical-align:super;font-family:var(--mono);font-weight:400}
+#a3 h2{font-family:var(--serif);font-weight:300;font-style:italic;
+  font-size:clamp(20px,2.3vw,34px);line-height:1.16;margin-top:22px;color:var(--steel-200)}
+#a3 .s{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--steel-400);margin-top:28px;line-height:2}
+
+/* ACT IV */
+#a4{align-content:center}
+#a4 .panel{grid-column:1/span 12;background:var(--bone);color:var(--ink);
+  box-shadow:0 50px 150px rgba(0,0,0,.7);overflow:hidden}
+
+/* ═══ the real document (DOM, not a texture) ═══════════════ */
+#sheet{position:fixed;z-index:5;opacity:0;pointer-events:none;
+  top:50%;left:auto;right:calc(var(--pad) + 1vw);
+  width:min(46vw,540px);aspect-ratio:1/1.36;
+  transform:translateY(-50%) perspective(1600px) rotateY(-7deg) rotateX(1.2deg);
+  transform-style:preserve-3d;will-change:opacity;
+  box-shadow:0 60px 140px rgba(0,0,0,.66), 0 4px 14px rgba(0,0,0,.5)}
+.doc{position:absolute;inset:0;background:var(--paper);color:var(--ink);
+  padding:clamp(16px,2.5vw,30px) clamp(18px,2.8vw,34px);display:flex;flex-direction:column}
+.doc.clean{background:var(--bone);
+  -webkit-mask-image:radial-gradient(circle var(--r,120px) at var(--mx,50%) var(--my,50%),
+    transparent 0 58%, #000 82%);
+          mask-image:radial-gradient(circle var(--r,120px) at var(--mx,50%) var(--my,50%),
+    transparent 0 58%, #000 82%)}
+.doc .meta{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+  color:#948E84;display:flex;justify-content:space-between;padding-bottom:9px;
+  border-bottom:1px solid rgba(0,0,0,.5)}
+.doc h3{font-family:var(--sans);font-weight:600;font-size:clamp(13px,1.15vw,17px);
+  letter-spacing:-.012em;margin:15px 0 3px}
+.doc .sh{font-family:var(--mono);font-size:9px;letter-spacing:.10em;text-transform:uppercase;
+  color:#9C968C;margin-bottom:15px}
+.doc table{width:100%;border-collapse:collapse}
+.doc td{padding:clamp(5px,.82vh,10px) 0;border-bottom:1px solid rgba(0,0,0,.08);
+  vertical-align:baseline}
+.doc td.k{font-family:var(--sans);font-size:clamp(10px,.86vw,12.5px);color:#5E584F;width:56%}
+.doc td.v{font-family:var(--mono);font-size:clamp(11px,.95vw,14px);font-weight:500;
+  text-align:right;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.doc .span{background:var(--ice);box-shadow:0 2px 0 var(--signal);padding:2px 6px;margin:0 -6px}
+.doc .ref{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.08em;
+  color:var(--signal);text-align:right;margin-top:3px;text-transform:uppercase}
+.doc .body{margin-top:auto;padding-top:14px}
+.doc .body i{display:block;height:5px;background:rgba(0,0,0,.10);margin-bottom:7px}
+#lens{position:absolute;border-radius:50%;pointer-events:none;
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 0 0 1px rgba(0,0,0,.16), 0 10px 34px rgba(0,0,0,.32),
+             inset 0 0 34px rgba(255,255,255,.30);
+  background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.22), transparent 58%)}
+
+/* ═══ ACT IV table ═════════════════════════════════════════ */
+.pbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;
+  background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:10px;
+  letter-spacing:.13em;text-transform:uppercase}
+.pbar .l{display:flex;gap:13px;align-items:center}
+.pbar .sq{width:5px;height:5px;background:var(--signal)}
+#a4 table{width:100%;border-collapse:collapse}
+#a4 th{font-family:var(--mono);font-weight:400;font-size:9px;letter-spacing:.13em;
+  text-transform:uppercase;text-align:left;padding:13px 22px;color:#948E84;
+  border-bottom:1px solid rgba(0,0,0,.16)}
+#a4 td{font-family:var(--mono);font-size:12px;font-weight:400;padding:clamp(9px,1.5vh,17px) 22px;
+  border-bottom:1px solid rgba(0,0,0,.065);letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+#a4 td.att{font-family:var(--sans);font-size:13px;letter-spacing:0}
+#a4 tr.bad{background:#E9E4DB;box-shadow:inset 2px 0 0 var(--signal)}
+#a4 tr.bad td:last-child{color:var(--signal)}
+#a4 tr.ok td:last-child{color:#948E84}
+.was{color:#A9A29A;text-decoration:line-through;text-decoration-thickness:1px}
+
+/* ═══ preloader ════════════════════════════════════════════ */
+#pre{position:fixed;inset:0;z-index:60;background:var(--black);
+  display:grid;place-content:center;justify-items:center;
+  transition:opacity 1s var(--e),visibility 1s}
+#pre .n{font-family:var(--serif);font-weight:300;font-size:clamp(64px,13vw,168px);
+  line-height:.84;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+#pre .l{width:min(42vw,300px);height:1px;background:rgba(255,255,255,.13);
+  margin-top:30px;position:relative}
+#pre .l i{position:absolute;inset:0 auto 0 0;width:0;background:var(--bone);
+  transition:width .3s linear}
+#pre .t{font-family:var(--mono);font-size:9px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--steel-400);margin-top:22px}
+body.ready #pre{opacity:0;visibility:hidden}
+#nogl{position:fixed;inset:0;z-index:70;display:none;place-content:center;text-align:center;
+  padding:40px;font-family:var(--serif);font-weight:300;font-size:28px;line-height:1.5}
+
+@media (max-width:960px){
+  body{cursor:auto} #ring{display:none}
+  #a2 .col{grid-column:1/span 12} #a3 .col{grid-column:1/span 12}
+  #sheet{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div class="rule" id="rt"></div><div class="rule" id="rb"></div>
+<div class="hud" id="tl"><em>ERRATA</em><br>Verification layer</div>
+<div class="hud" id="tr">ExtractBench 46.4 GF1<br>The 49-point gap</div>
+<div class="hud" id="bl"><span id="idx">01 / 04</span><span id="rail"><i></i></span><span id="lab">Still water</span></div>
+<div class="hud" id="br"><span id="crd">x 0.000 · y 0.000</span></div>
+
+<!-- ACT I ─────────────────────────────────────────────── -->
+<section class="act" id="a1">
+  <div class="k clip"><span>Catalog integrity · MMXXVI</span></div>
+  <h1>
+    <span class="clip"><span>Your catalog is a</span></span>
+    <span class="clip d1"><span><i>reflection</i>.</span></span>
+  </h1>
+  <div class="s clip d2"><span>We checked it against the thing it claims to reflect.</span></div>
+</section>
+
+<!-- ACT II ────────────────────────────────────────────── -->
+<section class="act" id="a2">
+  <div class="col">
+    <div class="tag clip"><span><b>02</b> — Blacklight</span></div>
+    <h2><span class="clip d1"><span>The page you were shown.</span></span>
+        <span class="clip d2"><span>The page <i>underneath</i> it.</span></span></h2>
+    <p class="clip d3"><span>Errata re-derives every attribute from the source document and
+      grounds it to a word-level span. It grades data. It does not create data.</span></p>
+    <div class="hint clip d3"><span><u></u>&nbsp;Move the light</span></div>
+  </div>
+</section>
+
+<!-- the document — real DOM, real type, device resolution -->
+<div id="sheet">
+  <div class="doc truth">
+    <div class="meta"><span>Manufacturer PDF</span><span>p.7 · table 3</span></div>
+    <h3>Technical datasheet — 4CN series</h3>
+    <div class="sh">Source document · re-derived by errata_audit.derive</div>
+    <table>
+      <tr><td class="k">Rated voltage</td><td class="v">400 V</td></tr>
+      <tr><td class="k">Rated current</td><td class="v"><span class="span">10 A</span><span class="ref">1402–1406</span></td></tr>
+      <tr><td class="k">Ingress protection</td><td class="v"><span class="span">IP54</span><span class="ref">1184–1188</span></td></tr>
+      <tr><td class="k">Breaking capacity</td><td class="v">6 kA</td></tr>
+      <tr><td class="k">Ambient temp. max</td><td class="v"><span class="span">+55 °C</span><span class="ref">0442–0448</span></td></tr>
+      <tr><td class="k">Poles</td><td class="v">3P</td></tr>
+      <tr><td class="k">Tripping curve</td><td class="v">C</td></tr>
+    </table>
+    <div class="body"><i style="width:96%"></i><i style="width:88%"></i><i style="width:93%"></i><i style="width:61%"></i></div>
+  </div>
+
+  <div class="doc clean">
+    <div class="meta"><span>PIM export</span><span>rev 12 · trusted</span></div>
+    <h3>Product catalog — 4CN-40118-B</h3>
+    <div class="sh">Your system of record</div>
+    <table>
+      <tr><td class="k">Rated voltage</td><td class="v">400 V</td></tr>
+      <tr><td class="k">Rated current</td><td class="v">16 A</td></tr>
+      <tr><td class="k">Ingress protection</td><td class="v">IP66</td></tr>
+      <tr><td class="k">Breaking capacity</td><td class="v">6 kA</td></tr>
+      <tr><td class="k">Ambient temp. max</td><td class="v">+70 °C</td></tr>
+      <tr><td class="k">Poles</td><td class="v">3P</td></tr>
+      <tr><td class="k">Tripping curve</td><td class="v">C</td></tr>
+    </table>
+    <div class="body"><i style="width:96%"></i><i style="width:88%"></i><i style="width:93%"></i><i style="width:61%"></i></div>
+  </div>
+  <div id="lens"></div>
+</div>
+
+<!-- ACT III ───────────────────────────────────────────── -->
+<section class="act" id="a3">
+  <div class="col">
+    <div class="tag clip"><span><b>03</b> — Scale</span></div>
+    <div class="n clip d1"><span><span id="count">0</span><small>／1.2M</small></span></div>
+    <h2 class="clip d2"><span>records disagree with their own evidence.</span></h2>
+    <div class="s clip d3"><span>1,204,880 attributes · 3.42% out of register<br>
+      every one carries the span that proves it</span></div>
+  </div>
+</section>
+
+<!-- ACT IV ────────────────────────────────────────────── -->
+<section class="act" id="a4">
+  <div class="panel">
+    <div class="pbar"><span class="l"><span class="sq"></span>Triage queue — ranked by disagreement</span><span>41,206 open</span></div>
+    <table>
+      <thead><tr><th>Record</th><th>Attribute</th><th>Catalog</th><th>Evidence</th><th>Span</th><th>State</th></tr></thead>
+      <tbody>
+        <tr class="bad"><td>4CN-40118-B</td><td class="att">Ingress protection</td><td class="was">IP66</td><td>IP54</td><td>p.7 §2 · 1184–1188</td><td>Out of register</td></tr>
+        <tr class="bad"><td>4CN-40118-B</td><td class="att">Rated current</td><td class="was">16 A</td><td>10 A</td><td>p.7 §2 · 1402–1406</td><td>Out of register</td></tr>
+        <tr class="ok"><td>4CN-40118-B</td><td class="att">Rated voltage</td><td>400 V</td><td>400 V</td><td>p.7 §2 · 1090–1095</td><td>Grounded</td></tr>
+        <tr class="bad"><td>7TQ-77291-A</td><td class="att">Ambient temp. max</td><td class="was">+70 °C</td><td>+55 °C</td><td>p.3 §1 · 0442–0448</td><td>Out of register</td></tr>
+        <tr class="ok"><td>7TQ-77291-A</td><td class="att">Breaking capacity</td><td>6 kA</td><td>6 kA</td><td>p.3 §1 · 0511–0515</td><td>Grounded</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div id="ring"></div>
+<div id="scroll"></div>
+
+<div id="pre">
+  <div class="n" id="pn">000</div>
+  <div class="l"><i id="pl"></i></div>
+  <div class="t">Errata — loading evidence</div>
+</div>
+<div id="nogl">WebGL is unavailable on this device.<br>The page reads without it.</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
+  "lenis":"https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.mjs"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer}  from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass}      from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {ShaderPass}      from 'three/addons/postprocessing/ShaderPass.js';
+import {OutputPass}      from 'three/addons/postprocessing/OutputPass.js';
+
+/* ═══════════════════════════════════════════════════════════
+   THE STILL WATER
+   I   the reflection that lies   (WebGL)
+   II  blacklight                 (DOM — type must be real type)
+   III 41,206                     (WebGL)
+   IV  the queue                  (DOM)
+   ═══════════════════════════════════════════════════════════ */
+
+const PAL={black:new THREE.Color('#07080A'),lift:new THREE.Color('#15181C'),
+  steel:new THREE.Color('#79828B'),signal:new THREE.Color('#C42B38')};
+
+const cv=document.getElementById('gl');
+let renderer;
+try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});}
+catch(e){document.getElementById('nogl').style.display='grid';cv.remove();
+  document.body.classList.add('ready');throw e;}
+
+const DPR=Math.min(devicePixelRatio,1.6);
+renderer.setPixelRatio(DPR);
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(PAL.black,1);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.02;
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x07080A,.028);
+const camera=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,.1,400);
+
+const key=new THREE.DirectionalLight(0xFFF2DE,3.6); key.position.set(-7.5,6,5);
+scene.add(key,new THREE.HemisphereLight(0x93ACC0,0x05070A,.46));
+
+/* studio strip light so the metal has something to reflect */
+(function(){
+  const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,512);
+  g.addColorStop(0,'#242A32');g.addColorStop(.44,'#090B0E');
+  g.addColorStop(.5,'#333A42');g.addColorStop(1,'#040507');
+  x.fillStyle=g;x.fillRect(0,0,1024,512);
+  x.fillStyle='rgba(255,242,222,.96)';x.fillRect(140,54,440,24);
+  x.fillStyle='rgba(150,180,212,.46)';x.fillRect(710,124,210,12);
+  const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;
+  scene.environment=new THREE.PMREMGenerator(renderer).fromEquirectangular(t).texture;
+})();
+
+/* ══ ACT I — anodized plate, etched type ═══════════════════ */
+function plate(rows){
+  const S=2, W=1200*S, H=760*S;                     // 2× so the etch stays crisp
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.scale(S,S);
+  x.fillStyle='#14171B';x.fillRect(0,0,1200,760);
+  for(let i=0;i<3400;i++){                          // brushed anisotropy
+    x.strokeStyle=`rgba(255,255,255,${Math.random()*.026})`;
+    x.lineWidth=Math.random()*1.1;const y=Math.random()*760;
+    x.beginPath();x.moveTo(0,y);x.lineTo(1200,y);x.stroke();
+  }
+  const vg=x.createRadialGradient(470,220,50,600,380,880);
+  vg.addColorStop(0,'rgba(255,255,255,.075)');vg.addColorStop(1,'rgba(0,0,0,.40)');
+  x.fillStyle=vg;x.fillRect(0,0,1200,760);
+  const etch=(t,px,py,f,a,track=0)=>{               // dark cut + light lip
+    x.font=f;
+    const draw=(dx,dy,st)=>{x.fillStyle=st;let cx=px;
+      for(const ch of t){x.fillText(ch,cx+dx,py+dy);cx+=x.measureText(ch).width+track;}};
+    draw(1.4,1.4,'rgba(0,0,0,.78)'); draw(0,0,`rgba(240,237,231,${a})`);
+  };
+  x.strokeStyle='rgba(255,255,255,.09)';x.lineWidth=3;x.strokeRect(28,28,1144,704);
+  etch('4CN-40118-B',68,120,'500 40px "Geist Mono",monospace',.94,1.2);
+  etch('MINIATURE CIRCUIT BREAKER',68,160,'300 17px "Geist Mono",monospace',.40,2.4);
+  x.strokeStyle='rgba(255,255,255,.12)';x.lineWidth=2;
+  x.beginPath();x.moveTo(68,200);x.lineTo(1132,200);x.stroke();
+  rows.forEach((r,i)=>{
+    const y=290+i*118;
+    etch(r[0],68,y,'300 17px "Geist Mono",monospace',.38,2.2);
+    etch(r[1],710,y+12,'500 56px "Geist Mono",monospace',.96,1.0);
+    x.strokeStyle='rgba(255,255,255,.055)';x.lineWidth=1;
+    x.beginPath();x.moveTo(68,y+40);x.lineTo(1132,y+40);x.stroke();
+  });
+  const map=new THREE.CanvasTexture(c);map.anisotropy=16;map.colorSpace=THREE.SRGBColorSpace;
+  const face=new THREE.MeshStandardMaterial({map,metalness:.94,roughness:.27,envMapIntensity:1.4});
+  const edge=new THREE.MeshStandardMaterial({color:0x363C42,metalness:.96,roughness:.24,envMapIntensity:1.2});
+  return new THREE.Mesh(new THREE.BoxGeometry(4.2,2.66,.10),[edge,edge,edge,edge,face,edge]);
+}
+const A1=new THREE.Group();scene.add(A1);
+const P_TRUE =[['INGRESS PROTECTION','IP66'],['RATED CURRENT','16 A'],['AMBIENT MAX','+70 °C']];
+const P_FALSE=[['INGRESS PROTECTION','IP54'],['RATED CURRENT','10 A'],['AMBIENT MAX','+55 °C']];
+const real=plate(P_TRUE); real.position.set(0,1.70,0); A1.add(real);
+
+const mirror=new THREE.Scene(); mirror.fog=scene.fog;
+const mk=new THREE.DirectionalLight(0xFFF2DE,3.6);mk.position.set(-7.5,6,5);
+mirror.add(mk,new THREE.HemisphereLight(0x93ACC0,0x05070A,.46));
+const fake=plate(P_FALSE); fake.position.copy(real.position); mirror.add(fake);
+mirror.environment=scene.environment;
+
+const RT=new THREE.WebGLRenderTarget(1024,1024,{type:THREE.HalfFloatType});
+const rcam=camera.clone();
+
+const water=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.ShaderMaterial({
+  uniforms:{uR:{value:RT.texture},uT:{value:0},uVP:{value:new THREE.Matrix4()},
+    uD:{value:0},uB:{value:PAL.black}},
+  vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;
+    gl_Position=projectionMatrix*viewMatrix*w;}`,
+  fragmentShader:`
+    uniform sampler2D uR;uniform float uT,uD;uniform mat4 uVP;uniform vec3 uB;varying vec3 vW;
+    float h(vec2 p){return fract(sin(dot(p,vec2(12.99,78.23)))*43758.5453);}
+    float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+    void main(){
+      vec4 c=uVP*vec4(vW,1.);vec2 uv=c.xy/c.w*.5+.5;
+      float t=uT*.10;
+      vec2 rp=vec2(n(vW.xz*.58+t),n(vW.zx*.58-t))-.5;
+      uv+=rp*(.0022+uD*.090); uv.x+=uD*.026*sin(vW.z*1.8+uT*.5);
+      vec3 r=texture2D(uR,clamp(uv,.002,.998)).rgb;
+      float f=smoothstep(64.,3.,length(vW.xz));
+      gl_FragColor=vec4(mix(uB,r*.86,f*.93)+rp.x*.009,1.);}`}));
+water.rotation.x=-Math.PI/2; A1.add(water);
+
+/* ══ ACT III — 41,206 ══════════════════════════════════════ */
+const COLS=440,ROWS=340,N=COLS*ROWS;                // 149,600 — fillrate-safe
+const pos=new Float32Array(N*3),que=new Float32Array(N*3);
+const bad=new Float32Array(N),del=new Float32Array(N),rnd=new Float32Array(N);
+const RATE=.0342;let nBad=0;
+for(let i=0;i<N;i++){
+  const cx=i%COLS,cy=(i/COLS)|0;
+  pos[i*3]=(cx/(COLS-1)-.5)*50; pos[i*3+1]=(cy/(ROWS-1)-.5)*32+7;
+  pos[i*3+2]=-((cx*7919+cy*104729)%101)/101*3.4;
+  rnd[i]=((i*2654435761)%1000)/1000;
+  const b=rnd[i]<RATE;bad[i]=b?1:0;if(b)nBad++;
+  del[i]=rnd[i]/RATE*2.2+(cy/ROWS)*.9;
+  const q=i%880;
+  que[i*3]=((q%30)/29-.5)*13.5; que[i*3+1]=5.6-((q/30)|0)*.40;
+  que[i*3+2]=b?0:-17-rnd[i]*11;
+}
+const pg=new THREE.BufferGeometry();
+pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+pg.setAttribute('aQ',new THREE.BufferAttribute(que,3));
+pg.setAttribute('aB',new THREE.BufferAttribute(bad,1));
+pg.setAttribute('aD',new THREE.BufferAttribute(del,1));
+pg.setAttribute('aR',new THREE.BufferAttribute(rnd,1));
+const field=new THREE.Points(pg,new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  uniforms:{uT:{value:0},uM:{value:0},uS:{value:innerHeight/2.1},
+    uC:{value:PAL.steel},uG:{value:PAL.signal},uO:{value:1}},
+  vertexShader:`attribute float aB,aD,aR;attribute vec3 aQ;
+    uniform float uT,uS,uM;varying float vB,vR;
+    void main(){vB=aB;vec3 p=position;float t=max(0.,uT-aD);
+      if(aB>.5&&t>0.){float y=position.y-4.9*t*t;
+        float rest=-9.2+aR*1.3+sin(position.x*.6)*.4;
+        vR=step(y,rest);p.y=max(y,rest);
+        p.x+=sin(t*1.7+aR*6.28)*.22*(1.-vR);p.z+=vR*aR*1.4;} else vR=0.;
+      p=mix(p,aQ,uM);
+      vec4 mv=modelViewMatrix*vec4(p,1.);
+      gl_PointSize=(uS/-mv.z)*(aB>.5?.030:.019)*(1.+uM*.85);
+      gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`uniform vec3 uC,uG;uniform float uO;varying float vB,vR;
+    void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;
+      float a=smoothstep(.5,.04,d);
+      vec3 c=mix(uC,uG,vB); c=mix(c,c*1.85,vB*(1.-vR));
+      gl_FragColor=vec4(c,a*uO*mix(.38,1.,vB));}`}));
+const A3=new THREE.Group();A3.visible=false;A3.add(field);scene.add(A3);
+
+/* ══ post ══════════════════════════════════════════════════ */
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth*.5,innerHeight*.5),.28,.34,.86);
+composer.addPass(bloom);
+composer.addPass(new ShaderPass({uniforms:{tDiffuse:{value:null},uT:{value:0},uA:{value:.026}},
+  vertexShader:`varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float uT,uA;varying vec2 v;
+    void main(){vec3 c=texture2D(tDiffuse,v).rgb;
+      float g=fract(sin(dot(v*vec2(1024.,768.)+uT,vec2(12.99,78.23)))*43758.5453)-.5;
+      c+=g*uA; c*=1.-smoothstep(.44,1.06,length((v-.5)*vec2(1.05,1.)))*.84;
+      gl_FragColor=vec4(c,1.);}`}));
+composer.addPass(new OutputPass());
+
+/* ══ smooth scroll — Lenis owns the scrollbar ══════════════ */
+let lenis=null, rawP=0;
+try{
+  const {default:Lenis}=await import('lenis');
+  lenis=new Lenis({duration:1.25,lerp:null,wheelMultiplier:.95,
+    easing:t=>Math.min(1,1.001-Math.pow(2,-10*t)),smoothWheel:true});
+  lenis.on('scroll',({scroll,limit})=>{rawP=limit?scroll/limit:0;});
+}catch(e){
+  addEventListener('scroll',()=>{rawP=scrollY/(document.body.scrollHeight-innerHeight);},{passive:true});
+}
+
+/* ══ input ═════════════════════════════════════════════════ */
+const ptr={x:.5,y:.45},ps={x:.5,y:.45};
+const ms={x:innerWidth/2,y:innerHeight/2},cs={x:ms.x,y:ms.y};
+addEventListener('pointermove',e=>{
+  ptr.x=e.clientX/innerWidth; ptr.y=1-e.clientY/innerHeight; ms.x=e.clientX; ms.y=e.clientY;
+},{passive:true});
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
+  field.material.uniforms.uS.value=innerHeight/2.1;
+});
+
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sg=(v,a,b)=>Math.min(1,Math.max(0,(v-a)/(b-a)));
+const ez=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const acts=[...document.querySelectorAll('.act')];
+const LAB=['Still water','Blacklight','41,206','The queue'];
+const $=id=>document.getElementById(id);
+const el={count:$('count'),rail:document.querySelector('#rail i'),idx:$('idx'),lab:$('lab'),
+  crd:$('crd'),ring:$('ring'),sheet:$('sheet'),lens:$('lens'),
+  clean:document.querySelector('.doc.clean')};
+
+/* damped camera — never snap a camera to a scroll value */
+const cam={x:0,y:2.2,z:9.2,tx:0,ty:1.7,tz:0};
+const damp=(a,b,l)=>a+(b-a)*l;
+const clock=new THREE.Clock();
+let p=0, last=0;
+
+function loop(t){
+  requestAnimationFrame(loop);
+  if(lenis) lenis.raf(t);
+  const dt=Math.min((t-last)/16.67||1,3); last=t;
+  const L=1-Math.pow(1-(reduced?1:.11),dt);       // frame-rate independent damping
+
+  p=damp(p,rawP,L);
+  ps.x=damp(ps.x,ptr.x,L); ps.y=damp(ps.y,ptr.y,L);
+  cs.x=damp(cs.x,ms.x,1-Math.pow(1-.20,dt)); cs.y=damp(cs.y,ms.y,1-Math.pow(1-.20,dt));
+  el.ring.style.transform=`translate3d(${cs.x}px,${cs.y}px,0)`;
+  const time=clock.getElapsedTime();
+
+  const a1=sg(p,0,.26),a2=sg(p,.24,.52),a3=sg(p,.50,.80),a4=sg(p,.78,1);
+
+  /* ── I ── */
+  A1.visible=p<.32;
+  if(A1.visible){
+    const e=ez(a1);
+    cam.x=damp(cam.x,(ps.x-.5)*.8,L); cam.y=damp(cam.y,2.20-e*2.78,L);
+    cam.z=damp(cam.z,9.2-e*4.8,L);    cam.ty=damp(cam.ty,1.68-e*1.54,L);
+    camera.position.set(cam.x,cam.y,cam.z); camera.lookAt(0,cam.ty,0);
+    water.material.uniforms.uT.value=time;
+    water.material.uniforms.uD.value=ez(sg(p,.09,.29));
+    real.rotation.y=(ps.x-.5)*.11;
+    fake.rotation.y=real.rotation.y*.83;          // it does not quite follow
+    rcam.copy(camera);
+    rcam.position.set(camera.position.x,-camera.position.y,camera.position.z);
+    rcam.up.set(0,1,0); rcam.lookAt(0,-cam.ty,0);
+    rcam.updateMatrixWorld(); rcam.updateProjectionMatrix();
+    water.material.uniforms.uVP.value.multiplyMatrices(rcam.projectionMatrix,rcam.matrixWorldInverse);
+    water.visible=false;
+    renderer.setRenderTarget(RT); renderer.render(mirror,rcam);
+    renderer.setRenderTarget(null); water.visible=true;
+  }
+
+  /* ── II — the document is DOM; the canvas steps back ── */
+  const shOp=Math.min(sg(p,.23,.31),1-sg(p,.48,.56));
+  el.sheet.style.opacity=shOp;
+  if(shOp>.01){
+    const r=el.sheet.getBoundingClientRect();
+    const lx=(cs.x-r.left)/r.width*100, ly=(cs.y-r.top)/r.height*100;
+    const rad=Math.max(96,r.width*.30);
+    el.clean.style.setProperty('--mx',lx+'%');
+    el.clean.style.setProperty('--my',ly+'%');
+    el.clean.style.setProperty('--r',rad+'px');
+    el.lens.style.cssText+=`;width:${rad*1.72}px;height:${rad*1.72}px;
+      left:${cs.x-r.left}px;top:${cs.y-r.top}px;margin:${-rad*.86}px 0 0 ${-rad*.86}px;
+      opacity:${shOp}`;
+  }
+  cv.style.opacity = shOp>.4 ? .30 : 1;           // let the paper own the frame
+
+  /* ── III + IV ── */
+  A3.visible=p>=.46;
+  if(A3.visible){
+    const e3=ez(a3),e4=ez(a4);
+    field.material.uniforms.uT.value=e3*4.3;
+    field.material.uniforms.uM.value=e4;
+    field.material.uniforms.uO.value=Math.min(sg(p,.46,.55),1-e4*.72);
+    cam.x=damp(cam.x,(ps.x-.5)*1.5,L);
+    cam.y=damp(cam.y,1.7-e3*2.5-e4*1.1,L);
+    cam.z=damp(cam.z,32-e3*7.5-e4*6.5,L);
+    cam.ty=damp(cam.ty,2.1-e3*3.4,L);
+    camera.position.set(cam.x,cam.y,cam.z); camera.lookAt(0,cam.ty,0);
+    el.count.textContent=Math.round(nBad*e3).toLocaleString();
+  }
+
+  const lift=ez(a4);
+  renderer.setClearColor(PAL.black.clone().lerp(PAL.lift,lift*.92),1);
+  scene.fog.density=.028-lift*.018;
+  key.intensity=3.6+lift*1.4;
+
+  /* ── copy ── */
+  const op=[Math.min(sg(p,.012,.055),1-sg(p,.14,.22)),
+            Math.min(sg(p,.26,.32),1-sg(p,.44,.50)),
+            Math.min(sg(p,.55,.60),1-sg(p,.74,.79)),
+            sg(p,.85,.94)];
+  for(let i=0;i<4;i++){acts[i].style.opacity=op[i];acts[i].classList.toggle('on',op[i]>.05);}
+  el.rail.style.width=(p*88)+'px';
+  const act=p<.24?0:p<.50?1:p<.78?2:3;
+  el.idx.textContent=`0${act+1} / 04`;
+  el.lab.textContent=LAB[act];
+  el.crd.textContent=`x ${ps.x.toFixed(3)} · y ${ps.y.toFixed(3)}`;
+  el.ring.classList.toggle('wide',act===1);
+
+  composer.render();
+}
+
+/* ══ boot ══════════════════════════════════════════════════ */
+(async function(){
+  const pn=$('pn'),pl=$('pl');
+  let n=0;const tk=setInterval(()=>{n=Math.min(96,n+Math.random()*9);
+    pn.textContent=String(Math.floor(n)).padStart(3,'0');pl.style.width=n+'%';},80);
+  try{await document.fonts.ready;}catch(e){}
+  composer.render();                                // compile before reveal
+  await new Promise(r=>setTimeout(r,700));
+  clearInterval(tk);pn.textContent='100';pl.style.width='100%';
+  setTimeout(()=>{document.body.classList.add('ready');requestAnimationFrame(loop);},480);
+})();
+</script>
+</body>
+</html>

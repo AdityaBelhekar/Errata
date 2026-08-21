@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — not found</title>
+<meta name="robots" content="noindex">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="/web/datum/styles/tokens.css">
+<link rel="stylesheet" href="/web/datum/styles/type.css">
+<link rel="stylesheet" href="/web/datum/styles/base.css">
+<link rel="stylesheet" href="/web/datum/styles/components.css">
+<link rel="stylesheet" href="/web/site/shell.css">
+</head>
+
+<body class="datum-field">
+<a class="skip-link t-body" href="#main">Skip to content</a>
+
+<!-- §8.1 LAW — the datum appears on every page including 404. It is not
+     decoration here: a 404 that drops the system's spine is a page that has
+     stopped being part of the product at the moment the reader most needs to
+     believe it still is. -->
+<div class="datum" aria-hidden="true"></div>
+
+<nav class="site-nav" aria-label="Primary">
+  <a class="wordmark" href="/web/site/">ERRATA</a>
+  <div class="nav-links t-micro">
+    <a href="/web/site/">Home</a>
+    <a href="/web/console/">Console</a>
+    <a href="/web/datum/">Design system</a>
+  </div>
+  <div class="theme-toggle" data-theme-toggle>
+    <button type="button" data-mode="system">Sys</button>
+    <button type="button" data-mode="light">Light</button>
+    <button type="button" data-mode="dark">Dark</button>
+  </div>
+</nav>
+
+<main id="main" class="shell rhythm-l poche">
+  <span class="poche-mark t-micro">404</span>
+
+  <!-- Redaction 100: fully corrupted, unreadable as record (§5.2). The void
+       cut has exactly one job in this system and this is it. With the font
+       files absent it renders in fallback, so the axis is currently making
+       this argument in words alone. -->
+  <h1 class="t-d3 is-void">Not in the record.</h1>
+
+  <p class="t-lead" style="margin-top:var(--s-24)">
+    There is no page at this address. That is all this means — no page, not a
+    page that was removed and not one that failed.
+  </p>
+
+  <p class="t-body u-dim" style="margin-top:var(--s-24);max-width:62ch">
+    Said plainly because this is a product about the difference between “we
+    checked and found nothing” and “nobody checked”. A 404 that guessed at what
+    you meant, or apologised for something it had not done, would be the same
+    failure at a smaller scale.
+  </p>
+
+  <div style="display:flex;gap:var(--s-12);flex-wrap:wrap;margin-top:var(--s-40)">
+    <a class="btn btn--lg" href="/web/site/">Back to the start</a>
+    <a class="btn btn--lg btn--quiet" href="/web/console/">Open the console</a>
+  </div>
+</main>
+
+<footer class="shell site-footer t-micro" style="border-top:var(--w-hair) solid var(--edge-hair);padding-block:var(--s-56);color:var(--text-3)">
+  ERRATA · DATUM v1.0
+</footer>
+
+<script src="/web/datum/theme.js"></script>
+</body>
+</html>

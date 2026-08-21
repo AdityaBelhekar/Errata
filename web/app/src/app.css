@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE PROCESSION — layout and the acts.
+
+   Built on DATUM. The token, type and component files are imported here rather
+   than copied, so the landing, the console and the design system share ONE
+   definition of every colour, size, duration and curve. A second palette is
+   how two surfaces stop looking like one product.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import '../../datum/styles/tokens.css';
+@import '../../datum/styles/type.css';
+@import '../../datum/styles/base.css';
+@import '../../datum/styles/components.css';
+
+:root {
+  --p: 0;
+  --a0: 1; --a1: 0; --a2: 0; --a3: 0; --a4: 0;
+  --gl-dim: 1;
+}
+
+html { scroll-behavior: auto; }
+body { background: var(--bg-void); overflow-x: hidden; }
+
+/* The scroll track. 860vh, as specified (§12.1) — long enough for five rooms
+   to breathe and short enough that a reader reaches the end. */
+#scroll-track { height: 860vh; pointer-events: none; }
+
+.gl-layer {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100dvh;
+  z-index: 0;
+  opacity: var(--gl-dim);
+  transition: opacity var(--m-base) var(--ease-out);
+}
+.gl-layer > div, .gl-layer canvas { width: 100% !important; height: 100% !important; display: block; }
+[data-gl="off"] .gl-layer { display: none; }
+
+/* ── Acts ──────────────────────────────────────────────────────────────
+   Each act is pinned to the viewport and cross-faded by its own custom
+   property, written once per frame by one rAF subscriber. No act is ever
+   `display:none`, so the whole page remains readable by a screen reader and
+   findable by ctrl-F even when its opacity is zero — a procession that hides
+   its own copy from assistive technology is F-12 again. */
+#procession { position: relative; z-index: 2; }
+
+/* The nav lives above the canvas. It had `z-index: auto` inside its own
+   stacking context and the fixed canvas painted straight over it. */
+.site-nav { z-index: 20; position: fixed; top: 0; left: 0; right: 0; }
+
+.act {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  /* Clears the nav (63px) and the HUD beneath it (72px + two lines). An act
+     that starts at the top of the viewport prints its copy straight through
+     both. */
+  padding: 128px var(--grid-margin) var(--s-56);
+  pointer-events: none;
+  overflow: hidden;
+}
+.act > * { pointer-events: auto; }
+
+.act--1 { opacity: var(--a0); justify-items: center; text-align: center; align-content: end; padding-bottom: 3.5vh; }
+.act--2 { opacity: var(--a1); }
+.act--3 { opacity: var(--a2); }
+.act--4 { opacity: var(--a3); }
+.act--5 { opacity: var(--a4); align-content: center; }
+
+/* An act at zero opacity must not swallow clicks meant for the act beneath. */
+.act[style*="opacity: 0"], .act--2, .act--3, .act--4, .act--5 { }
+.act--1 { z-index: 5; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* §10.4 — a DESIGNED alternative. The acts become static art-directed frames
+     that cross-fade at --m-base instead of tracking scroll continuously. */
+  .act { transition: opacity var(--m-base) var(--ease-out); }
+}
+
+/* ── Act I ─────────────────────────────────────────────────────────────
+   §8.6: centred EXACTLY ONCE on the entire site, and this is that once. */
+/* Capped against viewport HEIGHT as well as width: the plate owns the upper
+   half of the frame and the hero must fit in what is left without climbing
+   back over it. */
+.hero-line { max-width: 15ch; color: var(--text-1); font-size: min(var(--t-d1-size), 9.5vh); }
+.hero-line .degraded { font-family: var(--f-degraded); }
+.hero-sub { color: var(--text-3); margin-top: var(--s-24); }
+/* Clear of the act rail in the bottom-left corner, which it was printing
+   straight through. */
+.scroll-cue { margin-top: var(--s-32); margin-bottom: var(--s-24); }
+
+.act-copy { max-width: 46ch; display: grid; gap: var(--s-16); }
+.act-copy--wide { max-width: 30ch; }
+.act--2 .act-copy, .act--4 .act-copy { justify-self: start; }
+.count { font-variant-numeric: tabular-nums slashed-zero lining-nums; font-family: var(--f-data); }
+
+/* ── Act III · the blacklight ──────────────────────────────────────────
+   Two stacked HTML documents. The top one is masked away under the lens,
+   revealing the true datasheet beneath. Paper in both themes (L-2). */
+.act--3 { grid-template-columns: 1fr; gap: var(--s-40); align-content: center; }
+@media (min-width: 1100px) {
+  .act--3 { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; }
+}
+
+.sheet-stack {
+  --mx: 50%; --my: 50%;
+  position: relative;
+  justify-self: center;
+  /* Bounded by HEIGHT first: a 3:4 sheet at 560px wide is 747px tall and ran
+     off the bottom of every laptop. The evidence has to be visible all at once
+     — a document you have to scroll is not being held up to the light. */
+  height: min(58vh, 620px);
+  aspect-ratio: 3 / 4;
+  width: auto;
+  max-width: 100%;
+  transform: perspective(1600px) rotateY(-7deg) rotateX(1.2deg);
+  transform-style: preserve-3d;
+}
+
+.doc {
+  position: absolute; inset: 0;
+  background: var(--evidence-bg);
+  color: var(--evidence-text);
+  border: var(--w-hair) solid var(--evidence-edge);
+  border-left: var(--w-reveal) solid var(--signal);
+  border-radius: var(--r-paper);
+  padding: var(--s-32);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+}
+.doc-head { color: var(--p-bone-700); }
+.doc-table { width: 100%; border-collapse: collapse; font-family: var(--f-data); font-size: 13px; margin-top: var(--s-24); }
+.doc-table th, .doc-table td { padding: var(--s-12); border-bottom: var(--w-hair) solid var(--evidence-edge); text-align: left; }
+.doc-table td { text-align: right; font-variant-numeric: tabular-nums slashed-zero; }
+.doc-foot { margin-top: var(--s-16); color: var(--p-bone-700); }
+
+/* The mask, verbatim from §11.5. */
+.doc--claim {
+  -webkit-mask-image: radial-gradient(circle 92px at var(--mx) var(--my), transparent 0 58%, #000 82%);
+  mask-image: radial-gradient(circle 92px at var(--mx) var(--my), transparent 0 58%, #000 82%);
+}
+.doc--truth { filter: saturate(.9); }
+
+/* The glass. A mask with no lens reads as a hole; a lens reads as an
+   instrument, and the reader understands they are being handed one. */
+.lens {
+  position: absolute; top: 0; left: 0;
+  width: 168px; height: 168px;
+  border-radius: 50%;
+  pointer-events: none;
+  /* A RING, not a disc. The inset glow was 40px deep on a 184px circle, which
+     filled it: the lens read as a white puck sitting on the page instead of as
+     glass you can see through. Rim light at the edge, nothing in the middle. */
+  border: var(--w-hair) solid var(--glass-rim);
+  box-shadow:
+    inset 0 0 0 1px var(--glass-rim),
+    inset 0 0 18px -6px var(--glass-inner),
+    0 18px 40px var(--glass-shadow);
+  backdrop-filter: saturate(1.12) brightness(1.02);
+}
+@media (prefers-reduced-motion: reduce) { .lens { transition: none; } }
+
+.span-hl:focus-visible { outline: var(--w-reveal) solid var(--signal); outline-offset: 2px; }
+
+/* ── Act V · the queue ─────────────────────────────────────────────────── */
+.queue-panel {
+  justify-self: center;
+  width: min(920px, 100%);
+  display: grid; gap: var(--s-12);
+  background: var(--surface-1);
+  border: var(--w-hair) solid var(--edge-hair);
+  border-radius: var(--r-control);
+  padding: var(--s-24);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-3);
+}
+.queue-actions { display: flex; gap: var(--s-12); flex-wrap: wrap; margin-top: var(--s-8); }
+
+/* ── HUD ───────────────────────────────────────────────────────────────── */
+.hud { position: fixed; z-index: 6; color: var(--text-3); pointer-events: none; }
+/* Below the nav, not underneath it. Both carried the wordmark at the same
+   coordinates and the two sets of type printed straight over each other. */
+.hud--tl { top: 72px; left: var(--s-24); }
+.hud--tr { top: 72px; right: var(--s-24); text-align: right; }
+.hud--bl { bottom: var(--s-24); left: var(--s-24); display: flex; align-items: center; gap: var(--s-12); }
+.hud .rail { display: inline-block; width: 180px; height: var(--w-hair); background: var(--edge-strong); position: relative; }
+.hud .rail > i { position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); background: var(--signal); }
+
+/* ── Preloader ─────────────────────────────────────────────────────────── */
+.preloader {
+  position: fixed; inset: 0; z-index: 90;
+  background: var(--bg-void);
+  display: grid; place-content: center; justify-items: center; gap: var(--s-16);
+}
+.preload-count { font-family: var(--f-display); font-size: 76px; line-height: 1; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.preload-rail { width: 300px; height: var(--w-hair); background: var(--edge-strong); position: relative; overflow: hidden; }
+.preload-rail > i { position: absolute; inset: 0; background: var(--signal); transform-origin: left; animation: fill var(--d-preload) var(--ease-out) forwards; }
+@keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .preload-rail > i { animation: none; } }
+
+/* ── The no-canvas contract (L-7) ──────────────────────────────────────
+   With `?nogl=1` the acts stop being pinned overlays and become an ordinary
+   scrolling document. Not a degraded page — a different, complete one. */
+[data-gl="off"] #scroll-track { display: none; }
+[data-gl="off"] .act {
+  position: static;
+  opacity: 1 !important;
+  min-height: auto;
+  /* `overflow: hidden` is right for a PINNED act and wrong for a flowing one:
+     it clipped Act II's own heading mid-sentence. The no-canvas page is a
+     different, complete document, not the same one with the canvas removed. */
+  overflow: visible;
+  display: grid;
+  gap: var(--s-24);
+  padding-block: var(--s-96);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+}
+[data-gl="off"] .act--1 { align-content: start; padding-bottom: var(--s-96); }
+[data-gl="off"] .sheet-stack { height: auto; aspect-ratio: 3 / 4; width: min(560px, 100%); transform: none; }
+[data-gl="off"] .lens { display: none; }
+/* Without the lens there is no way to reveal what is underneath, so the top
+   sheet stops masking and both documents are simply shown in order. */
+[data-gl="off"] .doc--claim { -webkit-mask-image: none; mask-image: none; position: static; }
+[data-gl="off"] .doc--truth { position: static; margin-top: var(--s-24); }
+[data-gl="off"] .sheet-stack { display: grid; gap: var(--s-24); }
+[data-gl="off"] .hud--bl { display: none; }
+[data-gl="off"] body { overflow: auto; }

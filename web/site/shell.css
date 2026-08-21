@@ -1,0 +1,141 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERRATA — shell.css
+   The chrome every surface shares: site nav, dialogs, toasts, chips, progress.
+
+   Shared rather than duplicated so the console and the public site cannot drift
+   into looking like two products. Built on DATUM; no colour, spacing, duration
+   or curve literals — the token lint covers this file.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Site navigation ───────────────────────────────────────────────────── */
+
+.site-nav {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-24);
+  padding: var(--s-12) var(--grid-margin);
+  background: color-mix(in oklch, var(--bg-void) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+}
+.site-nav a { color: var(--text-2); }
+.site-nav a:hover { color: var(--text-1); }
+.nav-links { display: flex; gap: var(--s-24); align-items: baseline; flex-wrap: wrap; }
+.nav-links a[aria-current="page"] { color: var(--text-1); box-shadow: inset 0 -2px 0 var(--signal); }
+
+.head-group { display: flex; align-items: center; gap: var(--s-12); }
+.head-sep { width: var(--w-hair); height: var(--s-16); background: var(--edge-strong); }
+
+/* ── Chip — a small stateful control that is not a button-button ──────── */
+
+.chip {
+  display: inline-flex; align-items: center; gap: var(--s-8);
+  padding: var(--s-4) var(--s-8);
+  background: transparent;
+  border: var(--w-hair) solid var(--edge-hair);
+  border-radius: var(--r-control);
+  color: var(--text-2);
+  font-family: var(--f-data-micro); font-size: 10px;
+  text-transform: uppercase; letter-spacing: .14em;
+  cursor: pointer;
+  transition: border-color var(--m-fast) var(--ease-out), color var(--m-fast) var(--ease-out);
+}
+.chip:hover { color: var(--text-1); border-color: var(--edge-strong); }
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
+.chip[data-set="true"] .chip-dot { background: var(--settled); }
+.chip[data-role="implementer"] .chip-dot { background: var(--signal); }
+
+/* ── Progress ─────────────────────────────────────────────────────────── */
+
+.progress { display: inline-flex; align-items: center; gap: var(--s-8); color: var(--text-3); }
+.progress-rail {
+  width: 160px; height: 4px;
+  background: var(--edge-hair);
+  border-radius: 1px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0;
+  background: var(--settled);
+  transition: width var(--m-slow) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) { .progress-fill { transition: none; } }
+
+/* ── Dialogs — native <dialog>, so focus trap and Esc are the platform's ─
+   No focus-trap library, no scroll-lock hack, no aria-modal bookkeeping. The
+   element does all three correctly, and code we do not write is code that
+   cannot get the trap subtly wrong. */
+
+dialog { border: 0; padding: 0; background: transparent; color: inherit; max-width: 100vw; }
+dialog::backdrop { background: var(--p-scrim); backdrop-filter: blur(2px); }
+
+.sheet-dialog, .palette-dialog { margin: auto; }
+
+.dialog-body {
+  width: min(520px, calc(100vw - var(--s-32)));
+  display: grid; gap: var(--s-16);
+  padding: var(--s-24);
+  background: var(--surface-2);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-3);
+}
+.dialog-actions { display: flex; gap: var(--s-8); justify-content: flex-end; margin-top: var(--s-8); }
+
+.fieldset { border: 0; display: grid; gap: var(--s-12); }
+.fieldset > .field-label { margin-bottom: var(--s-4); }
+.fieldset .radio { align-items: flex-start; }
+
+/* Shortcut list */
+.keys { display: grid; grid-template-columns: auto 1fr; gap: var(--s-8) var(--s-16); align-items: baseline; margin: 0; }
+.keys dt { display: flex; gap: var(--s-4); }
+.keys dd { color: var(--text-2); margin: 0; }
+kbd {
+  display: inline-block;
+  min-width: 20px; text-align: center;
+  padding: 1px var(--s-4);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-bottom-width: 2px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-family: var(--f-data-micro); font-size: 10px;
+  text-transform: uppercase; letter-spacing: .1em;
+}
+
+/* ── Command palette ──────────────────────────────────────────────────── */
+
+.palette {
+  width: min(560px, calc(100vw - var(--s-32)));
+  background: var(--surface-2);
+  border: var(--w-hair) solid var(--edge-strong);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-3);
+  overflow: hidden;
+}
+.palette-input {
+  width: 100%;
+  padding: var(--s-16);
+  background: transparent; color: var(--text-1);
+  border: 0; border-bottom: var(--w-hair) solid var(--edge-hair);
+  font-family: var(--f-text); font-size: 15px;
+}
+.palette-input::placeholder { color: var(--text-3); }
+.palette .menu { border: 0; box-shadow: none; background: transparent; max-height: 320px; overflow-y: auto; border-radius: 0; }
+.palette-foot { padding: var(--s-8) var(--s-16); border-top: var(--w-hair) solid var(--edge-hair); display: flex; gap: var(--s-16); }
+
+/* ── Toasts ───────────────────────────────────────────────────────────── */
+
+.toast-region { position: fixed; left: var(--s-24); bottom: var(--s-24); display: grid; gap: var(--s-8); z-index: 80; }
+.toast { animation: toast-in var(--m-base) var(--ease-out); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
+/* ── Skeletons — a shape, not a spinner ───────────────────────────────────
+   A spinner says "wait". A skeleton says "wait, and here is where it will
+   be", which stops the layout jumping when content lands. */
+.skel { background: var(--edge-hair); border-radius: 2px; }
+.skel--pulse { animation: skel var(--m-cine) var(--ease-io) infinite; }
+@keyframes skel { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .skel--pulse { animation: none; opacity: .7; } }

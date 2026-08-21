@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — DATUM</title>
+<meta name="description" content="DATUM design system · THE STILL WATER art direction. FE-1 schematic and FE-2 design development.">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/type.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="../site/shell.css">
+
+<style>
+.card {
+  display: block;
+  background: var(--surface-1);
+  border: var(--w-hair) solid var(--edge-hair);
+  border-radius: var(--r-control);
+  padding: var(--s-24);
+  box-shadow: inset 0 var(--w-hair) 0 var(--edge-lift), var(--shadow-1);
+  transition: border-color var(--m-fast) var(--ease-out), background-color var(--m-fast) var(--ease-out);
+}
+.card:hover { border-color: var(--edge-strong); background: var(--surface-2); }
+.cards { display: grid; gap: var(--s-16); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.status { display: inline-block; padding: 2px var(--s-8); border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-control); }
+.status[data-state="done"] { border-color: var(--settled); color: var(--settled); }
+.status[data-state="open"] { border-color: var(--signal); color: var(--signal-text); }
+</style>
+</head>
+
+<body class="datum-field">
+<a class="skip-link t-body" href="#main">Skip to content</a>
+<div class="datum" aria-hidden="true"></div>
+
+<nav class="site-nav" aria-label="Primary">
+  <a class="wordmark" href="../site/">ERRATA</a>
+  <div class="nav-links t-micro">
+    <a href="../site/">Home</a>
+    <a href="../console/">Console</a>
+    <a href="./" aria-current="page">Design system</a>
+    <a href="room-i.html">Room I</a>
+    <a href="grid.html">Grid</a>
+    <a href="states.html">States</a>
+  </div>
+  <div class="theme-toggle" data-theme-toggle>
+    <button type="button" data-mode="system">Sys</button>
+    <button type="button" data-mode="light">Light</button>
+    <button type="button" data-mode="dark">Dark</button>
+  </div>
+</nav>
+
+<header class="site-header">
+  <div>
+    <div class="wordmark">ERRATA · DATUM v1.0</div>
+    <div class="t-micro u-dimmer">Design system DATUM · art direction THE STILL WATER</div>
+  </div>
+</header>
+
+<main id="main" class="shell">
+
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">FE</span>
+    <h1 class="t-d3">A dark mass, one raking light, warm paper, and a repair you are never allowed to stop seeing.</h1>
+    <p class="t-lead" style="margin-top:var(--s-32)">
+      Three surfaces are built. Everything downstream of them is not, and this
+      page says which is which.
+    </p>
+  </section>
+
+  <section class="rhythm-s">
+    <h2 class="t-h2">Built</h2>
+    <div class="cards" style="margin-top:var(--s-24)">
+      <a class="card" href="room-i.html">
+        <span class="t-col u-dimmer">FE-1 · schematic</span>
+        <h3 class="t-h3" style="margin-top:var(--s-8)">Room I</h3>
+        <p class="t-body-s u-dim" style="margin-top:var(--s-8)">The reflection that lies. One full-fidelity static comp, no shader — the gate is judging the direction before one exists.</p>
+      </a>
+      <a class="card" href="grid.html">
+        <span class="t-col u-dimmer">FE-2 · design development</span>
+        <h3 class="t-h3" style="margin-top:var(--s-8)">Grid &amp; specimen</h3>
+        <p class="t-body-s u-dim" style="margin-top:var(--s-8)">The datum, 16 columns, the 9/7 asymmetry, poché, the closed spacing set and the full type scale. Press <span class="fact">G</span> for the overlay.</p>
+      </a>
+      <a class="card" href="states.html">
+        <span class="t-col u-dimmer">FE-2 · design development</span>
+        <h3 class="t-h3" style="margin-top:var(--s-8)">States gallery</h3>
+        <p class="t-body-s u-dim" style="margin-top:var(--s-8)">Twenty components, every state, both themes, on one page. The CI screenshot-diff target and the first thing a reviewer opens.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="rhythm-s">
+    <h2 class="t-h2">Where the track stands</h2>
+    <p class="t-body u-dim" style="margin-top:var(--s-16);max-width:62ch">
+      These are the <strong>FE</strong> phases — the frontend track. They are
+      not the repository's <span class="fact">R0–R3</span> research gates in
+      <span class="fact">PHASES.md</span>, and the two are renumbered apart on
+      purpose so that a review can never confuse them.
+    </p>
+    <div class="table-wrap" style="margin-top:var(--s-24)">
+      <table class="table">
+        <thead><tr><th>Phase</th><th>Deliverable</th><th>Gate</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>FE-0</td><td>Concept — the blueprint</td><td>Signed off by brand + product</td><td><span class="status t-micro" data-state="open">prepared, unsigned</span></td></tr>
+          <tr><td>FE-1</td><td>Schematic — tokens, type, both themes, Room I comp</td><td>Judge the direction before a shader exists</td><td><span class="status t-micro" data-state="done">met, 1 item open</span></td></tr>
+          <tr><td>FE-2</td><td>Design development — datum grid, 20 components, all states</td><td>Nothing enters DD without a token</td><td><span class="status t-micro" data-state="done">met, 2 items open</span></td></tr>
+          <tr><td>FE-3</td><td>Art — 30 treated plates, provenance YAML</td><td>No untreated asset</td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-4</td><td>Motion prototype — grey boxes only</td><td>Camera approved blind</td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-5</td><td>Shader R&amp;D — TSL materials in isolation</td><td>Perf budget met before integration</td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-6</td><td>Landing build — Rooms I–V</td><td>Works with <span class="fact">?nogl=1</span></td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-7</td><td>Product build</td><td>Keyboard-only run-through passes</td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-8</td><td>Content</td><td>Every figure links to its reproduction command</td><td><span class="status t-micro">not started</span></td></tr>
+          <tr><td>FE-9</td><td>Snagging</td><td>The last 5% is the whole difference</td><td><span class="status t-micro">not started</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="t-body-s u-dimmer" style="margin-top:var(--s-16)">
+      Gate reports, with what is open and why:
+      <span class="fact">docs/frontend/FE-0-CONCEPT.md</span>,
+      <span class="fact">FE-1-SCHEMATIC.md</span>,
+      <span class="fact">FE-2-DESIGN-DEVELOPMENT.md</span>.
+    </p>
+  </section>
+
+  <section class="rhythm-s">
+    <h2 class="t-h2">The two gates that run on every change</h2>
+    <div class="claim-evidence" style="margin-top:var(--s-24)">
+      <div class="claim u-stack-16">
+        <p class="t-body u-dim">
+          Contrast is asserted, not assumed. Twenty pairs, each against the
+          worst ground its token may legally land on, computed from
+          <span class="fact">tokens.css</span> through OKLCH → Oklab → sRGB
+          rather than read off a table someone typed.
+        </p>
+        <p class="t-body u-dim">
+          The token lint enforces the two rules that keep a system from
+          dissolving: no colour literal outside <span class="fact">tokens.css</span>,
+          and no spacing, duration or curve outside its closed set.
+        </p>
+      </div>
+      <div class="evidence">
+        <div class="surface-code" style="padding:var(--s-16)">
+          <pre class="t-data-s" style="white-space:pre-wrap;margin:0">python web/datum/tools/contrast.py
+python web/datum/tools/lint-tokens.py</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="shell site-footer t-micro">
+  ERRATA · DATUM v1.0 · THE STILL WATER — nothing on these pages is a shipped
+  surface. Blueprint: <span class="fact">docs/FRONTEND-BLUEPRINT.md</span>.
+</footer>
+
+<script src="theme.js"></script>
+</body>
+</html>

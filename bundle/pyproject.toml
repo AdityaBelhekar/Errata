@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "errata-bundle"
+version = "0.1.0"
+description = "The Evidence Bundle: a portable, content-addressed, offline-verifiable evidence object, and the coordinate system it depends on."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+
+# Deliberately NOT dependent on errata-audit. The bundle format is a wire format; coupling it to
+# the audit pipeline's class layout would make every refactor there a breaking change for stored
+# evidence that has to stay readable for years. `errata_bundle.build` is the one module that
+# imports the pipeline, and it does so lazily, inside the function, so `geometry`, `probe` and
+# `bundle` stay importable on their own.
+dependencies = [
+    "pymupdf>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+errata-bundle = "errata_bundle.build:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

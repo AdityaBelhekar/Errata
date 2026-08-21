@@ -15,7 +15,7 @@ minversion = "8.0"
 # records, so the reason expired. What was left in the directory was never scaffolding -- the
 # annotation engine moved to `errata_ecosystem.goldbuild` and the table-blind predictor became
 # `errata_ecosystem.extractors.TableBlindExtractor`, the benchmark's frozen baseline.
-testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests"]
+testpaths = ["valuesem/tests", "spec/tests", "comparator/tests", "bench/tests", "audit/tests", "scale/tests", "ecosystem/tests", "bundle/tests"]
 addopts = "-q --strict-markers --strict-config"
 # `--strict-markers` is on, so a marker has to be declared here to be usable. That is the
 # right setting and it means this list is the register of what a test may claim about itself.
@@ -27,7 +27,7 @@ filterwarnings = ["error"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["valuesem/src", "spec/src", "comparator/src", "bench/src", "audit/src", "scale/src", "ecosystem/src"]
+src = ["valuesem/src", "spec/src", "comparator/src", "bench/src", "audit/src", "scale/src", "ecosystem/src", "bundle/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

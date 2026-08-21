@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATUM — type.css
+   Blueprint §5. Three voices, one concept.
+
+     Redaction        the record, and how far it has decayed  (display)
+     Apfel Grotezk    a human is speaking                     (text)
+     Sligoil          a machine is speaking, and you can check it (data)
+
+   The degradation axis is SEMANTIC, not decorative (§5.2):
+     Redaction 0    ground truth — the source, clean
+     Redaction 20   derived, calibrated, high confidence
+     Redaction 50   a claim we have not verified
+     Redaction 100  fully corrupted; unreadable as record
+
+   FONT FILES ARE NOT IN THIS REPOSITORY. See `web/datum/fonts/README.md` for
+   what to fetch, from where, and under which licence. Until they land, every
+   rule below resolves through its fallback stack — which is why the stacks are
+   metric-matched rather than arbitrary. This is stated in FE-1's gate report as
+   an open item, not asserted as done.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── @font-face · Redaction (SIL OFL — Forest Young & Jeremy Mickel) ────────
+   LAW §5.3: every face carries size-adjust / ascent-override / descent-override
+   tuned to its fallback so the swap causes zero layout shift. The overrides
+   below are PLACEHOLDERS marked <MEASURE> — they must be produced from the real
+   files with a fallback-metrics tool before FE-6, and no CLS number may be
+   quoted until they are. Ground rule 1: do not publish a metric nobody measured. */
+
+@font-face {
+  font-family: 'Redaction 0';
+  src: url('../fonts/redaction/Redaction_0-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+  /* <MEASURE> against Spectral / Georgia */
+}
+@font-face {
+  font-family: 'Redaction 20';
+  src: url('../fonts/redaction/Redaction_20-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Redaction 20';
+  src: url('../fonts/redaction/Redaction_20-Italic.woff2') format('woff2');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Redaction 50';
+  src: url('../fonts/redaction/Redaction_50-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Redaction 100';
+  src: url('../fonts/redaction/Redaction_100-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* ── @font-face · Apfel Grotezk (OFL — Collletttivo) ───────────────────────── */
+@font-face {
+  font-family: 'Apfel Grotezk';
+  src: url('../fonts/apfel/ApfelGrotezk-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Apfel Grotezk';
+  src: url('../fonts/apfel/ApfelGrotezk-Mittel.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Apfel Grotezk';
+  src: url('../fonts/apfel/ApfelGrotezk-Fett.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Apfel Grotezk Brukt';
+  src: url('../fonts/apfel/ApfelGrotezk-Brukt.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* ── @font-face · Sligoil (OFL — Ariel Martín Pérez, Velvetyne) ─────────────
+   Sligoil Micro is the small-optical-size cut. It is a separate family, not a
+   weight, which is why the token layer names it separately. */
+@font-face {
+  font-family: 'Sligoil';
+  src: url('../fonts/sligoil/Sligoil-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Sligoil Micro';
+  src: url('../fonts/sligoil/Sligoil-Micro.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* ═══ THE OPTICAL TRACKING CURVE (§5.4) ═══════════════════════════════════════
+   tracking(em) = −0.0165 + (0.29 / size_px)
+
+   Every value below is that formula evaluated at the token's size and rounded
+   to four places. None of them was chosen by eye — which is the point of having
+   a curve. The curve is reproducible:
+
+       python -c "print(-0.0165 + 0.29/15)"     ->  0.002833...
+
+   ERRATUM E-5 (see docs/frontend/FE-1-SCHEMATIC.md): below 20px, blueprint
+   §5.5's hand-written tracking column disagrees with §5.4's curve — §5.5 gives
+   `body` (15px) −.002em where the curve gives +.0028em. The curve wins, because
+   §5.4 says "never by eye" and the §5.5 column is an eye value. The uppercase
+   allowances (`col` +.10em, `meta` +.14em, `micro` +.16em) are NOT curve values
+   and are kept: they are caps letterspacing, which the curve does not govern.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* editorial — Perfect Fourth (1.333) anchored at 18px, fluid at the top end */
+  --t-d1-size: clamp(64px, 11.6vw, 168px);
+  --t-d2-size: clamp(48px, 7.8vw, 112px);
+  --t-d3-size: clamp(38px, 5.3vw, 76px);
+  --t-d4-size: clamp(30px, 3.8vw, 54px);
+
+  --t-track-d1: -.0148em;
+  --t-track-d2: -.0139em;
+  --t-track-d3: -.0127em;
+  --t-track-d4: -.0111em;
+  --t-track-h1: -.0093em;
+  --t-track-h2: -.0061em;
+  --t-track-h3: -.0020em;
+  --t-track-h4: .0016em;
+  --t-track-lead: -.0033em;
+  --t-track-body: .0028em;
+  --t-track-body-s: .0058em;
+  --t-track-data: .0042em;
+  --t-track-data-s: .0077em;
+  --t-track-col: .10em;    /* caps allowance, not the curve */
+  --t-track-meta: .14em;   /* caps allowance, not the curve */
+  --t-track-micro: .16em;  /* caps allowance, not the curve */
+}
+
+/* ═══ THE SCALE (§5.5) ═════════════════════════════════════════════════════ */
+
+.t-d1, .t-d2, .t-d3, .t-d4 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  text-wrap: balance;
+  hyphens: none;
+}
+
+/* d-1 — the landing hero. ONE PER SITE. Redaction 50: the claim is not yet
+   verified, and the type says so before the copy does. */
+.t-d1 {
+  font-family: var(--f-degraded);
+  font-size: var(--t-d1-size);
+  line-height: .905;              /* 152/168 */
+  letter-spacing: var(--t-track-d1);
+}
+.t-d2 {
+  font-size: var(--t-d2-size);
+  line-height: .93;               /* 104/112 */
+  letter-spacing: var(--t-track-d2);
+}
+.t-d3 {
+  font-size: var(--t-d3-size);
+  line-height: 1;                 /* 76/76 */
+  letter-spacing: var(--t-track-d3);
+}
+/* d-4 — the single italic accent in the whole system. One word or one line. */
+.t-d4 {
+  font-size: var(--t-d4-size);
+  line-height: 1.111;             /* 60/54 */
+  letter-spacing: var(--t-track-d4);
+  font-style: italic;
+}
+
+.t-h1, .t-h2, .t-h3, .t-h4 { font-family: var(--f-text); text-wrap: balance; }
+.t-h1 { font-size: 40px; line-height: 1.1;   letter-spacing: var(--t-track-h1); font-weight: 700; }
+.t-h2 { font-size: 28px; line-height: 1.214; letter-spacing: var(--t-track-h2); font-weight: 500; }
+.t-h3 { font-size: 20px; line-height: 1.35;  letter-spacing: var(--t-track-h3); font-weight: 500; }
+.t-h4 { font-size: 16px; line-height: 1.375; letter-spacing: var(--t-track-h4); font-weight: 500; }
+
+/* lead — Redaction 0. Clean, because a lead paragraph is the grounded claim.
+   ONCE PER SECTION. Measure 44–52ch (§5.6 LAW). */
+.t-lead {
+  font-family: var(--f-clean);
+  font-size: 22px; line-height: 1.545;
+  letter-spacing: var(--t-track-lead);
+  max-width: 48ch;
+  text-wrap: pretty;
+}
+
+.t-body, .t-body-s { font-family: var(--f-text); text-wrap: pretty; hyphens: auto; }
+.t-body   { font-size: 15px; line-height: 1.6;   letter-spacing: var(--t-track-body);   max-width: 67ch; }
+.t-body-s { font-size: 13px; line-height: 1.538; letter-spacing: var(--t-track-body-s); max-width: 67ch; }
+
+/* ── the machine's voice ───────────────────────────────────────────────────
+   LAW §5.6: tabular lining numerals + slashed zero in every data context. */
+.t-data, .t-data-s, .t-col, .t-meta, .t-micro {
+  font-variant-numeric: tabular-nums slashed-zero lining-nums;
+  font-feature-settings: 'tnum' 1, 'zero' 1, 'lnum' 1;
+  hyphens: none;
+}
+.t-data   { font-family: var(--f-data); font-size: 14px; line-height: 1.429; letter-spacing: var(--t-track-data); }
+.t-data-s { font-family: var(--f-data); font-size: 12px; line-height: 1.417; letter-spacing: var(--t-track-data-s); }
+
+.t-col, .t-meta, .t-micro {
+  font-family: var(--f-data-micro);
+  text-transform: uppercase;
+}
+.t-col   { font-size: 11px; line-height: 1.273; letter-spacing: var(--t-track-col); }
+.t-meta  { font-size: 10px; line-height: 1.4;   letter-spacing: var(--t-track-meta); }
+.t-micro { font-size: 9px;  line-height: 1.333; letter-spacing: var(--t-track-micro); }
+
+/* ═══ THE DEGRADATION AXIS AS A UTILITY ════════════════════════════════════
+   These four classes are how the semantic axis is *used*. A component reaches
+   for the meaning, never for the cut. */
+.is-source     { font-family: var(--f-clean); }     /* Redaction 0   — ground truth  */
+.is-derived    { font-family: var(--f-display); }   /* Redaction 20  — calibrated    */
+.is-unverified { font-family: var(--f-degraded); }  /* Redaction 50  — a claim       */
+.is-void       { font-family: var(--f-void); }      /* Redaction 100 — corrupted     */
+
+/* ═══ TYPOGRAPHIC LAWS, ENFORCED IN CSS WHERE CSS CAN ═════════════════════ */
+
+/* §5.6 — mono and prose never mix inside a sentence EXCEPT to mark a machine
+   fact. That exception has a name, so it can be counted in review. */
+.fact {
+  font-family: var(--f-data);
+  font-variant-numeric: tabular-nums slashed-zero lining-nums;
+  font-size: .933em;                 /* 14/15 — optical match inside 15px prose */
+  letter-spacing: var(--t-track-data);
+}
+
+/* Optical alignment beats mathematical (§8.6): punctuation hangs. */
+.hang-quote { text-indent: -.42em; }
+
+/* Italic is Redaction 20 Italic only, one word or one line, never a paragraph. */
+em, .t-em { font-family: var(--f-display); font-style: italic; }

@@ -1,0 +1,327 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATUM — tokens.css
+   Design system DATUM · art direction THE STILL WATER · FE-1 schematic
+
+   LAW (blueprint §17): this is the only file in the repository that contains a
+   colour literal. A hex, rgb() or oklch() anywhere else fails
+   `web/datum/tools/lint-tokens.py`.
+
+   Three layers of indirection, and components only ever touch the third:
+       PALETTE            SEMANTIC          COMPONENT
+       --p-graphite-900   --surface-1       --panel-bg
+
+   Palette values never change. Semantic values change per theme. Light is the
+   base definition on bare :root (§6.6) so that no colour is defined only inside
+   a media query.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light dark;
+
+  /* ── PALETTE · graphite — the mass ─────────────────────────────────────── */
+  --p-graphite-950: oklch(.145 .008 250);
+  --p-graphite-900: oklch(.195 .010 250);
+  --p-graphite-850: oklch(.235 .011 250);
+  --p-graphite-800: oklch(.275 .012 250);
+  --p-graphite-700: oklch(.345 .012 250);
+  --p-graphite-600: oklch(.425 .012 250);
+  --p-graphite-500: oklch(.520 .011 250);
+  --p-graphite-400: oklch(.668 .010 250);   /* E-2 */
+  --p-graphite-300: oklch(.720 .009 250);
+  --p-graphite-200: oklch(.820 .007 250);
+  --p-graphite-100: oklch(.900 .005 250);
+
+  /* ── PALETTE · bone — the fabric, warm, hue 78 ─────────────────────────── */
+  --p-bone-50:  oklch(.972 .010 78);
+  --p-bone-100: oklch(.952 .012 78);
+  --p-bone-200: oklch(.918 .015 78);
+  --p-bone-300: oklch(.868 .018 78);
+  --p-bone-400: oklch(.780 .020 74);
+  --p-bone-700: oklch(.470 .018 70);
+  --p-bone-900: oklch(.250 .014 70);
+  --p-bone-950: oklch(.190 .012 70);
+
+  /* ── PALETTE · signal — the intervention. The only chroma in the building. */
+  --p-signal-700: oklch(.420 .155 20);
+  --p-signal-600: oklch(.505 .175 20);
+  --p-signal-500: oklch(.560 .180 20);
+  --p-signal-400: oklch(.690 .140 20);     /* E-1 */
+  --p-signal-100: oklch(.920 .040 22);
+  --p-signal-050: oklch(.960 .020 22);
+
+  /* ── PALETTE · verdigris — settled / reconciled. Twice per screen, at most. */
+  --p-verdigris-600: oklch(.495 .060 178); /* E-3 */
+  --p-verdigris-300: oklch(.820 .035 178);
+
+  /* ── PALETTE · ice — light on paper. A highlight, never a colour. ──────── */
+  --p-ice-200: oklch(.920 .030 230);
+  --p-ice-400: oklch(.800 .045 230);
+
+  /* ── PALETTE · pure ────────────────────────────────────────────────────── */
+  --p-white: #ffffff;
+  --p-scrim: rgba(7, 8, 10, .72);
+
+  /* ═══ SEMANTIC — THE LIGHT TABLE (base definition, §6.5) ═══════════════ */
+  --bg-void:      var(--p-bone-100);
+  --surface-1:    var(--p-bone-50);
+  --surface-2:    var(--p-white);
+  --surface-3:    var(--p-bone-200);
+
+  --edge-hair:    rgba(20, 18, 14, .085);
+  --edge-strong:  rgba(20, 18, 14, .170);
+  --edge-lift:    rgba(255, 255, 255, .900);
+  --edge-contact: rgba(42, 38, 32, .090);
+
+  --text-1:        var(--p-bone-950);
+  --text-2:        var(--p-bone-700);
+  --text-3:        oklch(.510 .014 70);    /* E-4 */
+  --text-disabled: oklch(.680 .012 70);
+
+  --signal:        var(--p-signal-600);   /* the mark: planes, reveals, rules */
+  --signal-text:   var(--p-signal-700);   /* signal as type — E-1 */
+  --signal-hover:  var(--p-signal-700);
+  --signal-wash:   var(--p-signal-050);
+  --signal-wash-2: var(--p-signal-100);
+  --settled:       var(--p-verdigris-600);
+  --settled-wash:  oklch(.965 .012 178);
+
+  --evidence-bg:    var(--p-bone-50);     /* paper is paper — L-2       */
+  --evidence-text:  var(--p-bone-950);
+  --evidence-edge:  rgba(20, 18, 14, .120);
+  --span-field:     var(--p-ice-200);
+  --span-rule:      var(--signal);
+
+  --focus-ring:  var(--p-signal-600);
+  --selection:   var(--p-signal-600);
+  --selection-t: var(--p-bone-50);
+
+  /* The lens (§11.5). Glass is a material, not decoration: it has a rim the
+     key light catches, an inner bloom, and a warm contact shadow. Tokenised
+     rather than exempted, because unlike the WebGL scene values these are
+     ordinary DOM and there is no reason they should live outside this file. */
+  --glass-rim:    rgba(255, 255, 255, .55);
+  --glass-inner:  rgba(220, 233, 242, .50);
+  --glass-shadow: rgba(20, 18, 14, .34);
+
+  /* Elevation, light theme: two-layer, tinted warm (§9.1). */
+  --shadow-1: 0 1px 2px rgba(42, 38, 32, .07), 0 2px 6px rgba(42, 38, 32, .05);
+  --shadow-2: 0 2px 4px rgba(42, 38, 32, .06), 0 12px 28px rgba(42, 38, 32, .09);
+  --shadow-3: 0 4px 8px rgba(42, 38, 32, .06), 0 40px 96px rgba(42, 38, 32, .16);
+
+  /* ── SPACE — closed set (§8.5). No other spacing value exists. LAW. ────── */
+  --s-2: 2px;    --s-4: 4px;     --s-8: 8px;     --s-12: 12px;
+  --s-16: 16px;  --s-24: 24px;   --s-32: 32px;   --s-40: 40px;
+  --s-56: 56px;  --s-72: 72px;   --s-96: 96px;   --s-128: 128px;
+  --s-160: 160px; --s-224: 224px;
+
+  /* ── RADIUS — 0 on paper, 3px on controls, 999px never (§8.6). ─────────── */
+  --r-paper: 0;
+  --r-control: 3px;
+
+  /* ── EDGE WEIGHTS — one hairline weight, one reveal weight. ────────────── */
+  --w-hair: 1px;
+  --w-reveal: 2px;
+
+  /* ── GRID (§8.2) ───────────────────────────────────────────────────────── */
+  --grid-cols: 4;
+  --grid-gutter: var(--s-16);
+  --grid-margin: 20px;
+  --grid-max: 100%;
+  --datum-col: 5;          /* the datum sits at column 5 of 16 — §8.1 */
+  --datum-x: 31.25%;       /* recomputed per breakpoint below           */
+
+  /* ── MOTION — closed set (§10.1). LAW. ─────────────────────────────────── */
+  --m-instant: 90ms;
+  --m-fast:    160ms;
+  --m-base:    240ms;
+  --m-slow:    420ms;
+  --m-reveal:  720ms;
+  --m-cine:    1200ms;
+  --ease-out: cubic-bezier(.16, 1, .30, 1);
+  --ease-io:  cubic-bezier(.65, 0, .35, 1);
+
+  /* Delays and dwells are NOT durations, and the §10.1 closed set does not
+     govern them — it governs how long a thing takes to move. These three come
+     from elsewhere in the blueprint and are named here so that no component
+     ever writes a raw millisecond:
+       --d-tip      §13.1  tooltip appears after 400ms
+       --d-toast    §13.1  toast auto-dismisses after 6s
+       --m-collapse §10.4  transitions collapse to 120ms under reduced motion,
+                           the value the blueprint's own token file (§20) uses */
+  --d-tip: 400ms;
+  --d-toast: 6000ms;
+  --m-collapse: 120ms;
+  --d-preload: 1400ms;   /* §12.1 — the counter runs 000 to 100 once */
+
+  /* ── TYPE FAMILIES (§5.2, fallbacks per §5.3) ──────────────────────────── */
+  --f-display:  'Redaction 20', 'Redaction 0', 'Spectral', Georgia, serif;
+  --f-clean:    'Redaction 0', 'Redaction 20', 'Spectral', Georgia, serif;
+  --f-degraded: 'Redaction 50', 'Redaction 20', Georgia, serif;
+  --f-void:     'Redaction 100', 'Redaction 50', Georgia, serif;
+  --f-text:     'Apfel Grotezk', 'Switzer', system-ui, -apple-system, sans-serif;
+  --f-broken:   'Apfel Grotezk Brukt', 'Apfel Grotezk', system-ui, sans-serif;
+  --f-data:     'Sligoil', 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --f-data-micro: 'Sligoil Micro', 'Sligoil', 'Geist Mono', ui-monospace, monospace;
+}
+
+/* ═══ SEMANTIC — THE VAULT (dark, §6.4) ═══════════════════════════════════
+   Declared twice, deliberately: once for the system preference and once for the
+   explicit choice, so that a stored `light` beats a dark OS and a stored `dark`
+   beats a light one. Never define a colour only inside one of these. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-void:     var(--p-graphite-950);
+    --surface-1:   var(--p-graphite-900);
+    --surface-2:   var(--p-graphite-850);
+    --surface-3:   var(--p-graphite-800);
+
+    --edge-hair:    rgba(255, 255, 255, .055);
+    --edge-strong:  rgba(255, 255, 255, .115);
+    --edge-lift:    rgba(255, 255, 255, .075);
+    --edge-contact: rgba(0, 0, 0, .350);
+
+    --text-1:        var(--p-bone-50);
+    --text-2:        var(--p-graphite-300);
+    --text-3:        var(--p-graphite-400);
+    --text-disabled: var(--p-graphite-500);
+
+    --signal:        var(--p-signal-500);   /* the mark: planes, reveals, rules */
+    --signal-text:   var(--p-signal-400);   /* signal as type — E-1 */
+    --signal-hover:  var(--p-signal-400);
+    --signal-wash:   rgba(196, 43, 56, .085);
+    --signal-wash-2: rgba(196, 43, 56, .160);
+    --settled:       var(--p-verdigris-300);
+    --settled-wash:  rgba(180, 207, 203, .090);
+
+    --evidence-bg:   var(--p-bone-100);
+    --evidence-text: var(--p-bone-950);
+    --evidence-edge: rgba(20, 18, 14, .120);
+
+    --focus-ring:  var(--p-ice-200);
+    --selection:   var(--p-signal-500);
+    --selection-t: var(--p-bone-50);
+
+    --glass-rim:    rgba(255, 255, 255, .38);
+    --glass-inner:  rgba(220, 233, 242, .30);
+    --glass-shadow: rgba(0, 0, 0, .55);
+
+    /* §9.1 LAW — no blur in the dark. Elevation is a lit top edge and a
+       contact shadow, because there is no lamp above the void to cast one. */
+    --shadow-1: none;
+    --shadow-2: none;
+    --shadow-3: 0 0 0 1px rgba(255, 255, 255, .115);
+  }
+}
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --bg-void:     var(--p-graphite-950);
+  --surface-1:   var(--p-graphite-900);
+  --surface-2:   var(--p-graphite-850);
+  --surface-3:   var(--p-graphite-800);
+
+  --edge-hair:    rgba(255, 255, 255, .055);
+  --edge-strong:  rgba(255, 255, 255, .115);
+  --edge-lift:    rgba(255, 255, 255, .075);
+  --edge-contact: rgba(0, 0, 0, .350);
+
+  --text-1:        var(--p-bone-50);
+  --text-2:        var(--p-graphite-300);
+  --text-3:        var(--p-graphite-400);
+  --text-disabled: var(--p-graphite-500);
+
+  --signal:        var(--p-signal-500);   /* the mark: planes, reveals, rules */
+  --signal-text:   var(--p-signal-400);   /* signal as type — E-1 */
+  --signal-hover:  var(--p-signal-400);
+  --signal-wash:   rgba(196, 43, 56, .085);
+  --signal-wash-2: rgba(196, 43, 56, .160);
+  --settled:       var(--p-verdigris-300);
+  --settled-wash:  rgba(180, 207, 203, .090);
+
+  --evidence-bg:   var(--p-bone-100);
+  --evidence-text: var(--p-bone-950);
+  --evidence-edge: rgba(20, 18, 14, .120);
+
+  --focus-ring:  var(--p-ice-200);
+  --selection:   var(--p-signal-500);
+  --selection-t: var(--p-bone-50);
+
+  --glass-rim:    rgba(255, 255, 255, .38);
+  --glass-inner:  rgba(220, 233, 242, .30);
+  --glass-shadow: rgba(0, 0, 0, .55);
+
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: 0 0 0 1px rgba(255, 255, 255, .115);
+}
+
+/* ═══ LIGHT AS AN ISLAND ═══════════════════════════════════════════════════
+   The semantic layer above is declared on bare :root, which is correct for the
+   page but cannot re-light a subtree inside a dark root. This block repeats it
+   for any element explicitly marked light, so that `[data-theme]` works as a
+   scoped theme boundary — which is what the states gallery (§13.5) needs in
+   order to show both themes on one page, and what the evidence pane needs in
+   order to stay paper inside the vault. */
+[data-theme="light"] {
+  --bg-void:      var(--p-bone-100);
+  --surface-1:    var(--p-bone-50);
+  --surface-2:    var(--p-white);
+  --surface-3:    var(--p-bone-200);
+
+  --edge-hair:    rgba(20, 18, 14, .085);
+  --edge-strong:  rgba(20, 18, 14, .170);
+  --edge-lift:    rgba(255, 255, 255, .900);
+  --edge-contact: rgba(42, 38, 32, .090);
+
+  --text-1:        var(--p-bone-950);
+  --text-2:        var(--p-bone-700);
+  --text-3:        oklch(.510 .014 70);
+  --text-disabled: oklch(.680 .012 70);
+
+  --signal:        var(--p-signal-600);
+  --signal-text:   var(--p-signal-700);
+  --signal-hover:  var(--p-signal-700);
+  --signal-wash:   var(--p-signal-050);
+  --signal-wash-2: var(--p-signal-100);
+  --settled:       var(--p-verdigris-600);
+  --settled-wash:  oklch(.965 .012 178);
+
+  --evidence-bg:   var(--p-bone-50);
+  --evidence-text: var(--p-bone-950);
+  --evidence-edge: rgba(20, 18, 14, .120);
+
+  --focus-ring:  var(--p-signal-600);
+  --selection:   var(--p-signal-600);
+  --selection-t: var(--p-bone-50);
+
+  --glass-rim:    rgba(255, 255, 255, .55);
+  --glass-inner:  rgba(220, 233, 242, .50);
+  --glass-shadow: rgba(20, 18, 14, .34);
+
+  --shadow-1: 0 1px 2px rgba(42, 38, 32, .07), 0 2px 6px rgba(42, 38, 32, .05);
+  --shadow-2: 0 2px 4px rgba(42, 38, 32, .06), 0 12px 28px rgba(42, 38, 32, .09);
+  --shadow-3: 0 4px 8px rgba(42, 38, 32, .06), 0 40px 96px rgba(42, 38, 32, .16);
+}
+
+/* ═══ GRID PER BREAKPOINT (§8.2) ══════════════════════════════════════════
+   The datum is column 5 of 16. Below `lg` there are not 16 columns, so the
+   datum holds its *proportion* — 4/16 of the content measure — rather than
+   snapping to a column that does not exist. It never moves within a
+   breakpoint, which is what §8.1 actually asks for. */
+
+@media (min-width: 480px) {
+  :root { --grid-cols: 6; --grid-gutter: 18px; --grid-margin: var(--s-24); }
+}
+@media (min-width: 768px) {
+  :root { --grid-cols: 12; --grid-gutter: 20px; --grid-margin: var(--s-32); --grid-max: 720px; }
+}
+@media (min-width: 1024px) {
+  :root { --grid-cols: 16; --grid-gutter: 20px; --grid-margin: 64px; --grid-max: 1080px; }
+}
+@media (min-width: 1440px) {
+  :root { --grid-cols: 16; --grid-gutter: var(--s-24); --grid-margin: 112px; --grid-max: 1288px; }
+}
+@media (min-width: 1920px) {
+  :root { --grid-cols: 16; --grid-gutter: var(--s-24); --grid-margin: 160px; --grid-max: 1440px; }
+}

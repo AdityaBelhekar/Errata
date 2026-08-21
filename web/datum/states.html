@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — DATUM states gallery</title>
+<meta name="description" content="FE-2 deliverable. Every core component, every state, both themes, on one page.">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/type.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+
+<style>
+/* The gallery's own chrome. §13.5 LAW: every component in every state in both
+   themes on one page. It is the screenshot-diff target in CI and the first
+   thing a reviewer opens.
+
+   Each component is defined ONCE, in a <template>, and cloned into a light pane
+   and a dark pane. Duplicated markup would let the two themes drift, which is
+   exactly the failure this page exists to catch. */
+
+.gallery-head {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg-void);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+  padding: var(--s-16) var(--s-32);
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-24);
+  flex-wrap: wrap;
+}
+.toc { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); }
+.toc a { color: var(--text-3); }
+.toc a:hover { color: var(--text-1); }
+
+.spec { border-bottom: var(--w-hair) solid var(--edge-hair); padding: var(--s-40) var(--s-32); }
+.spec-head { display: grid; gap: var(--s-8); margin-bottom: var(--s-24); max-width: 72ch; }
+.spec-name { display: flex; align-items: baseline; gap: var(--s-12); }
+.spec-num { color: var(--text-3); }
+.spec-note { color: var(--text-2); }
+.spec-na { color: var(--text-3); }
+
+.panes { display: grid; gap: var(--s-2); grid-template-columns: 1fr; }
+@media (min-width: 1100px) { .panes { grid-template-columns: 1fr 1fr; } }
+.pane {
+  background: var(--bg-void); color: var(--text-1);
+  border: var(--w-hair) solid var(--edge-hair);
+  padding: var(--s-24);
+}
+.pane-label { color: var(--text-3); display: block; margin-bottom: var(--s-24); }
+
+.states { display: grid; gap: var(--s-24); grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); align-items: start; }
+.state { display: grid; gap: var(--s-8); align-content: start; }
+.state > .state-label { color: var(--text-3); }
+.state-wide { grid-column: 1 / -1; }
+</style>
+</head>
+
+<body>
+<a class="skip-link t-body" href="#g">Skip to the gallery</a>
+
+<header class="gallery-head">
+  <div>
+    <div class="wordmark">ERRATA · DATUM — STATES GALLERY</div>
+    <div class="t-micro u-dimmer">FE-2 · design development · 21 components · both themes · §13.5</div>
+  </div>
+  <nav class="toc t-micro" aria-label="Components">
+    <a href="#c01">01 Button</a><a href="#c02">02 IconButton</a><a href="#c03">03 Input</a>
+    <a href="#c04">04 Select</a><a href="#c05">05 Checkbox</a><a href="#c06">06 Radio</a>
+    <a href="#c07">07 Toggle</a><a href="#c08">08 Tabs</a><a href="#c09">09 Tooltip</a>
+    <a href="#c10">10 Toast</a><a href="#c11">11 Modal</a><a href="#c12">12 Drawer</a>
+    <a href="#c13">13 Menu</a><a href="#c14">14 DataTable</a><a href="#c15">15 Confidence</a>
+    <a href="#c16">16 ProvenanceTag</a><a href="#c17">17 DiffPair</a><a href="#c18">18 DocumentView</a>
+    <a href="#c19">19 SectionOpener</a><a href="#c20">20 ThemeToggle</a><a href="#c21">21 QueueRow</a>
+  </nav>
+</header>
+
+<main id="g">
+
+<!-- ═══ 01 BUTTON ═══════════════════════════════════════════════════════ -->
+<section class="spec" id="c01">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">01</span><h2 class="t-h3">Button</h2></div>
+    <p class="spec-note t-body-s">3px radius, 36/44px heights. Primary is <span class="fact">--text-1</span> on <span class="fact">--surface-3</span> with a 1px lift, and is <strong>never</strong> signal-filled: signal means dispute, not "click me". Destructive is the one control signal touches, and even there it is an edge and a word, never a fill.</p>
+    <p class="spec-na t-micro">States: all 8. Empty is N/A — a button with no label is a defect, not a state.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Default</span><div><button class="btn">Open record</button></div></div>
+      <div class="state"><span class="state-label t-micro">Hover (forced)</span><div><button class="btn" style="background:var(--surface-2)">Open record</button></div></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><div><button class="btn" style="outline:2px solid var(--focus-ring);outline-offset:2px">Open record</button></div></div>
+      <div class="state"><span class="state-label t-micro">Active (forced)</span><div><button class="btn" style="box-shadow:none;transform:translateY(1px)">Open record</button></div></div>
+      <div class="state"><span class="state-label t-micro">Disabled</span><div><button class="btn" disabled>Open record</button></div></div>
+      <div class="state"><span class="state-label t-micro">Loading</span><div><button class="btn" data-state="loading">Deriving…</button></div></div>
+      <div class="state"><span class="state-label t-micro">Error</span><div><button class="btn" data-state="error">Retry derive</button></div></div>
+      <div class="state"><span class="state-label t-micro">Quiet</span><div><button class="btn btn--quiet">Dismiss</button></div></div>
+      <div class="state"><span class="state-label t-micro">Destructive</span><div><button class="btn btn--destructive">Discard audit</button></div></div>
+      <div class="state"><span class="state-label t-micro">Large (44px)</span><div><button class="btn btn--lg">Run audit</button></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 02 ICON BUTTON ══════════════════════════════════════════════════ -->
+<section class="spec" id="c02">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">02</span><h2 class="t-h3">IconButton</h2></div>
+    <p class="spec-note t-body-s">32px visual box, 44px hit area via a pseudo-element so the box does not grow (WCAG 2.2 SC 2.5.8). Tooltip after 400ms. Every instance carries an accessible name; an icon is not a label.</p>
+    <p class="spec-na t-micro">States: default, hover, focus, active, pressed, disabled, loading. Empty and error are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Default</span><div><button class="icon-btn" aria-label="Filter">≡</button></div></div>
+      <div class="state"><span class="state-label t-micro">Hover (forced)</span><div><button class="icon-btn" aria-label="Filter" style="background:var(--surface-1);color:var(--text-1)">≡</button></div></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><div><button class="icon-btn" aria-label="Filter" style="outline:2px solid var(--focus-ring);outline-offset:2px">≡</button></div></div>
+      <div class="state"><span class="state-label t-micro">Pressed</span><div><button class="icon-btn" aria-label="Filter" aria-pressed="true">≡</button></div></div>
+      <div class="state"><span class="state-label t-micro">Disabled</span><div><button class="icon-btn" aria-label="Filter" disabled>≡</button></div></div>
+      <div class="state"><span class="state-label t-micro">Loading</span><div><button class="icon-btn" aria-label="Filter" data-state="loading" style="color:var(--text-3)">·</button></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 03 INPUT ════════════════════════════════════════════════════════ -->
+<section class="spec" id="c03">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">03</span><h2 class="t-h3">Input</h2></div>
+    <p class="spec-note t-body-s">Label above in <span class="fact">col</span>, error below in <span class="fact">micro</span> signal. The value itself is set in Sligoil with tabular figures, because an input on this product usually holds a machine fact.</p>
+    <p class="spec-na t-micro">States: all 8.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><label class="field"><span class="field-label t-col">Type designation</span><input class="input" value="4C-M-16-66"></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Focus</span><input class="input" value="4C-M-16-66" style="border-color:var(--signal);outline:2px solid var(--focus-ring);outline-offset:2px"></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Empty</span><input class="input" placeholder="No value in catalog"></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Disabled</span><input class="input" value="locked" disabled></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Loading</span><input class="input" value="deriving…" data-state="loading" readonly></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Error</span><input class="input" value="16 amps" aria-invalid="true"><span class="field-error t-micro">Unit not in the source. Expected <span class="fact">A</span>.</span></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">With hint</span><input class="input" value="0.86"><span class="field-hint t-micro">Operating point, 0–1</span></label></div>
+      <div class="state state-wide"><label class="field"><span class="field-label t-col">Textarea</span><textarea class="input" rows="3">Reviewer note: the catalog value predates the 2024 datasheet revision.</textarea></label></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 04 SELECT ═══════════════════════════════════════════════════════ -->
+<section class="spec" id="c04">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">04</span><h2 class="t-h3">Select</h2></div>
+    <p class="spec-note t-body-s">Native element, our skin. The full ARIA combobox listbox lands in FE-7 where it has real data to hold — shipping a fake one now would be a component without a job.</p>
+    <p class="spec-na t-micro">States: default, hover, focus, disabled, error, empty. Loading and active are N/A on a native control.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><label class="field"><span class="field-label t-col">ETIM class</span><span class="select-wrap"><select class="select"><option>EC000227 — Circuit breaker</option><option>EC001234 — Contactor</option></select></span></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Focus</span><span class="select-wrap"><select class="select" style="border-color:var(--signal);outline:2px solid var(--focus-ring);outline-offset:2px"><option>EC000227 — Circuit breaker</option></select></span></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Empty</span><span class="select-wrap"><select class="select"><option>No classes in this catalog</option></select></span></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Disabled</span><span class="select-wrap"><select class="select" disabled><option>EC000227 — Circuit breaker</option></select></span></label></div>
+      <div class="state"><label class="field"><span class="field-label t-col">Error</span><span class="select-wrap"><select class="select" aria-invalid="true" style="border-color:var(--signal);background:var(--signal-wash)"><option>Unmapped class</option></select></span><span class="field-error t-micro">No UNSPSC bridge for this class.</span></label></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 05 CHECKBOX ═════════════════════════════════════════════════════ -->
+<section class="spec" id="c05">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">05</span><h2 class="t-h3">Checkbox</h2></div>
+    <p class="spec-note t-body-s">16px, 2px stroke, <span class="fact">--m-instant</span>. Indeterminate is a real state here: a class is partly selected when some of its records are.</p>
+    <p class="spec-na t-micro">States: default, checked, indeterminate, hover, focus, disabled, error. Loading and empty are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Unchecked</span><label class="check"><input type="checkbox"><span class="box"></span><span class="t-body">Show settled</span></label></div>
+      <div class="state"><span class="state-label t-micro">Checked</span><label class="check"><input type="checkbox" checked><span class="box"></span><span class="t-body">Show disputed</span></label></div>
+      <div class="state"><span class="state-label t-micro">Indeterminate</span><label class="check"><input type="checkbox" class="ind"><span class="box"></span><span class="t-body">EC000227 (partial)</span></label></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><label class="check"><input type="checkbox" checked><span class="box" style="outline:2px solid var(--focus-ring);outline-offset:2px"></span><span class="t-body">Show disputed</span></label></div>
+      <div class="state"><span class="state-label t-micro">Disabled</span><label class="check"><input type="checkbox" disabled><span class="box"></span><span class="t-body">Show withdrawn</span></label></div>
+      <div class="state"><span class="state-label t-micro">Error</span><label class="check"><input type="checkbox" aria-invalid="true"><span class="box"></span><span class="t-body">Accept unverified</span></label></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 06 RADIO ════════════════════════════════════════════════════════ -->
+<section class="spec" id="c06">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">06</span><h2 class="t-h3">Radio</h2></div>
+    <p class="spec-note t-body-s">The one legitimate circle in a system where radius is 0 or 3px: a radio that is not round stops reading as a radio.</p>
+    <p class="spec-na t-micro">States: default, checked, focus, disabled. Loading, error and empty are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Group</span>
+        <div class="u-stack-8">
+          <label class="radio"><input type="radio" name="x" checked><span class="dot"></span><span class="t-body">Table-blind</span></label>
+          <label class="radio"><input type="radio" name="x"><span class="dot"></span><span class="t-body">R1 text-window</span></label>
+          <label class="radio"><input type="radio" name="x" disabled><span class="dot"></span><span class="t-body">R1 (tautology)</span></label>
+        </div>
+      </div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><label class="radio"><input type="radio" name="y" checked><span class="dot" style="outline:2px solid var(--focus-ring);outline-offset:2px"></span><span class="t-body">Table-blind</span></label></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 07 TOGGLE ═══════════════════════════════════════════════════════ -->
+<section class="spec" id="c07">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">07</span><h2 class="t-h3">Toggle</h2></div>
+    <p class="spec-note t-body-s">Binary settings only. <strong>Never for filters</strong> — a filter needs to read as "on for this value", which a switch cannot say. Square-ended, because 999px never.</p>
+    <p class="spec-na t-micro">States: off, on, focus, disabled. Loading, error and empty are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Off</span><label class="toggle"><input type="checkbox"><span class="track"></span><span class="t-body">Reduced motion</span></label></div>
+      <div class="state"><span class="state-label t-micro">On</span><label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="t-body">Reduced motion</span></label></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><label class="toggle"><input type="checkbox" checked><span class="track" style="outline:2px solid var(--focus-ring);outline-offset:2px"></span><span class="t-body">Reduced motion</span></label></div>
+      <div class="state"><span class="state-label t-micro">Disabled</span><label class="toggle"><input type="checkbox" disabled><span class="track"></span><span class="t-body u-dimmer">Audio (not shipped)</span></label></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 08 TABS ═════════════════════════════════════════════════════════ -->
+<section class="spec" id="c08">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">08</span><h2 class="t-h3">Tabs</h2></div>
+    <p class="spec-note t-body-s">2px underline, slides at <span class="fact">--m-base</span>, roving tabindex. The underline is <span class="fact">--text-1</span>, not signal: a selected tab is not a dispute.</p>
+    <p class="spec-na t-micro">States: default, selected, hover, focus, disabled, loading, empty. Error is N/A — an errored panel is the panel's state, not the tab's.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true">Evidence</button>
+          <button class="tab" role="tab" aria-selected="false">Derivation</button>
+          <button class="tab" role="tab" aria-selected="false" style="outline:2px solid var(--focus-ring);outline-offset:2px">Focus</button>
+          <button class="tab" role="tab" aria-selected="false" disabled>Calibration</button>
+        </div>
+      </div>
+      <div class="state state-wide"><span class="state-label t-micro">Empty panel</span>
+        <div class="table-empty"><span class="t-h4">No derivation recorded</span><span class="t-body-s u-dimmer">This record was ingested but never audited.</span></div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 09 TOOLTIP ══════════════════════════════════════════════════════ -->
+<section class="spec" id="c09">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">09</span><h2 class="t-h3">Tooltip</h2></div>
+    <p class="spec-note t-body-s"><span class="fact">--surface-3</span>, <span class="fact">micro</span>, 6px offset, 400ms delay, never on touch. It supplements an accessible name; it never carries the only copy of a fact.</p>
+    <p class="spec-na t-micro">States: hidden, shown, focus-within. Loading, error, disabled and empty are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Hover or focus me</span><span class="tip"><button class="btn btn--quiet" aria-describedby="tp1">Span 1184–1188</button><span class="tip-body t-micro" id="tp1" role="tooltip">Page 2 · table 3 · cell C4</span></span></div>
+      <div class="state"><span class="state-label t-micro">Shown (forced)</span><span class="tip"><button class="btn btn--quiet">Span 1184–1188</button><span class="tip-body t-micro" style="opacity:1;visibility:visible;transition:none">Page 2 · table 3 · cell C4</span></span></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 10 TOAST ════════════════════════════════════════════════════════ -->
+<section class="spec" id="c10">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">10</span><h2 class="t-h3">Toast</h2></div>
+    <p class="spec-note t-body-s">Bottom-left, stacks to 3, auto-dismiss 6s, pause on hover, <span class="fact">role="status"</span>. Shown inline here so the gallery can be screenshot-diffed.</p>
+    <p class="spec-na t-micro">States: default, loading, error, settled. Hover/focus/disabled are N/A on a status region.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide"><div class="toast" role="status"><div><div class="toast-title t-h4">Audit queued</div><div class="t-body-s u-dim">1,426 records · ETIM EC000227</div></div><button class="icon-btn" aria-label="Dismiss">×</button></div></div>
+      <div class="state state-wide"><div class="toast" role="status" data-state="loading"><div><div class="toast-title t-h4">Deriving</div><div class="t-body-s u-dim">318 of 1,426</div></div><button class="icon-btn" aria-label="Dismiss">×</button></div></div>
+      <div class="state state-wide"><div class="toast" role="alert" data-state="error"><div><div class="toast-title t-h4">Source unreachable</div><div class="t-body-s u-dim">3 datasheets could not be fetched. Nothing was flagged from them.</div></div><button class="icon-btn" aria-label="Dismiss">×</button></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 11 MODAL ════════════════════════════════════════════════════════ -->
+<section class="spec" id="c11">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">11</span><h2 class="t-h3">Modal</h2></div>
+    <p class="spec-note t-body-s">Focus trap, <span class="fact">Esc</span>, scrim <span class="fact">--p-scrim</span>, returns focus on close. Shown inline rather than over the page so both themes are diffable.</p>
+    <p class="spec-na t-micro">States: default, loading, error. Hover/disabled/empty belong to its contents.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m1">
+          <div class="modal-head"><h3 class="t-h3" id="m1">Discard this audit?</h3></div>
+          <div class="modal-body t-body u-dim">1,426 derivations and their evidence spans will be removed. The catalog is not modified — Errata grades data, it does not create data.</div>
+          <div class="modal-foot"><button class="btn btn--quiet">Cancel</button><button class="btn btn--destructive">Discard</button></div>
+        </div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 12 DRAWER ═══════════════════════════════════════════════════════ -->
+<section class="spec" id="c12">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">12</span><h2 class="t-h3">Drawer</h2></div>
+    <p class="spec-note t-body-s">Right, 480px, same trap rules as Modal. Slides at <span class="fact">--m-slow</span>; under reduced motion it cross-fades instead, which is a designed alternative, not a disabled one.</p>
+    <p class="spec-na t-micro">States: closed, open, loading, empty. Shown here as a static panel.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div style="position:relative;height:260px;overflow:hidden;border:var(--w-hair) solid var(--edge-hair)">
+          <div class="drawer" data-open="true" style="position:absolute">
+            <div style="padding:var(--s-16) var(--s-24);border-bottom:var(--w-hair) solid var(--edge-hair);display:flex;justify-content:space-between;align-items:center">
+              <span class="t-h4">Record 4C-M-16-66</span><button class="icon-btn" aria-label="Close">×</button>
+            </div>
+            <div style="padding:var(--s-24)" class="u-stack-16">
+              <div class="diff-pair"><span class="t-col u-dimmer">Rated current</span><span class="diff-claim">10 A</span><span class="diff-evidence">16 A</span></div>
+              <div class="confidence"><span class="confidence-bar"><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg"></i></span><span class="confidence-value t-data-s">0.86</span></div>
+            </div>
+            <div style="padding:var(--s-16) var(--s-24);border-top:var(--w-hair) solid var(--edge-hair);display:flex;gap:var(--s-8);justify-content:flex-end"><button class="btn btn--quiet">Skip</button><button class="btn">Accept evidence</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 13 MENU ═════════════════════════════════════════════════════════ -->
+<section class="spec" id="c13">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">13</span><h2 class="t-h3">Menu</h2></div>
+    <p class="spec-note t-body-s">Roving tabindex, type-ahead, and the <span class="fact">⌘K</span> palette shares its renderer — one list, two entry points.</p>
+    <p class="spec-na t-micro">States: default, active, disabled, empty, loading. Error is N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Default</span>
+        <div class="menu" role="menu">
+          <button class="menu-item" role="menuitem">Open evidence<kbd>E</kbd></button>
+          <button class="menu-item" role="menuitem" data-active="true">Copy span offsets<kbd>⇧C</kbd></button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" role="menuitem" disabled>Export (R4)</button>
+        </div>
+      </div>
+      <div class="state"><span class="state-label t-micro">Empty</span>
+        <div class="menu"><div class="table-empty" style="padding:var(--s-24)"><span class="t-body-s u-dimmer">No commands match</span></div></div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 14 DATA TABLE ═══════════════════════════════════════════════════ -->
+<section class="spec" id="c14">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">14</span><h2 class="t-h3">DataTable</h2></div>
+    <p class="spec-note t-body-s">Sticky head, hairline rows, tabular numerals (LAW), virtualised beyond 200 rows. Hover is <strong>background only</strong> — never lift, never move: a row that jumps under the cursor makes a reader lose the line they were checking. A disputed row gets a <strong>plane</strong> of signal with a 2px edge on the datum side, never a dot.</p>
+    <p class="spec-na t-micro">States: default, hover, selected, disputed, settled, loading, empty, error. All 8 present.</p>
+    <p class="spec-note t-body-s" style="border-left:var(--w-reveal) solid var(--signal);background:var(--signal-wash);padding:var(--s-12) var(--s-16)"><strong>Defect C-2 — this table is not the queue.</strong> Blueprint §13.2 specified a queue ranked by a right-aligned <span class="fact">Conf.</span> column. <strong>FR-7.5 (P0) forbids exactly that</strong>: queue rows render as a sentence, <em>never</em> a bare confidence percentage, and no UI surface may show a raw confidence score as the primary signal. The PRD wins over the blueprint. <span class="fact">DataTable</span> keeps this shape for the record detail, the benchmark and the coverage report; the queue is <a href="#c21" style="color:var(--signal-text);text-decoration:underline">component 21</a>. Logged in <span class="fact">FE-SYSTEM-REVIEW.md</span> §2.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide"><span class="state-label t-micro">Default · disputed · settled · selected</span>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Type designation</th><th>Attribute</th><th>Catalog</th><th>Evidence</th><th class="num">Conf.</th></tr></thead>
+            <tbody>
+              <tr data-state="disputed"><td>4C-M-16-66</td><td>Rated current</td><td><span class="cell-struck">10 A</span></td><td>16 A</td><td class="num">0.86</td></tr>
+              <tr data-state="disputed"><td>4C-M-16-66</td><td>Ingress</td><td><span class="cell-struck">IP54</span></td><td>IP66</td><td class="num">0.91</td></tr>
+              <tr><td>4C-M-16-66</td><td>Rated voltage</td><td>400 V</td><td>400 V</td><td class="num">0.97</td></tr>
+              <tr data-state="settled"><td>2B-K-06-44</td><td>Ingress</td><td>IP44</td><td>IP44</td><td class="num">0.94</td></tr>
+              <tr aria-selected="true"><td>2B-K-06-44</td><td>Rated current</td><td>6 A</td><td>6 A</td><td class="num">0.88</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="state state-wide"><span class="state-label t-micro">Loading</span>
+        <div class="table-wrap">
+          <table class="table" data-state="loading">
+            <thead><tr><th>Type designation</th><th>Attribute</th><th>Catalog</th><th>Evidence</th><th class="num">Conf.</th></tr></thead>
+            <tbody><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="state"><span class="state-label t-micro">Empty</span>
+        <div class="table-wrap"><div class="table-empty"><span class="t-h4">Nothing disagrees</span><span class="t-body-s u-dimmer">1,426 records checked against their sources. No dispute above the operating point.</span></div></div>
+      </div>
+      <div class="state"><span class="state-label t-micro">Error</span>
+        <div class="table-wrap"><div class="table-error"><span class="t-h4">Audit did not complete</span><span class="t-body-s">Partial results are withheld: a half-run queue ranks wrong.</span></div></div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 15 CONFIDENCE ═══════════════════════════════════════════════════ -->
+<section class="spec" id="c15">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">15</span><h2 class="t-h3">Confidence</h2></div>
+    <p class="spec-note t-body-s">Five segments, <strong>achromatic on purpose</strong>. A green/amber/red bar would be the product telling you how to feel about a number it has just asked you to check yourself.</p>
+    <p class="spec-na t-micro">States: full range, empty (uncalibrated), disabled. Hover/focus/error are N/A — it is a readout, not a control.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">0.97</span><div class="confidence"><span class="confidence-bar"><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i></span><span class="confidence-value t-data-s">0.97</span></div></div>
+      <div class="state"><span class="state-label t-micro">0.86</span><div class="confidence"><span class="confidence-bar"><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg"></i></span><span class="confidence-value t-data-s">0.86</span></div></div>
+      <div class="state"><span class="state-label t-micro">0.41</span><div class="confidence"><span class="confidence-bar"><i class="confidence-seg" data-on="true"></i><i class="confidence-seg" data-on="true"></i><i class="confidence-seg"></i><i class="confidence-seg"></i><i class="confidence-seg"></i></span><span class="confidence-value t-data-s">0.41</span></div></div>
+      <div class="state"><span class="state-label t-micro">Uncalibrated</span><div class="confidence" data-state="empty"><span class="confidence-bar"><i class="confidence-seg"></i><i class="confidence-seg"></i><i class="confidence-seg"></i><i class="confidence-seg"></i><i class="confidence-seg"></i></span><span class="confidence-value t-data-s">not measured</span></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 16 PROVENANCE TAG ═══════════════════════════════════════════════ -->
+<section class="spec" id="c16">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">16</span><h2 class="t-h3">ProvenanceTag</h2></div>
+    <p class="spec-note t-body-s">Institution + identifier + retrieved date, in <span class="fact">micro</span>, hanging in the margin. §7.4 makes provenance a LAW; this is the component that discharges it. Its empty state is not blank — it accuses.</p>
+    <p class="spec-na t-micro">States: default, empty (missing provenance). Interactive states are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Default</span><span class="provenance t-micro">Library of Congress · <span class="prov-id">HAER PA,51-PITBU,1--12</span> · retrieved 2026-08-21</span></div>
+      <div class="state"><span class="state-label t-micro">Missing</span><span class="provenance t-micro" data-state="empty"></span></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 17 DIFF PAIR ════════════════════════════════════════════════════ -->
+<section class="spec" id="c17">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">17</span><h2 class="t-h3">DiffPair</h2></div>
+    <p class="spec-note t-body-s">The signature data component: the catalog value in <strong>Redaction 50</strong> above the evidence value in <strong>Redaction 0</strong>. The reader watches an unverified claim resolve into a grounded one, in type, without a legend. <em>With the Redaction files absent this reads as one face struck through — the axis is the part you cannot judge yet.</em></p>
+    <p class="spec-na t-micro">States: disputed, settled, empty (no evidence found). Interactive states are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">Disputed</span><div class="diff-pair"><span class="t-col u-dimmer">Rated current</span><span class="diff-claim">10 A</span><span class="diff-evidence">16 A</span><span class="diff-note t-micro">Span 1226–1230 · p.2</span></div></div>
+      <div class="state"><span class="state-label t-micro">Settled</span><div class="diff-pair" data-state="settled"><span class="t-col u-dimmer">Rated voltage</span><span class="diff-claim">400 V</span><span class="diff-evidence">400 V</span><span class="diff-note t-micro">Agrees with source</span></div></div>
+      <div class="state"><span class="state-label t-micro">No evidence</span><div class="diff-pair" data-state="empty"><span class="t-col u-dimmer">Short-circuit rating</span><span class="diff-claim">6 kA</span><span class="diff-evidence">not in source</span><span class="diff-note t-micro">Declined rather than guessed — finding N12</span></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 18 DOCUMENT VIEW ════════════════════════════════════════════════ -->
+<section class="spec" id="c18">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">18</span><h2 class="t-h3">DocumentView + SpanHighlight</h2></div>
+    <p class="spec-note t-body-s">Real DOM or a PDF.js text layer — <strong>never an image-only render</strong>, because spans must be selectable (L-6). Paper in <em>both</em> themes (L-2), with the 2px signal reveal on the datum side (L-3). Compare the two panes: everything else inverts and this does not.</p>
+    <p class="spec-na t-micro">States: default, loading, empty, error. Hover/focus belong to the spans.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div class="document">
+          <div class="t-col" style="color:var(--p-bone-700)">Datasheet 4C-M · page 2 · table 3</div>
+          <table style="margin-top:var(--s-16)">
+            <tbody>
+              <tr><th>Ingress protection</th><td><span class="span-hl" tabindex="0" aria-describedby="o1">IP66</span></td></tr>
+              <tr><th>Rated voltage</th><td>400 V</td></tr>
+              <tr><th>Rated current</th><td><span class="span-hl" tabindex="0" aria-describedby="o2">16 A</span></td></tr>
+            </tbody>
+          </table>
+          <p class="t-micro" id="o1" style="margin-top:var(--s-16);color:var(--p-bone-700)">Offsets 1184–1188</p>
+          <p class="t-micro" id="o2" style="color:var(--p-bone-700)">Offsets 1226–1230</p>
+        </div>
+      </div>
+      <div class="state"><span class="state-label t-micro">Empty</span><div class="document" data-state="empty"><span class="t-body-s">No source document linked</span></div></div>
+      <div class="state"><span class="state-label t-micro">Error</span><div class="document"><span class="t-h4" style="color:var(--p-signal-700)">Text layer unavailable</span><p class="t-body-s" style="color:var(--p-bone-700);margin-top:var(--s-8)">This PDF is image-only. Nothing was grounded from it, and nothing was flagged.</p></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 19 SECTION OPENER ═══════════════════════════════════════════════ -->
+<section class="spec" id="c19">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">19</span><h2 class="t-h3">SectionOpener</h2></div>
+    <p class="spec-note t-body-s">Number in poché, hairline above, opener in Redaction 20 — derived and calibrated, not raw source. One <span class="fact">lead</span> per section, and never a second.</p>
+    <p class="spec-na t-micro">States: default only. This component has no interaction to have states about.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div class="section-opener poche">
+          <span class="poche-mark num t-micro">03</span>
+          <h3 class="t-d3">The 49-point gap</h3>
+          <p class="t-lead" style="margin-top:var(--s-24)">Extraction is solved. Evidence is not.</p>
+        </div>
+      </div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 20 THEME TOGGLE ═════════════════════════════════════════════════ -->
+<section class="spec" id="c20">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">20</span><h2 class="t-h3">ThemeToggle</h2></div>
+    <p class="spec-note t-body-s">Three-state: system / light / dark. A <span class="fact">radiogroup</span>, not a switch — a switch with three positions is a lie about its own affordance. Arrow keys traverse. The live one is in the page header; these are static.</p>
+    <p class="spec-na t-micro">States: each of three selected, hover, focus, disabled. Loading/error/empty are N/A.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state"><span class="state-label t-micro">System selected</span><div class="theme-toggle"><button aria-checked="true">Sys</button><button aria-checked="false">Light</button><button aria-checked="false">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Light selected</span><div class="theme-toggle"><button aria-checked="false">Sys</button><button aria-checked="true">Light</button><button aria-checked="false">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Dark selected</span><div class="theme-toggle"><button aria-checked="false">Sys</button><button aria-checked="false">Light</button><button aria-checked="true">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><div class="theme-toggle"><button aria-checked="true" style="outline:2px solid var(--focus-ring);outline-offset:-2px">Sys</button><button aria-checked="false">Light</button><button aria-checked="false">Dark</button></div></div>
+    </div>
+  </template>
+</section>
+
+<!-- ═══ 21 QUEUE ROW ════════════════════════════════════════════════════ -->
+<section class="spec" id="c21">
+  <div class="spec-head">
+    <div class="spec-name"><span class="spec-num t-col">21</span><h2 class="t-h3">QueueRow</h2></div>
+    <p class="spec-note t-body-s"><strong>Added after the FE system review, to discharge FR-7.5.</strong> The row is prose because the requirement is prose. It carries FR-8.4's four blast-radius factors <em>separately</em> — "each factor must be independently inspectable in the UI", because a reviewer shown one opaque score has been given a number, not a reason — and FR-8.5's <em>computed</em> cluster size. Confidence is not absent from the product; it is absent from the queue, and lives on the record detail where the evidence is in front of the reviewer.</p>
+    <p class="spec-na t-micro">States: disputed, declined (abstention), settled, awaiting second adjudicator (FR-8.9), hover, current, loading, empty. Discharges FR-7.5 · FR-8.4 · FR-8.5 · FR-8.9.</p>
+  </div>
+  <div class="panes"></div>
+  <template>
+    <div class="states">
+      <div class="state state-wide">
+        <div class="queue">
+
+          <button class="queue-row" data-state="disputed" aria-current="true">
+            <span class="queue-sentence"><span class="sku">4C-M-16-66</span> says rated current is <span class="val was">10&nbsp;A</span>. <span class="loc">Page&nbsp;2, table&nbsp;3</span> says <span class="val">16&nbsp;A</span>.</span>
+            <span class="blast t-micro">
+              <span data-safety="true">Safety class<span class="f">×4.0</span></span>
+              <span>Revenue weight<span class="f">1.8</span></span>
+              <span>Propagates to<span class="f">3</span>filters, <span class="f">1</span>compliance export</span>
+              <span><span class="f">1,240</span>SKUs share this signature</span>
+            </span>
+          </button>
+
+          <button class="queue-row" data-state="declined">
+            <span class="queue-sentence"><span class="sku">7J-P-32-55</span> claims a short-circuit rating of <span class="val">6&nbsp;kA</span>. <strong>We did not check it.</strong></span>
+            <span class="declined-why t-micro">Declined — the window offered two competing values and neither is the row whose identity is the type designation. A value picked by tie-break becomes a confident accusation two steps later (finding N12).</span>
+          </button>
+
+          <button class="queue-row" data-state="awaiting-second">
+            <span class="queue-sentence"><span class="sku">2B-K-06-44</span> ingress corrected <span class="val was">IP44</span> → <span class="val">IP54</span>. <strong>Awaiting a second adjudicator.</strong></span>
+            <span class="blast t-micro">
+              <span data-safety="true">Safety-class attribute — single-signature acceptance impossible (FR-8.9)</span>
+              <span>Accepted by<span class="f">R. Vogel</span>at<span class="f">14:02Z</span></span>
+            </span>
+          </button>
+
+          <button class="queue-row" data-state="settled">
+            <span class="queue-sentence"><span class="sku">2B-K-06-44</span> rated voltage <span class="val">400&nbsp;V</span> agrees with <span class="loc">page&nbsp;1, table&nbsp;1</span>.</span>
+            <span class="blast t-micro"><span>Reconciled · no action</span></span>
+          </button>
+
+        </div>
+      </div>
+
+      <div class="state state-wide"><span class="state-label t-micro">Loading</span>
+        <div class="queue">
+          <div class="queue-row" data-state="loading"><span class="queue-sentence" style="color:transparent;background:var(--edge-hair);max-width:52ch">&nbsp;</span></div>
+          <div class="queue-row" data-state="loading"><span class="queue-sentence" style="color:transparent;background:var(--edge-hair);max-width:38ch">&nbsp;</span></div>
+        </div>
+      </div>
+
+      <div class="state state-wide"><span class="state-label t-micro">Empty — and the empty state is a finding, not a blank</span>
+        <div class="queue"><div class="table-empty"><span class="t-h4">Nothing in this catalog disagrees with its evidence</span><span class="t-body-s u-dimmer">1,426 records checked. 1,196 declined — see the coverage report for what was not checked and why.</span></div></div>
+      </div>
+    </div>
+  </template>
+</section>
+
+</main>
+
+<footer class="site-footer t-micro" style="padding-inline:var(--s-32)">
+  ERRATA · DATUM v1.0 — states gallery. Every component is defined once and
+  cloned into both panes, so the two themes cannot drift apart in the source.
+  Screenshot-diff target for CI (§13.5).
+</footer>
+
+<script>
+/* Clone each component's <template> into a light pane and a dark pane. One
+   definition, two themes — the panes are theme islands, which tokens.css
+   supports by declaring the semantic layer on `[data-theme]` as well as on
+   `:root`. */
+document.querySelectorAll('.spec').forEach(function (spec) {
+  var panes = spec.querySelector('.panes');
+  var tpl = spec.querySelector('template');
+  [['light', 'THE LIGHT TABLE — product default'],
+   ['dark', 'THE VAULT']].forEach(function (t) {
+    var pane = document.createElement('div');
+    pane.className = 'pane';
+    pane.setAttribute('data-theme', t[0]);
+    var label = document.createElement('span');
+    label.className = 'pane-label t-meta';
+    label.textContent = t[1];
+    pane.appendChild(label);
+    pane.appendChild(tpl.content.cloneNode(true));
+    panes.appendChild(pane);
+  });
+  // Names must stay unique across the two clones.
+  var n = 0;
+  panes.querySelectorAll('input[name]').forEach(function (i) { i.name += '-' + (n++); });
+  panes.querySelectorAll('.ind').forEach(function (i) { i.indeterminate = true; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — DATUM grid &amp; specimen</title>
+<meta name="description" content="FE-2 deliverable. The datum, the 16-column grid, the 9/7 asymmetry, poché, the spacing scale and the type scale, all overlaid on the thing they govern.">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/type.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+
+<style>
+/* The column overlay. Not a component — a drafting aid, which is why it lives
+   on this page and not in components.css. */
+.col-overlay {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  opacity: 0; transition: opacity var(--m-base) var(--ease-out);
+}
+[data-cols="on"] .col-overlay { opacity: 1; }
+.col-overlay .shell, .col-overlay .grid { height: 100%; }
+.col-overlay .col { background: var(--signal-wash-2); }
+
+.rule { height: var(--w-hair); background: var(--edge-hair); }
+.swatch { height: var(--s-56); border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-paper); }
+.token-row { display: grid; grid-template-columns: var(--s-56) 1fr auto; gap: var(--s-16); align-items: center; }
+.space-bar { background: var(--signal); height: var(--s-8); }
+.spec-line { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: var(--s-24); align-items: baseline; padding-block: var(--s-16); border-bottom: var(--w-hair) solid var(--edge-hair); }
+.spec-line > .spec-meta { color: var(--text-3); white-space: nowrap; }
+.demo-block { background: var(--surface-1); border: var(--w-hair) solid var(--edge-hair); padding: var(--s-16); }
+</style>
+</head>
+
+<body class="datum-field">
+<a class="skip-link t-body" href="#main">Skip to content</a>
+
+<div class="datum" aria-hidden="true"></div>
+
+<div class="col-overlay datum-field" aria-hidden="true">
+  <div class="shell"><div class="grid" id="overlay-grid"></div></div>
+</div>
+
+<header class="site-header">
+  <div>
+    <div class="wordmark">ERRATA · DATUM — GRID &amp; SPECIMEN</div>
+    <div class="t-micro u-dimmer">FE-2 · §5 type · §8 grid, space, alignment</div>
+  </div>
+  <div style="display:flex;gap:var(--s-16);align-items:center">
+    <button class="btn btn--quiet" id="cols-btn" aria-pressed="false">Show columns</button>
+    <div class="theme-toggle" data-theme-toggle>
+      <button type="button" data-mode="system">Sys</button>
+      <button type="button" data-mode="light">Light</button>
+      <button type="button" data-mode="dark">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="shell">
+
+  <!-- ── THE DATUM ─────────────────────────────────────────────────────── -->
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">01</span>
+    <h1 class="t-d3">The datum</h1>
+    <p class="t-lead" style="margin-top:var(--s-24)">
+      One vertical hairline at column 5 of 16, running the full height of every
+      page, uninterrupted, behind all content.
+    </p>
+    <div class="claim-evidence" style="margin-top:var(--s-40)">
+      <div class="claim u-stack-16">
+        <p class="t-body u-dim">
+          Left of it is <strong>claim</strong> — what we say. Right of it is
+          <strong>evidence</strong> — what backs it. It never moves, never
+          breaks, and appears on every page including 404. Once it exists,
+          layout decisions stop being arbitrary, which is the entire reason an
+          architect draws a datum.
+        </p>
+        <p class="t-body u-dim">
+          Its position is derived, not typed. With 16 columns of width
+          <span class="fact">c</span> and gutter <span class="fact">g</span>
+          across a content track of width <span class="fact">W</span>, the left
+          edge of column 5 is
+          <span class="fact">4(c + g)</span>, and
+          <span class="fact">c = (W − 15g) / 16</span>. Change the gutter token
+          and the datum follows; nobody re-measures anything.
+        </p>
+        <p class="t-body-s u-dimmer">
+          Below <span class="fact">lg</span> there are not 16 columns. The datum
+          then holds its <em>proportion</em> of the content measure rather than
+          snapping to a column that does not exist.
+        </p>
+      </div>
+      <div class="evidence">
+        <div class="document">
+          <div class="t-col" style="color:var(--p-bone-700)">Claim / evidence, 9 : 7</div>
+          <p class="t-body-s" style="margin-top:var(--s-16)">
+            This block sits in the evidence columns. Every content section and
+            every product screen splits 9 / 7 across the page — never 50/50,
+            because symmetry is passive and kills hierarchy. Visitors are
+            trained by the layout before they ever reach the product.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── THE GRID ──────────────────────────────────────────────────────── -->
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">02</span>
+    <h2 class="t-d3">The structural grid</h2>
+    <div class="table-wrap" style="margin-top:var(--s-32)">
+      <table class="table">
+        <thead><tr><th>Breakpoint</th><th class="num">Columns</th><th class="num">Content max</th><th class="num">Gutter</th><th class="num">Margin</th></tr></thead>
+        <tbody>
+          <tr><td>xs &lt; 480</td><td class="num">4</td><td class="num">fluid</td><td class="num">16</td><td class="num">20</td></tr>
+          <tr><td>sm 480–767</td><td class="num">6</td><td class="num">fluid</td><td class="num">18</td><td class="num">24</td></tr>
+          <tr><td>md 768–1023</td><td class="num">12</td><td class="num">720</td><td class="num">20</td><td class="num">32</td></tr>
+          <tr><td>lg 1024–1439</td><td class="num">16</td><td class="num">1080</td><td class="num">20</td><td class="num">64</td></tr>
+          <tr><td>xl 1440–1919</td><td class="num">16</td><td class="num">1288</td><td class="num">24</td><td class="num">112</td></tr>
+          <tr><td>2xl ≥ 1920</td><td class="num">16</td><td class="num">1440</td><td class="num">24</td><td class="num">160</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="t-body-s u-dimmer" style="margin-top:var(--s-16)">
+      Press <span class="fact">Show columns</span> in the header, or the key
+      <span class="fact">G</span>, to lay the live grid over this page. The
+      overlay reads its column count from the same token the layout does — if
+      they ever disagree, the overlay is telling the truth.
+    </p>
+  </section>
+
+  <!-- ── SPACING ───────────────────────────────────────────────────────── -->
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">03</span>
+    <h2 class="t-d3">The spacing scale</h2>
+    <p class="t-body u-dim" style="margin-top:var(--s-24);max-width:62ch">
+      A closed set. No other spacing value exists — that is a LAW, and
+      <span class="fact">tools/lint-tokens.py</span> fails the build on a
+      literal that is not in it. Baseline grid 8px; type sits on a 4px sub-grid.
+    </p>
+    <div class="u-stack-8" style="margin-top:var(--s-32)" id="space-scale"></div>
+  </section>
+
+  <!-- ── TYPE ──────────────────────────────────────────────────────────── -->
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">04</span>
+    <h2 class="t-d3">The type scale</h2>
+    <p class="t-body u-dim" style="margin-top:var(--s-24);max-width:62ch">
+      Two ratios, because editorial and interface have different jobs: Perfect
+      Fourth <span class="fact">1.333</span> anchored at 18px for editorial,
+      Minor Third <span class="fact">1.200</span> anchored at 15px for
+      interface. Tracking is not chosen by eye — it comes off a curve,
+      <span class="fact">−0.0165 + 0.29/size</span>, and every value below is
+      that formula evaluated and rounded.
+    </p>
+
+    <div class="substitution-note demo-block t-body-s" style="margin-top:var(--s-24);border-left:var(--w-reveal) solid var(--signal);background:var(--signal-wash);max-width:62ch">
+      <strong>Rendering in fallback.</strong> Redaction, Apfel Grotezk and
+      Sligoil are not in this repository. The sizes, leadings, tracking and
+      measure below are real and judgeable; the letterforms are stand-ins. See
+      <span class="fact">fonts/README.md</span>.
+    </div>
+
+    <div style="margin-top:var(--s-40)">
+      <div class="spec-line"><span class="t-d3 is-unverified">Your catalog is a reflection</span><span class="spec-meta t-micro">d-3 · Redaction 20 · 76/76 · −.0127em</span></div>
+      <div class="spec-line"><span class="t-d4">the thing it claims to reflect</span><span class="spec-meta t-micro">d-4 · Redaction 20 Italic · 54/60 · −.0111em</span></div>
+      <div class="spec-line"><span class="t-h1">Evidence, not extraction</span><span class="spec-meta t-micro">h-1 · Apfel Fett · 40/44 · −.0093em</span></div>
+      <div class="spec-line"><span class="t-h2">The 49-point gap</span><span class="spec-meta t-micro">h-2 · Apfel Mittel · 28/34 · −.0061em</span></div>
+      <div class="spec-line"><span class="t-h3">Grounding, word-level</span><span class="spec-meta t-micro">h-3 · Apfel Mittel · 20/27 · −.0020em</span></div>
+      <div class="spec-line"><span class="t-h4">Operating point</span><span class="spec-meta t-micro">h-4 · Apfel Mittel · 16/22 · +.0016em</span></div>
+      <div class="spec-line"><span class="t-lead">It grades data. It does not create data.</span><span class="spec-meta t-micro">lead · Redaction 0 · 22/34 · −.0033em · 44–52ch</span></div>
+      <div class="spec-line"><span class="t-body">Errata ingests a catalog and the source documents behind it, independently re-derives every attribute, and emits a ranked list of records where the catalog and the evidence disagree — with the evidence attached.</span><span class="spec-meta t-micro">body · Apfel · 15/24 · +.0028em · 62–72ch</span></div>
+      <div class="spec-line"><span class="t-body-s">Dense prose and help text. The measure is the same; the size is not.</span><span class="spec-meta t-micro">body-s · Apfel · 13/20 · +.0058em</span></div>
+      <div class="spec-line"><span class="t-data">16 A · 400 V · IP66 · 0.8600 · 1,426</span><span class="spec-meta t-micro">data · Sligoil · 14/20 · +.0042em · tabular, slashed zero</span></div>
+      <div class="spec-line"><span class="t-data-s">4C-M-16-66 · spans 1226–1230 · conf 0.86</span><span class="spec-meta t-micro">data-s · Sligoil · 12/17 · +.0077em</span></div>
+      <div class="spec-line"><span class="t-col">Type designation</span><span class="spec-meta t-micro">col · Sligoil Micro · 11/14 · +.10em uc</span></div>
+      <div class="spec-line"><span class="t-meta">Verification layer</span><span class="spec-meta t-micro">meta · Sligoil Micro · 10/14 · +.14em uc</span></div>
+      <div class="spec-line"><span class="t-micro">HAER PA,51-PITBU,1--12 · retrieved 2026-08-21</span><span class="spec-meta t-micro">micro · Sligoil Micro · 9/12 · +.16em uc</span></div>
+    </div>
+
+    <h3 class="t-h3" style="margin-top:var(--s-56)">The degradation axis</h3>
+    <p class="t-body u-dim" style="margin-top:var(--s-16);max-width:62ch">
+      Four cuts of one family, used semantically. A visitor scrolling from hero
+      to evidence watches the type sharpen as the claim becomes grounded. With
+      the files absent these four lines are currently identical, which is
+      itself the clearest possible statement of what FE-3 still owes.
+    </p>
+    <div class="u-stack-16" style="margin-top:var(--s-24)">
+      <div class="spec-line"><span class="t-h2 is-source">IP66 — the source says so</span><span class="spec-meta t-micro">Redaction 0 · ground truth</span></div>
+      <div class="spec-line"><span class="t-h2 is-derived">IP66 — we derived it, calibrated</span><span class="spec-meta t-micro">Redaction 20 · high confidence</span></div>
+      <div class="spec-line"><span class="t-h2 is-unverified">IP54 — the catalog claims it</span><span class="spec-meta t-micro">Redaction 50 · unverified</span></div>
+      <div class="spec-line"><span class="t-h2 is-void">IP?? — unreadable as record</span><span class="spec-meta t-micro">Redaction 100 · corrupted</span></div>
+    </div>
+  </section>
+
+  <!-- ── COLOUR ────────────────────────────────────────────────────────── -->
+  <section class="rhythm-m poche">
+    <span class="poche-mark t-micro">05</span>
+    <h2 class="t-d3">The semantic layer</h2>
+    <p class="t-body u-dim" style="margin-top:var(--s-24);max-width:62ch">
+      Components never reference a palette value. These are the tokens they may
+      touch, in the theme you are currently in. Every text pair below is
+      asserted in CI against the <em>worst</em> ground it may legally land on —
+      run <span class="fact">python web/datum/tools/contrast.py</span>.
+    </p>
+    <div class="u-stack-8" style="margin-top:var(--s-32)" id="colour-tokens"></div>
+  </section>
+
+</main>
+
+<footer class="shell site-footer t-micro">
+  ERRATA · DATUM v1.0 — grid and specimen. FE-2 design development.
+</footer>
+
+<script src="theme.js"></script>
+<script>
+/* Column overlay — built from the same token the layout reads, so it cannot
+   drift from the grid it is drawing. */
+(function () {
+  var grid = document.getElementById('overlay-grid');
+  function build() {
+    var n = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--grid-cols'), 10) || 4;
+    if (grid.childElementCount === n) return;
+    grid.innerHTML = '';
+    for (var i = 0; i < n; i++) {
+      var d = document.createElement('div');
+      d.className = 'col';
+      grid.appendChild(d);
+    }
+  }
+  build();
+  addEventListener('resize', build);
+
+  var btn = document.getElementById('cols-btn');
+  function toggle() {
+    var on = document.documentElement.getAttribute('data-cols') === 'on';
+    document.documentElement.setAttribute('data-cols', on ? 'off' : 'on');
+    btn.setAttribute('aria-pressed', String(!on));
+    btn.textContent = on ? 'Show columns' : 'Hide columns';
+  }
+  btn.addEventListener('click', toggle);
+  addEventListener('keydown', function (e) {
+    if (e.key === 'g' || e.key === 'G') {
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      toggle();
+    }
+  });
+})();
+
+/* The spacing scale, drawn from the tokens rather than retyped. */
+(function () {
+  var vals = [2, 4, 8, 12, 16, 24, 32, 40, 56, 72, 96, 128, 160, 224];
+  var host = document.getElementById('space-scale');
+  vals.forEach(function (v) {
+    var row = document.createElement('div');
+    row.className = 'token-row';
+    row.innerHTML =
+      '<span class="t-micro u-dimmer">--s-' + v + '</span>' +
+      '<span class="space-bar" style="width:var(--s-' + v + ')"></span>' +
+      '<span class="t-data-s u-dim">' + v + 'px</span>';
+    host.appendChild(row);
+  });
+})();
+
+/* The semantic tokens, read live out of the cascade. */
+(function () {
+  var tokens = [
+    '--bg-void', '--surface-1', '--surface-2', '--surface-3',
+    '--text-1', '--text-2', '--text-3', '--text-disabled',
+    '--signal', '--signal-text', '--signal-wash', '--settled',
+    '--evidence-bg', '--evidence-text', '--span-field', '--focus-ring'
+  ];
+  var host = document.getElementById('colour-tokens');
+  function paint() {
+    host.innerHTML = '';
+    var cs = getComputedStyle(document.body);
+    tokens.forEach(function (t) {
+      var row = document.createElement('div');
+      row.className = 'token-row';
+      row.innerHTML =
+        '<span class="swatch" style="background:var(' + t + ')"></span>' +
+        '<span class="t-data-s">' + t + '</span>' +
+        '<span class="t-micro u-dimmer">' + cs.getPropertyValue(t).trim() + '</span>';
+      host.appendChild(row);
+    });
+  }
+  paint();
+  document.documentElement.addEventListener('datum:theme', paint);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errata — reviewer console</title>
+<meta name="description" content="The three-pane reviewer console. Queue, evidence, claim.">
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('errata-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="../datum/styles/tokens.css">
+<link rel="stylesheet" href="../datum/styles/type.css">
+<link rel="stylesheet" href="../datum/styles/base.css">
+<link rel="stylesheet" href="../datum/styles/components.css">
+<link rel="stylesheet" href="../site/shell.css">
+<link rel="stylesheet" href="console.css">
+</head>
+
+<body class="app">
+
+<a class="skip-link t-body" href="#queue">Skip to the queue</a>
+
+<!-- Screen-reader announcements. Decisions, navigation and errors are spoken here, because a
+     keyboard-first tool that says nothing when it acts is only usable by people who can see it
+     act. -->
+<div class="u-sr-only" role="status" aria-live="polite" id="say"></div>
+
+<div class="console">
+
+  <!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
+  <header class="console-head">
+    <div class="head-group">
+      <a class="wordmark" href="../site/">ERRATA</a>
+      <span class="head-sep" aria-hidden="true"></span>
+      <span class="t-micro u-dimmer">Reviewer console</span>
+    </div>
+
+    <div class="head-group head-centre">
+      <!-- Progress, not a spinner. A reviewer wants to know how much is left, and a triage
+           session with no visible end is the thing that makes people stop halfway. -->
+      <div class="progress" id="progress" title="Findings decided in this catalog">
+        <div class="progress-rail"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="t-micro" id="progress-label">—</span>
+      </div>
+    </div>
+
+    <div class="head-group">
+      <span class="verify t-micro" id="verify" data-state="idle">
+        <span class="verify-dot" aria-hidden="true"></span>
+        <span id="verify-text">bundle</span>
+      </span>
+
+      <button class="chip" id="identity-btn" title="Who is deciding, and in what role (FR-9.3)">
+        <span class="chip-dot" aria-hidden="true"></span>
+        <span id="identity-label">Set reviewer</span>
+      </button>
+
+      <span class="timer t-data-s" id="timer" data-paused="false"
+            title="FR-9.3 reviewer-seconds. Pauses when the window loses focus.">0.0 s</span>
+
+      <button class="icon-btn" id="help-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
+
+      <div class="theme-toggle" data-theme-toggle>
+        <button type="button" data-mode="system">Sys</button>
+        <button type="button" data-mode="light">Light</button>
+        <button type="button" data-mode="dark">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ PANES ════════════════════════════════════════════════════════ -->
+  <div class="panes">
+
+    <!-- ── 1 · QUEUE (FR-7.5) ──────────────────────────────────────── -->
+    <section class="pane pane--queue" id="queue" aria-labelledby="queue-h">
+      <div class="pane-head">
+        <h2 class="t-col" id="queue-h">Queue</h2>
+        <div class="tabs tabs--compact" role="tablist" aria-label="Filter the queue">
+          <button class="tab" role="tab" aria-selected="true" data-filter="undecided">To do</button>
+          <button class="tab" role="tab" aria-selected="false" data-filter="all">All</button>
+          <button class="tab" role="tab" aria-selected="false" data-filter="decided">Done</button>
+        </div>
+      </div>
+      <div class="queue" id="queue-list" role="listbox" aria-label="Findings" tabindex="0"></div>
+      <p class="pane-body t-micro u-dimmer" id="queue-note"></p>
+    </section>
+
+    <!-- ── 2 · EVIDENCE (FR-7.2 / FR-7.3) ──────────────────────────── -->
+    <section class="pane pane--evidence" aria-labelledby="ev-h">
+      <div class="pane-head">
+        <h2 class="t-col" id="ev-h">Evidence</h2>
+        <div class="head-group">
+          <span class="t-micro u-dimmer" id="ev-source">—</span>
+          <span class="zoom-controls">
+            <button class="icon-btn" id="zoom-out" aria-label="Zoom out" title="Zoom out (−)">−</button>
+            <span class="t-micro u-dimmer" id="zoom-label">Fit</span>
+            <button class="icon-btn" id="zoom-in" aria-label="Zoom in" title="Zoom in (+)">+</button>
+            <button class="icon-btn" id="zoom-fit" aria-label="Centre on the evidence" title="Centre on the evidence (f)">⤢</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sheet-wrap" id="sheet-wrap">
+        <!-- The raster is presentational and the TEXT LAYER is the accessible representation of
+             the page. The other way round leaves a screen-reader user with a page number and no
+             evidence, on a product whose whole premise is showing the evidence. The overlay is
+             hidden because the marks are decoration: what they mean is stated in words in the
+             claim pane. -->
+        <div class="sheet" id="sheet">
+          <img id="page-img" alt="" role="presentation">
+          <div class="textlayer" id="textlayer" role="document" tabindex="0"
+               aria-label="Source document text, as extracted."></div>
+          <svg class="overlay" id="overlay" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg>
+        </div>
+        <div class="sheet-skeleton" id="sheet-skeleton" aria-hidden="true"></div>
+      </div>
+
+      <div class="pane-body">
+        <div class="legend t-micro" aria-label="How the marks are drawn">
+          <div class="legend-row">
+            <svg viewBox="0 0 34 14" width="34" height="14" aria-hidden="true"><rect class="mark-value" x="2" y="2" width="30" height="10"/><line class="mark-reveal" x1="2" y1="2" x2="2" y2="12"/></svg>
+            <span><strong>The value.</strong> The only colour on the page.</span>
+          </div>
+          <div class="legend-row">
+            <svg viewBox="0 0 34 14" width="34" height="14" aria-hidden="true"><path class="mark-header" d="M4 3 H2 V11 H4"/><path class="mark-header" d="M30 3 H32 V11 H30"/><line class="mark-leader" x1="4" y1="7" x2="30" y2="7"/></svg>
+            <span><strong>Its headers</strong>, bracketed, with a leader back to the value — the notation a drawing uses to dimension a feature (FR-7.3).</span>
+          </div>
+          <div class="legend-row">
+            <svg viewBox="0 0 34 14" width="34" height="14" aria-hidden="true"><rect class="mark-counter" x="2" y="2" width="30" height="10"/></svg>
+            <span><strong>Counter-evidence.</strong> Dotted, because it is the opposite claim (FR-7.4).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3 · CLAIM (FR-7.1 / 7.4 / 7.6 / 8.4) ────────────────────── -->
+    <section class="pane pane--claim" aria-labelledby="claim-h">
+      <div class="pane-head">
+        <h2 class="t-col" id="claim-h">Claim</h2>
+        <span class="t-micro u-dimmer" id="claim-attr">—</span>
+      </div>
+      <div id="detail" class="claim-body"></div>
+
+      <!-- The decision bar is sticky. On a tool measured in reviewer-seconds, a control that
+           scrolls away is a control the reviewer has to go and find. -->
+      <div class="decision-bar" id="decision-bar" hidden></div>
+    </section>
+
+  </div>
+
+  <footer class="console-foot">
+    <span class="t-micro u-dimmer" id="provenance">—</span>
+    <span class="t-micro u-dimmer">Errata grades data. It does not create data — no path here writes to a catalog (ADR-001).</span>
+  </footer>
+
+</div>
+
+<div class="toast-region" id="toasts"></div>
+
+<!-- ═══ IDENTITY ═══════════════════════════════════════════════════════
+     Asked once, stored in this browser. The ROLE is not a formality: the
+     reviewer-seconds harness refuses to produce a rate from anyone who built
+     the tool, so a console that quietly recorded everyone as the same thing
+     would hand that harness numbers it must throw away. -->
+<dialog class="sheet-dialog" id="identity-dialog" aria-labelledby="id-h">
+  <form method="dialog" class="dialog-body" id="identity-form">
+    <h2 class="t-h3" id="id-h">Who is deciding?</h2>
+    <p class="t-body-s u-dim">Recorded with every decision, immutably (FR-7.6). Stored in this browser only — there is no account and no server-side identity.</p>
+
+    <label class="field">
+      <span class="field-label t-col">Name</span>
+      <input class="input" id="identity-name" required autocomplete="off" placeholder="R. Vogel">
+    </label>
+
+    <fieldset class="fieldset">
+      <legend class="field-label t-col">Role</legend>
+      <label class="radio"><input type="radio" name="role" value="domain_reviewer" checked><span class="dot"></span>
+        <span><span class="t-body">Domain reviewer</span><br><span class="t-micro u-dimmer">Maintains or buys this product data. Decisions count toward FR-9.3.</span></span></label>
+      <label class="radio"><input type="radio" name="role" value="implementer"><span class="dot"></span>
+        <span><span class="t-body">Implementer</span><br><span class="t-micro u-dimmer">Built this tool. Decisions are recorded but <strong>excluded</strong> from the reviewer-seconds rate — an author's opinion of the author's boxes is not a measurement.</span></span></label>
+    </fieldset>
+
+    <div class="dialog-actions">
+      <button class="btn btn--quiet" value="cancel" type="submit" formnovalidate>Cancel</button>
+      <button class="btn" value="save" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ═══ SHORTCUTS ══════════════════════════════════════════════════════ -->
+<dialog class="sheet-dialog" id="help-dialog" aria-labelledby="help-h">
+  <div class="dialog-body">
+    <h2 class="t-h3" id="help-h">Keyboard</h2>
+    <p class="t-body-s u-dim">This tool is measured in reviewer-seconds. Every one of these exists so a decision never needs the mouse.</p>
+    <dl class="keys" id="keys-list"></dl>
+    <div class="dialog-actions">
+      <button class="btn" id="help-close" autofocus>Close</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ═══ COMMAND PALETTE ════════════════════════════════════════════════
+     Shares the Menu renderer, as §13.4 specifies: one list, two entry points. -->
+<dialog class="palette-dialog" id="palette" aria-label="Command palette">
+  <div class="palette">
+    <input class="palette-input" id="palette-input" placeholder="Jump to a record, or run a command…" autocomplete="off" aria-label="Command palette">
+    <div class="menu" id="palette-list" role="listbox" aria-label="Commands"></div>
+    <div class="palette-foot t-micro u-dimmer">↑↓ move · ⏎ run · esc close</div>
+  </div>
+</dialog>
+
+<script src="../datum/theme.js"></script>
+<script src="console.js"></script>
+</body>
+</html>

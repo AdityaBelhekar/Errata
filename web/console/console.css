@@ -1,0 +1,257 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERRATA CONSOLE — FE-7
+
+   The three-pane reviewer console (FR-7.1): queue · evidence · claim.
+   Built on DATUM + shell.css. No colour, spacing, duration or curve literals.
+
+   THE EVIDENCE LEGEND — resolving contradiction C-1
+   -------------------------------------------------
+   FR-7.3 requires the value's cell outlined PLUS its row and column headers
+   "in a second colour"; FR-7.4 adds counter-evidence. Four simultaneous,
+   adjacent marks. Blueprint L-1 permits exactly one chromatic event and §6.8
+   forbids verdigris adjacent to signal. Both are P0.
+
+   The resolution stops encoding the distinction in HUE:
+
+     THE VALUE      signal plane + 2px reveal. The only chroma on the page.
+     ITS HEADERS    hairline BRACKETS with a leader rule back to the value —
+                    the notation an engineering drawing uses to dimension a
+                    feature. Achromatic, and it survives greyscale printing,
+                    which a second hue does not.
+     COUNTER-EVID.  a DOTTED reveal. Anastylosis reversed: the fabric arguing
+                    back. Dotted because the solid reveal means "correction".
+
+   A proposal with an implementation, not a settled answer. It needs judging
+   against FR-7.3's own criterion by a domain reviewer, not a designer.
+
+   THE UX PRINCIPLE THIS FILE IS BUILT ON
+   --------------------------------------
+   FR-9.3 measures the reviewer in SECONDS. So: nothing that matters scrolls
+   away, nothing reflows when a record changes, the decision is always three
+   keys from the reviewer's hands, and no requirement is discovered by hitting
+   an error. Prevent, do not validate.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html, body { height: 100%; }
+body.app { overflow: hidden; }
+
+.console { display: grid; grid-template-rows: auto 1fr auto; height: 100dvh; }
+
+.console-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-24);
+  padding: var(--s-8) var(--s-16);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+  background: var(--bg-void);
+}
+.head-centre { justify-self: center; }
+.console-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-24);
+  padding: var(--s-8) var(--s-16);
+  border-top: var(--w-hair) solid var(--edge-hair);
+  flex-wrap: wrap;
+}
+
+/* ── Panes ─────────────────────────────────────────────────────────────
+   Fixed track widths, not percentages: the evidence pane must not resize when
+   a queue row's sentence happens to be longer, because a page that reflows
+   under the reviewer costs a re-fixation every single record. */
+.panes {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr) 400px;
+  min-height: 0;
+}
+@media (min-width: 1800px) { .panes { grid-template-columns: 420px minmax(0, 1fr) 460px; } }
+
+.pane { min-height: 0; display: grid; grid-template-rows: auto 1fr auto; border-right: var(--w-hair) solid var(--edge-hair); }
+.pane:last-child { border-right: 0; }
+.pane > .queue, .pane > .claim-body, .pane > .sheet-wrap { overflow-y: auto; min-height: 0; }
+
+.pane-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-12);
+  padding: var(--s-8) var(--s-16);
+  border-bottom: var(--w-hair) solid var(--edge-hair);
+  background: var(--bg-void);
+  min-height: 40px;
+}
+.pane-body { padding: var(--s-12) var(--s-16); border-top: var(--w-hair) solid var(--edge-hair); }
+
+.tabs--compact { border: 0; gap: var(--s-12); }
+.tabs--compact .tab { padding: var(--s-4) 0; font-size: 12px; }
+
+@media (max-width: 1200px) {
+  body.app { overflow: auto; }
+  .console { height: auto; }
+  .panes { grid-template-columns: 1fr; }
+  .pane { border-right: 0; border-bottom: var(--w-hair) solid var(--edge-hair); }
+  .pane > .queue, .pane > .claim-body, .pane > .sheet-wrap { overflow: visible; }
+  .decision-bar { position: static; }
+}
+
+/* ── Queue ─────────────────────────────────────────────────────────────── */
+
+.queue { border: 0; border-radius: var(--r-paper); background: transparent; display: block; }
+.queue:focus-visible { outline: var(--w-reveal) solid var(--focus-ring); outline-offset: -2px; }
+.queue-row { border-radius: var(--r-paper); scroll-margin: var(--s-24); }
+.queue-row + .queue-row { border-top: var(--w-hair) solid var(--edge-hair); }
+
+/* The active row. A left reveal rather than a fill, so it reads as "you are
+   here" and never competes with the signal plane that means "disputed". */
+.queue-row[aria-selected="true"] { background: var(--surface-3); }
+.queue-row[aria-selected="true"]::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: var(--w-reveal); background: var(--text-1);
+}
+.queue-row { position: relative; }
+
+/* A decided row is settled, not gone. It stays legible: hiding it would make
+   "what did I already do" unanswerable without changing filter. */
+.queue-row[data-decided] { opacity: .62; }
+.queue-row[data-decided]:hover, .queue-row[data-decided][aria-selected="true"] { opacity: 1; }
+.decided-mark {
+  display: inline-flex; align-items: center; gap: var(--s-4);
+  color: var(--settled);
+}
+.decided-mark[data-decision="keep_catalog"] { color: var(--text-2); }
+.decided-mark[data-decision="escalate"] { color: var(--signal-text); }
+
+.queue-empty { padding: var(--s-40) var(--s-16); display: grid; gap: var(--s-8); text-align: center; color: var(--text-3); }
+
+/* ── Evidence ──────────────────────────────────────────────────────────── */
+
+.pane--evidence { background: var(--surface-3); }
+.sheet-wrap { padding: var(--s-24); display: grid; justify-items: center; align-content: start; position: relative; }
+
+.sheet {
+  position: relative;
+  /* A size container so the text layer can size words in `cqh` — 1% of this
+     element's height — and track the page at every zoom with no resize JS. */
+  container-type: size;
+  width: 100%;
+  background: var(--evidence-bg);
+  border: var(--w-hair) solid var(--evidence-edge);
+  box-shadow: var(--shadow-2);
+}
+.sheet > img { width: 100%; display: block; }
+.sheet[data-loading="true"] { visibility: hidden; }
+
+.sheet-skeleton {
+  position: absolute; top: var(--s-24); left: var(--s-24); right: var(--s-24);
+  aspect-ratio: 1191 / 1684;
+  background: var(--evidence-bg);
+  border: var(--w-hair) solid var(--evidence-edge);
+  display: none;
+}
+.sheet-wrap[data-loading="true"] .sheet-skeleton { display: block; }
+
+/* L-6: the page is an image because a page IS an image, and the TEXT over it
+   is real selectable DOM at device resolution. */
+.textlayer { position: absolute; inset: 0; overflow: hidden; line-height: 1; -webkit-user-select: text; user-select: text; }
+.textlayer:focus-visible { outline: var(--w-reveal) solid var(--focus-ring); outline-offset: 2px; }
+.textlayer > span {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  transform-origin: 0 0;
+  line-height: 1;
+  cursor: text;
+}
+.textlayer > span::selection { background: var(--span-field); color: transparent; }
+
+.overlay { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+
+/* THE VALUE — the only chroma. A plane, not an outline (§6.8). */
+.mark-value { fill: var(--signal); fill-opacity: .16; stroke: var(--signal); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.mark-reveal { stroke: var(--signal); stroke-width: 2; vector-effect: non-scaling-stroke; }
+
+/* THE HEADERS — brackets and a leader. Achromatic by construction. */
+.mark-header { fill: none; stroke: var(--evidence-text); stroke-width: 1; stroke-opacity: .55; vector-effect: non-scaling-stroke; }
+.mark-leader { stroke: var(--evidence-text); stroke-width: 1; stroke-opacity: .3; stroke-dasharray: 1 3; vector-effect: non-scaling-stroke; }
+
+/* COUNTER-EVIDENCE — the dotted reveal. */
+.mark-counter { fill: none; stroke: var(--signal); stroke-width: 2; stroke-dasharray: 3 3; stroke-opacity: .8; vector-effect: non-scaling-stroke; }
+
+/* A one-shot pulse when a record loads, so the eye is taken to the value
+   instead of hunting for it. Motion is the cheapest possible wayfinding and
+   the most expensive possible decoration; this is the former, it runs once,
+   and reduced-motion removes it entirely. */
+.mark-value { animation: find var(--m-reveal) var(--ease-out) 1; }
+@keyframes find { from { fill-opacity: .42; } to { fill-opacity: .16; } }
+@media (prefers-reduced-motion: reduce) { .mark-value { animation: none; } }
+
+.legend { display: grid; gap: var(--s-8); }
+.legend-row { display: grid; grid-template-columns: 34px 1fr; gap: var(--s-12); align-items: center; }
+.legend svg { overflow: visible; }
+.zoom-controls { display: inline-flex; gap: var(--s-4); align-items: center; }
+
+/* ── Claim ─────────────────────────────────────────────────────────────── */
+
+.claim-body { display: block; }
+.block { padding: var(--s-16); border-bottom: var(--w-hair) solid var(--edge-hair); }
+.block-title { color: var(--text-3); display: block; margin-bottom: var(--s-12); }
+
+/* FR-8.4 — four factors, separately. A reviewer given one score has a number,
+   not a reason. */
+.factors { display: grid; gap: var(--s-8); }
+.factor { display: grid; grid-template-columns: 1fr auto; gap: var(--s-12); align-items: baseline; }
+.factor > .f-name { color: var(--text-2); }
+.factor > .f-value { font-family: var(--f-data); font-variant-numeric: tabular-nums slashed-zero; }
+.factor[data-safety="true"] > .f-value { color: var(--signal-text); }
+.factor-total { border-top: var(--w-hair) solid var(--edge-hair); padding-top: var(--s-8); }
+
+/* FR-7.4 — never empty, never absent. */
+.counter-panel { border-left: var(--w-reveal) dotted var(--signal); padding-left: var(--s-12); color: var(--text-2); }
+
+.evidence-item { display: grid; gap: var(--s-4); padding-block: var(--s-8); }
+.evidence-item + .evidence-item { border-top: var(--w-hair) solid var(--edge-hair); }
+
+/* ── The decision bar ──────────────────────────────────────────────────── */
+
+.decision-bar {
+  border-top: var(--w-hair) solid var(--edge-strong);
+  background: var(--surface-1);
+  padding: var(--s-12) var(--s-16);
+  display: grid; gap: var(--s-12);
+  box-shadow: 0 calc(-1 * var(--w-hair)) 0 var(--edge-lift);
+}
+.decision-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s-8); }
+.decision-row .btn { justify-content: center; padding-inline: var(--s-8); }
+.btn > .k { color: var(--text-3); font-family: var(--f-data-micro); font-size: 9px; letter-spacing: .16em; }
+
+/* FR-8.9 — dual control, surfaced BEFORE the click. The domain model refuses a
+   single signature on a safety-class attribute; discovering that as a server
+   error after deciding would be a wall the reviewer could have been shown. */
+.two-sig {
+  display: grid; gap: var(--s-8);
+  padding: var(--s-12);
+  border-left: var(--w-reveal) solid var(--signal);
+  background: var(--signal-wash);
+}
+.two-sig[hidden] { display: none; }
+
+.decided-state {
+  display: grid; gap: var(--s-8);
+  padding: var(--s-12);
+  border-left: var(--w-reveal) solid var(--settled);
+  background: var(--settled-wash);
+}
+
+.empty-state { padding: var(--s-56) var(--s-24); text-align: center; color: var(--text-3); display: grid; gap: var(--s-8); }
+
+/* ── View transitions ──────────────────────────────────────────────────
+   Switching records cross-fades the two panes that change instead of
+   repainting them, so the reviewer's eye is not thrown back to the top of the
+   page. The platform does it; there is no animation library here. */
+@view-transition { navigation: none; }
+::view-transition-old(claim), ::view-transition-new(claim),
+::view-transition-old(evidence), ::view-transition-new(evidence) {
+  animation-duration: var(--m-base);
+  animation-timing-function: var(--ease-out);
+}
+.pane--claim { view-transition-name: claim; }
+.sheet { view-transition-name: evidence; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
