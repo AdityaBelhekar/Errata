@@ -148,13 +148,23 @@ EXTERNAL_NAV: tuple[tuple[str, str], ...] = (
 
 
 def _nav(current: Page) -> str:
-    """The primary nav.
+    """The primary nav: a plain wrapping row, and deliberately not a disclosure.
 
-    Mobile collapse is a ``<details>`` element rather than a scripted disclosure. It opens with no
-    JavaScript, it is focusable and operable from the keyboard without any code of ours, and it
-    announces its own expanded state to a screen reader -- three things a scripted `div` gets wrong
-    by default. L-7 says navigation is keyboard-reachable with the canvas deleted; the cheapest way
-    to keep that true is not to write the widget.
+    This WAS a ``<details>`` disclosure, chosen so the mobile collapse would need no JavaScript.
+    It did not render. A closed ``<details>`` gets a zero-size box from the UA stylesheet and
+    hides its non-summary children, so hiding the ``<summary>`` above the breakpoint left the
+    element shut with no way to open it -- eight nav links laid out at 25x24 each inside a
+    container 0 pixels wide, painting nothing. The whole site navigation was invisible on
+    desktop.
+
+    Found by opening the page and looking at it. None of the 437 automated tests caught it: the
+    links had non-zero boxes, so the keyboard and target-size checks passed on elements that were
+    never painted.
+
+    The replacement is the simplest thing that works at every width: one flex row with
+    ``flex-wrap``. It needs no JavaScript, has no state to get wrong, and at 375px it wraps to a
+    second line instead of collapsing. A disclosure was solving a problem eight items of micro
+    type do not have.
     """
     links = []
     for page in PAGES:
@@ -170,12 +180,9 @@ def _nav(current: Page) -> str:
     return f"""<nav class="site-nav" aria-label="Primary">
   <a class="wordmark" href="{BASE}/site/">ERRATA</a>
 
-  <details class="nav-disclosure">
-    <summary class="t-micro" aria-label="Menu">Menu</summary>
-    <div class="nav-links t-micro">
+  <div class="nav-links t-micro">
       {link_html}
-    </div>
-  </details>
+  </div>
 
   <div class="theme-toggle" data-theme-toggle>
     <button type="button" data-mode="system">Sys</button>

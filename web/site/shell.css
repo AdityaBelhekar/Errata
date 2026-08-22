@@ -144,47 +144,22 @@ kbd {
 @keyframes skel { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .skel--pulse { animation: none; opacity: .7; } }
 
-/* ── Responsive primary nav — the disclosure ───────────────────────────────
-   The link row collapses into a <details> below the tablet breakpoint.
+/* ── Responsive primary nav ────────────────────────────────────────────────
+   One wrapping flex row at every width.
 
-   A <details> rather than a scripted menu, deliberately: it opens with no
-   JavaScript, it is keyboard-operable without any code of ours, and it reports
-   its own expanded state to a screen reader. L-7 says navigation stays reachable
-   with the canvas deleted; the cheapest way to keep that true is not to write
-   the widget at all.
+   This was a `<details>` disclosure so the mobile collapse would need no
+   JavaScript. It did not render: a CLOSED `<details>` gets a zero-size box from
+   the UA stylesheet and hides its non-summary children, so hiding the `<summary>`
+   above the breakpoint left the element shut with no affordance to open it. The
+   links laid out at 25x24 each inside a container 0 pixels wide and painted
+   nothing — the entire site nav was invisible on desktop, and no automated test
+   caught it because the links themselves had boxes.
 
-   Above the breakpoint the <details> stops being a disclosure and becomes a
-   plain flex row — the marker is hidden and the panel is always open, so one
-   piece of markup serves both layouts and there is no second nav to drift. */
-
-.nav-disclosure { min-width: 0; }
-.nav-disclosure > summary {
-  display: none;
-  cursor: pointer;
-  list-style: none;
-  padding: var(--s-4) var(--s-8);
-  color: var(--text-2);
-  border: var(--w-hair) solid var(--edge-hair);
-  border-radius: var(--r-control);
-}
-.nav-disclosure > summary::-webkit-details-marker { display: none; }
-.nav-disclosure > summary:hover { color: var(--text-1); border-color: var(--edge-strong); }
+   Eight items of micro type do not need a disclosure. They wrap. */
 
 @media (max-width: 767px) {
-  .nav-disclosure > summary { display: inline-block; }
-  .nav-disclosure > .nav-links {
-    position: absolute;
-    left: 0; right: 0;
-    top: 100%;
-    flex-direction: column;
-    gap: var(--s-16);
-    padding: var(--s-16) var(--grid-margin);
-    background: var(--bg-void);
-    border-bottom: var(--w-hair) solid var(--edge-hair);
-  }
-  /* The nav is the positioning context for the panel above. Set here rather than
-     on .site-nav unconditionally, so the desktop layout is untouched. */
-  .site-nav { position: sticky; }
+  .site-nav { flex-wrap: wrap; row-gap: var(--s-8); }
+  .nav-links { gap: var(--s-16); }
 }
 
 /* ── Status banner ─────────────────────────────────────────────────────────

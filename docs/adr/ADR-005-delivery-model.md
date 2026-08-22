@@ -37,6 +37,22 @@ states what follows from it.
 **C.** A single Python process serves the console, the static site and the built landing page from
 one origin. There is no second runtime and no network dependency at run time.
 
+**Correction, 22 August 2026 — found by running it.** "A single Python process" is true, but there
+are **two different entry points** and this ADR originally implied one:
+
+| Entry point | Serves | Does NOT serve |
+|---|---|---|
+| `errata-audit serve` | the reviewer console rendered **server-side** as HTML, `/status`, `/ledger`, `/sku/<id>` | `/web/**` — returns 404 |
+| `python -m errata_bundle serve` | `/web/**` (site, datum, console, landing) **and** the `/api/**` bundle endpoints | server-rendered `/sku/<id>` |
+
+Both are single-process and same-origin, so the decision is unaffected. What was wrong was the
+implication that either one serves everything: `vite.config.ts` says the built landing page is
+served by "the Python console server", and there are two things that name could mean. The one it
+means is `errata_bundle.serve`.
+
+This was not caught by reading the code — it was caught by starting `errata-audit serve` and
+curling `/web/landing/`.
+
 This is what the code already does. What this ADR adds is the *consequences*, which were being
 inherited without being examined:
 

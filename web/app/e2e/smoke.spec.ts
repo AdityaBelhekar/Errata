@@ -85,6 +85,70 @@ for (const surface of SURFACES) {
   });
 }
 
+test.describe('the primary nav is actually painted', () => {
+  // The test that did not exist when it was needed.
+  //
+  // The site nav was a `<details>` disclosure whose `<summary>` was hidden above the mobile
+  // breakpoint. A CLOSED `<details>` gets a zero-size box from the UA stylesheet, so eight links
+  // laid out at 25x24 each inside a container 0 pixels WIDE and painted nothing. The entire
+  // navigation was invisible on desktop.
+  //
+  // None of the existing tests caught it, and the reason is worth stating: they all asked about
+  // the LINKS. The links were fine — present, non-zero, focusable, big enough for
+  // WCAG target-size. It was their CONTAINER that had collapsed. So this asserts the container,
+  // and asserts it the way a reader experiences it: is the row wide enough to hold what is in it.
+
+  for (const path of ['/web/site/', '/web/site/method.html', '/web/site/404.html']) {
+    test(`${path} — the nav row has real width and every link is inside it`, async ({ page }) => {
+      await page.goto(path, { waitUntil: 'load' });
+
+      const nav = page.locator('.nav-links');
+      await expect(nav).toBeVisible();
+
+      const geometry = await page.evaluate(() => {
+        const row = document.querySelector('.nav-links');
+        if (!row) return null;
+        const box = row.getBoundingClientRect();
+        const links = [...row.querySelectorAll('a')];
+        return {
+          width: box.width,
+          height: box.height,
+          count: links.length,
+          // A link painted outside its own container is a link nobody sees, whatever its rect says.
+          escaping: links.filter((a) => {
+            const r = a.getBoundingClientRect();
+            return r.right > box.right + 1 || r.left < box.left - 1;
+          }).length,
+        };
+      });
+
+      expect(geometry, `${path} has no .nav-links`).not.toBeNull();
+      expect(geometry!.count, 'the nav lost its links').toBeGreaterThan(3);
+      // The collapsed case measured 0. Anything narrower than one label is collapsed.
+      expect(geometry!.width, 'the nav row collapsed — its links are laid out but not painted')
+        .toBeGreaterThan(200);
+      expect(geometry!.height, 'the nav row has no height').toBeGreaterThan(10);
+      expect(geometry!.escaping, 'links are painting outside their own container').toBe(0);
+    });
+  }
+
+  test('the nav wraps rather than collapsing at a phone width', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/web/site/', { waitUntil: 'load' });
+    const box = await page.locator('.nav-links').boundingBox();
+    // Wrapped to more than one line, and still inside the viewport.
+    expect(box!.height).toBeGreaterThan(30);
+    expect(box!.width).toBeLessThanOrEqual(375);
+  });
+
+  test('the current page is marked in the nav', async ({ page }) => {
+    // `aria-current` is how a screen-reader user knows where they are. It is generated, so a
+    // generator change that dropped it would be silent.
+    await page.goto('/web/site/method.html', { waitUntil: 'load' });
+    await expect(page.locator('.nav-links a[aria-current="page"]')).toHaveText('Method');
+  });
+});
+
 test.describe('the degradation ladder', () => {
   test('?nogl=1 renders the page with no canvas at all (L-7)', async ({ page }) => {
     // The claim L-7 makes is that the page is a complete document with the canvas deleted, not
