@@ -265,6 +265,17 @@
     var rows = visibleQueue();
     list.innerHTML = '';
 
+    // The container is only a listbox while it holds options. An empty one fails
+    // aria-required-children, and with tabindex=0 it is also a focus stop containing nothing --
+    // a keyboard user tabs into a box that announces itself and has no contents.
+    if (rows.length) {
+      list.setAttribute('role', 'listbox');
+      list.setAttribute('tabindex', '0');
+    } else {
+      list.removeAttribute('role');
+      list.removeAttribute('tabindex');
+    }
+
     if (!rows.length) {
       var e = el('div', 'queue-empty');
       if (state.filter === 'undecided' && state.queue.length) {

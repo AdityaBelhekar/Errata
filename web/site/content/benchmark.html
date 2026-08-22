@@ -1,0 +1,82 @@
+<h1 class="t-d3">Benchmark</h1>
+
+<p class="t-lead" style="margin-top:var(--s-24);max-width:66ch">
+  Two of three kill-gates have been measured. Neither result is a win, and this page is
+  not going to describe them as one.
+</p>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Gate 2 — word-level grounding</h2>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    Measured: <span class="fact">46.34%</span> word-level grounding F1, against
+    ExtractBench's best published <span class="fact">46.4%</span>.
+  </p>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    That is a <strong>dead heat</strong>, not a lead. Two further things have to be said
+    plainly, because leaving them out is how this number would become a marketing claim:
+  </p>
+
+  <ul class="t-body u-stack" style="max-width:70ch;margin-top:var(--s-16)">
+    <li>
+      The 46.34% belongs to a <strong>table-blind baseline</strong> — a deliberately
+      limited extractor kept as a floor — <strong>not</strong> to the shipped extractor.
+      Any sentence implying otherwise makes a claim this project's own README refuses to
+      make.
+    </li>
+    <li>
+      The asymmetry the gate was designed to establish is <strong>not confirmed</strong>.
+      A dead heat does not establish it, and no amount of restating the number will.
+    </li>
+  </ul>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-16)">
+    The metric is ExtractBench's own: a field counts as grounded-correct only when the
+    value is accepted <em>and</em> the predicted box overlaps an accepted evidence box at
+    IoU 0.5. Reusing a published metric rather than inventing one is deliberate — you do
+    not want a measure of your own that nobody can check you against.
+  </p>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Gate 3 — not measured</h2>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    Deferred. It needs SKU counts per ETIM class that three separate searches did not
+    find. There is a proposal to derive the figure from the review queue's own
+    adjudications; it is untested and it carries a real statistical problem — the queue is
+    ranked, so its adjudications are not an i.i.d. sample, and treating them as one would
+    produce a calibration curve that is confidently wrong.
+  </p>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-16)">
+    A confidently wrong calibration curve is worse than no curve. So there is no curve,
+    and the calibration surface that would display it is not built.
+  </p>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">What would make these numbers stronger</h2>
+
+  <ul class="t-body u-stack" style="max-width:70ch;margin-top:var(--s-16)">
+    <li>
+      <strong>A public corpus.</strong> Ours is not public. That exit criterion is half
+      open and stays half open until it is.
+    </li>
+    <li>
+      <strong>Third-party reproduction.</strong> The numbers reproduce from a receipt on
+      our machines. Nobody outside this project has re-derived them.
+    </li>
+  </ul>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-24)">
+    Both are recorded as open rather than quietly omitted, on the grounds that a benchmark
+    page which lists only its strengths is an advertisement.
+  </p>
+</section>
+
+<div style="display:flex;gap:var(--s-12);flex-wrap:wrap;margin-top:var(--s-56)">
+  <a class="btn btn--lg" href="/web/site/method.html">How it works</a>
+  <a class="btn btn--lg btn--quiet" href="/web/site/errata.html">What is wrong with it</a>
+</div>

@@ -1,0 +1,81 @@
+<h1 class="t-d3">Documentation</h1>
+
+<p class="t-lead" style="margin-top:var(--s-24);max-width:66ch">
+  Running it, reading what it produces, and checking its work without taking our word for
+  any of it.
+</p>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Install and run</h2>
+
+  <pre class="t-data" tabindex="0" role="region" aria-label="Command, scrollable" style="margin-top:var(--s-16);overflow-x:auto;padding:var(--s-16);border:var(--w-hair) solid var(--edge-hair);border-radius:var(--r-control)"><code>bash scripts/setup.sh          # virtualenv and the seven packages
+bash scripts/ci.sh             # everything that must be true, in one command
+bash scripts/ci.sh --fast      # skip the steps needing fetched reference data</code></pre>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-16)">
+    The same script runs locally and in continuous integration, deliberately. A pipeline
+    that exists only as a YAML file nobody can execute is a second, invisible definition of
+    "correct" that drifts from the first one.
+  </p>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">The reviewer console</h2>
+
+  <pre class="t-data" tabindex="0" role="region" aria-label="Command, scrollable" style="margin-top:var(--s-16);overflow-x:auto;padding:var(--s-16);border:var(--w-hair) solid var(--edge-hair);border-radius:var(--r-control)"><code>errata-audit serve             # the queue, the evidence pane, the claim history</code></pre>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    It runs on your machine and talks to nothing off-origin. The page image is regenerated
+    from the exact bytes the claim was made against — named by content hash — rather than
+    from whatever is at the supplier's URL today.
+  </p>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Checking our work</h2>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    An Evidence Bundle is a self-contained file: the claim, the evidence spans, the page
+    images, the projection that placed the boxes, and a digest over all of it. It verifies
+    without this software, and the verifier runs in a browser as well as in Python.
+  </p>
+
+  <pre class="t-data" tabindex="0" role="region" aria-label="Command, scrollable" style="margin-top:var(--s-16);overflow-x:auto;padding:var(--s-16);border:var(--w-hair) solid var(--edge-hair);border-radius:var(--r-control)"><code>errata-r3 reproduce            # re-derive the published numbers from source
+errata-r3 gold verify          # the gold set re-derives from the documents
+errata-r3 split verify         # the frozen test split is untouched</code></pre>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-16)">
+    These are the same commands the build runs. If a published number and the code ever
+    disagree, one of these fails — which is the point of publishing a receipt rather than a
+    figure.
+  </p>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Reading a decline</h2>
+
+  <p class="t-body" style="max-width:70ch;margin-top:var(--s-16)">
+    Every record that was not audited carries exactly one reason. The ones worth knowing
+    before you see them:
+  </p>
+
+  <ul class="t-body u-stack" style="max-width:70ch;margin-top:var(--s-16)">
+    <li><span class="fact">no_source_document</span> — nothing to ground against. Feeds the document-recovery queue.</li>
+    <li><span class="fact">layout_unreadable</span> — the layout defeated us: fold-out, rotated table, table split across pages.</li>
+    <li><span class="fact">ocr_text_not_evidence</span> — the document is a scan carrying an OCR layer. The text is legible; that is the problem.</li>
+    <li><span class="fact">value_outside_known_grammar</span> — the value parser refused. Surfaced, never guessed.</li>
+    <li><span class="fact">equal_rank_source_conflict</span> — two sources of identical rank disagree; policy declines to arbitrate.</li>
+    <li><span class="fact">calibration_out_of_distribution</span> — too few labels in this class for the confidence estimate to be honest.</li>
+  </ul>
+
+  <p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-24)">
+    A decline is a result. There are no silent skips anywhere in the pipeline, because a
+    system that quietly skips what it cannot handle is indistinguishable from one that
+    handled it.
+  </p>
+</section>
+
+<div style="display:flex;gap:var(--s-12);flex-wrap:wrap;margin-top:var(--s-56)">
+  <a class="btn btn--lg" href="/web/console/">Open the console</a>
+  <a class="btn btn--lg btn--quiet" href="/web/site/method.html">Read the method</a>
+</div>

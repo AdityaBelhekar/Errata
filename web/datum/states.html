@@ -38,7 +38,9 @@
   flex-wrap: wrap;
 }
 .toc { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); }
-.toc a { color: var(--text-3); }
+/* WCAG 2.2 AA target-size: 24x24 minimum. These are 11px micro type in a dense index, so the
+   target grows without the type changing. */
+.toc a { color: var(--text-3); display: inline-flex; align-items: center; min-height: var(--s-24); }
 .toc a:hover { color: var(--text-1); }
 
 .spec { border-bottom: var(--w-hair) solid var(--edge-hair); padding: var(--s-40) var(--s-32); }
@@ -374,7 +376,7 @@
   <template>
     <div class="states">
       <div class="state state-wide"><span class="state-label t-micro">Default · disputed · settled · selected</span>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table, scrollable">
           <table class="table">
             <thead><tr><th>Type designation</th><th>Attribute</th><th>Catalog</th><th>Evidence</th><th class="num">Conf.</th></tr></thead>
             <tbody>
@@ -388,7 +390,7 @@
         </div>
       </div>
       <div class="state state-wide"><span class="state-label t-micro">Loading</span>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table, scrollable">
           <table class="table" data-state="loading">
             <thead><tr><th>Type designation</th><th>Attribute</th><th>Catalog</th><th>Evidence</th><th class="num">Conf.</th></tr></thead>
             <tbody><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr><tr><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr></tbody>
@@ -396,10 +398,10 @@
         </div>
       </div>
       <div class="state"><span class="state-label t-micro">Empty</span>
-        <div class="table-wrap"><div class="table-empty"><span class="t-h4">Nothing disagrees</span><span class="t-body-s u-dimmer">1,426 records checked against their sources. No dispute above the operating point.</span></div></div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table, scrollable"><div class="table-empty"><span class="t-h4">Nothing disagrees</span><span class="t-body-s u-dimmer">1,426 records checked against their sources. No dispute above the operating point.</span></div></div>
       </div>
       <div class="state"><span class="state-label t-micro">Error</span>
-        <div class="table-wrap"><div class="table-error"><span class="t-h4">Audit did not complete</span><span class="t-body-s">Partial results are withheld: a half-run queue ranks wrong.</span></div></div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Table, scrollable"><div class="table-error"><span class="t-h4">Audit did not complete</span><span class="t-body-s">Partial results are withheld: a half-run queue ranks wrong.</span></div></div>
       </div>
     </div>
   </template>
@@ -517,10 +519,10 @@
   <div class="panes"></div>
   <template>
     <div class="states">
-      <div class="state"><span class="state-label t-micro">System selected</span><div class="theme-toggle"><button aria-checked="true">Sys</button><button aria-checked="false">Light</button><button aria-checked="false">Dark</button></div></div>
-      <div class="state"><span class="state-label t-micro">Light selected</span><div class="theme-toggle"><button aria-checked="false">Sys</button><button aria-checked="true">Light</button><button aria-checked="false">Dark</button></div></div>
-      <div class="state"><span class="state-label t-micro">Dark selected</span><div class="theme-toggle"><button aria-checked="false">Sys</button><button aria-checked="false">Light</button><button aria-checked="true">Dark</button></div></div>
-      <div class="state"><span class="state-label t-micro">Focus-visible</span><div class="theme-toggle"><button aria-checked="true" style="outline:2px solid var(--focus-ring);outline-offset:-2px">Sys</button><button aria-checked="false">Light</button><button aria-checked="false">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">System selected</span><div class="theme-toggle" role="radiogroup" aria-label="Colour theme"><button role="radio" aria-checked="true">Sys</button><button role="radio" aria-checked="false">Light</button><button role="radio" aria-checked="false">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Light selected</span><div class="theme-toggle" role="radiogroup" aria-label="Colour theme"><button role="radio" aria-checked="false">Sys</button><button role="radio" aria-checked="true">Light</button><button role="radio" aria-checked="false">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Dark selected</span><div class="theme-toggle" role="radiogroup" aria-label="Colour theme"><button role="radio" aria-checked="false">Sys</button><button role="radio" aria-checked="false">Light</button><button role="radio" aria-checked="true">Dark</button></div></div>
+      <div class="state"><span class="state-label t-micro">Focus-visible</span><div class="theme-toggle" role="radiogroup" aria-label="Colour theme"><button role="radio" aria-checked="true" style="outline:2px solid var(--focus-ring);outline-offset:-2px">Sys</button><button role="radio" aria-checked="false">Light</button><button role="radio" aria-checked="false">Dark</button></div></div>
     </div>
   </template>
 </section>

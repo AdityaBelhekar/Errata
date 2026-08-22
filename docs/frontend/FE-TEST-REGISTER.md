@@ -1,6 +1,9 @@
 # FE — TEST REGISTER AND OPEN-ITEM LEDGER
 
-**Written:** 21 August 2026.
+**Written:** 21 August 2026. **Revised:** 22 August 2026, after the remediation described in
+`docs/EXECUTION-BLUEPRINT.md`. Closed items are struck rather than deleted — a register that only
+lists what is currently wrong loses the record of what was wrong and why, which is the part that
+stops it recurring.
 **Purpose:** everything that is not done, not verified, or verified weakly — in one place, ranked
 by what it would cost to be wrong about.
 **Standing rule:** a gate that has never failed has not been shown to work. Where a "pass" below
@@ -10,27 +13,28 @@ rests on a single manual observation, it is labelled **SMOKE**, not PASS.
 
 ## 0. The headline numbers
 
-| | Measured | Comment |
-|---|---:|---|
-| Python tests | **1,335 passing** | Real coverage of the domain |
-| **Frontend automated tests** | **0** | No Playwright, no Vitest, no axe run, no visual diff |
-| **CI steps touching the frontend** | **0** | `scripts/ci.sh` has no reference to `web/`, npm, or either design gate |
-| PRD requirements (FR-*) | **59** | |
-| …referenced by a built surface | **14** | |
-| …**with no surface at all** | **45** | §3 lists them |
-| Browsers tested | **1** | One Chromium pane, one viewport family |
-| Frontend perf measurements | **0** | §11.9's budget has never been recorded |
+| | Was (21 Aug) | Now (22 Aug) | Comment |
+|---|---:|---:|---|
+| Python tests | 1,335 | **1,357** | +22: G-1 geometry, ADR-004 OCR decline, CSP/nonce, O-11 wording |
+| **Frontend automated tests** | **0** | **158** | 28 Vitest + 130 Playwright (smoke, axe, keyboard, visual) |
+| **CI steps touching the frontend** | **0** | **9** | `ci.sh` §4: both design gates, site drift, typecheck, unit, audit, build, build-drift, e2e |
+| axe violations (serious+critical) | never run | **0** | First run found 6; all fixed. `docs/frontend/A11Y-BASELINE.md` |
+| Screenshot baselines on `states.html` | 0 | **42** | 21 components × 2 themes, per-component clips |
+| PRD requirements (FR-*) | 59 | 59 | |
+| …with no surface at all | 45 | **39** | 6 specified pages built: `/method` `/benchmark` `/errata` `/pricing` `/docs` `/500` |
+| Browsers configured | 1 | **4** | Chromium green; Firefox/WebKit/mobile configured, **not yet run** |
+| Frontend perf measurements | **0** | **0** | §11.9's budget still never recorded — unchanged |
 
-**The single most important line in this table is the second one.** Every frontend claim in every
-gate report — including the ones I wrote — rests on manual observation in one browser, on one
-machine, on one day. That is a demo, not a test suite.
+**The second line was the most important one in this table and it has moved.** What has not moved
+is the perf row: §11.9 remains unmeasured, and FE-5's gate ("budget met *before* integration") is
+still not met.
 
 ---
 
 ## 1. BLOCKERS — things that make a release impossible
 
-### B-1 · No frontend test suite exists
-**Severity: critical. Owner: engineering.**
+### ~~B-1 · No frontend test suite exists~~ — **CLOSED 22 Aug**
+**Was: critical.** 158 frontend tests now run in `ci.sh`. See §11 for what the suite still does not cover.
 
 Zero automated tests across `web/datum`, `web/console`, `web/site`, `web/app`. Everything asserted
 in FE-1, FE-2, FE-2.5, FE-6 and FE-7 was verified by me looking at it once.
@@ -45,8 +49,8 @@ Minimum to close:
   the same off-by-one at *both ends* (D-4 in FE-6) and a three-line unit test would have caught it
   before it reached a screenshot.
 
-### B-2 · CI does not build or check the frontend
-**Severity: critical. Owner: engineering.**
+### ~~B-2 · CI does not build or check the frontend~~ — **CLOSED 22 Aug**
+**Was: critical.** `scripts/ci.sh` §4 runs nine frontend steps, each observed to fail when deliberately broken.
 
 `scripts/ci.sh` runs the Python suite, the licence scan and the reproduction receipt. It does not:
 run `lint-tokens.py`, run `contrast.py`, run `errata_bundle probe`, `npm ci && npm run build`, or
@@ -55,23 +59,23 @@ serve anything. **Both design gates I built can be broken by any commit and noth
 The repo's own rule applies here — *"a pipeline that only exists as YAML is a second definition of
 correct"* — so these belong in `ci.sh`, invoked from the workflow.
 
-### B-3 · Delivery model still undecided (Q1)
-**Severity: critical. Owner: product + founder.**
+### ~~B-3 · Delivery model still undecided (Q1)~~ — **CLOSED 22 Aug**
+**Was: critical.** ADR-005. The decision was already implemented in `vite.config.ts` and merely unratified, which is worse than undecided — the ADR records the consequences that were being inherited unexamined.
 
 Local tool vs hosted SaaS vs split. Everything downstream — auth, tenancy, data residency, the
 copyright posture of holding customers' catalogs beside manufacturers' PDFs — hangs on it. It has
 been made by default, by nobody, every day since the blueprint was written.
 
-### B-4 · `errata_audit.console` still carries the G-1 rotation bug
-**Severity: critical (latent). Owner: engineering.**
+### ~~B-4 · `errata_audit.console` still carries the G-1 rotation bug~~ — **CLOSED 22 Aug**
+**Was: critical (latent).** Fixed by deleting the local arithmetic and importing `errata_bundle.geometry`. Tested by rendering the page and measuring ink under the box; failed on `rotated_90`/`rotated_270` before the fix.
 
 `PageImage.place` computes `x * zoom`. On a `/Rotate 90` page every evidence box lands on a
 different part of the page. Cannot fire on the current corpus; **FR-9.6 names fold-outs as part of
 the frozen hard-tail split**, so it will fire. Fixed in `errata_bundle.geometry`, **not** in the
 shipped console. (FE-2.5 O-7.)
 
-### B-5 · OCR-over-scan documents are never declined
-**Severity: critical (latent). Owner: engineering + research.**
+### ~~B-5 · OCR-over-scan documents are never declined~~ — **CLOSED 22 Aug**
+**Was: critical (latent).** ADR-004. Declined with `OCR_TEXT_NOT_EVIDENCE`. **Measured coverage will fall on the full corpus, and that is the point.**
 
 `TextLayer.is_born_digital` is true for any extracted word. `H28-1957-Part-I.pdf` is 100% image
 area with an OCR layer and reports **161,731 words** — nothing declines it, and its evidence boxes
@@ -306,3 +310,75 @@ that have each been shown to fail when they should.
 What is missing is **the entire verification layer around it** — which is an uncomfortable thing to
 report on a product whose pitch is that unverified data is the problem. 1,335 tests cover the
 domain; zero cover the thing a user touches. That asymmetry is the finding of this register.
+
+---
+
+## 11. WHAT THE NEW SUITE FOUND — and what it still cannot see
+
+Added 22 August 2026. The first honest runs of the frontend gates found **seven defects that
+looking at the pages had not**, which is the register's own thesis demonstrated rather than argued.
+
+### 11.1 Found by the suite
+
+| Found by | Defect |
+|---|---|
+| Smoke, 375px | `.site-header` overflowed the viewport by 9px and scrolled the whole document sideways. `flex-wrap` alone does not fix it — flex items default to `min-width: auto` and refuse to shrink below content. |
+| Smoke, 375px | The console header measured **738px in a 375px viewport**. `grid-template-columns: auto 1fr auto` gives the outer columns their content width and no instruction to yield. This is H-4's "never opened on a phone", confirmed. |
+| Smoke, 375px | `.table-wrap` had `overflow-x: auto` and still overflowed, for the same `min-width: auto` reason — so the *page* scrolled instead of the table. |
+| axe | `#queue-list` was a `role="listbox"` with no options **and** a `tabindex="0"` focus stop containing nothing. |
+| axe | The states gallery's theme-toggle specimens carried `aria-checked` on bare buttons — inaccessible, and misleading as documentation, because the real component gets `role="radio"` from JS. |
+| axe | `.table-empty` rendered on `.queue`'s translucent hairline background at **4.19:1**. See §11.2. |
+| axe | **The landing page's primary navigation had no styling at all** — `.site-nav`/`.nav-links` live in `shell.css`, which the app bundle never imported. Invisible to inspection because the nav sits above a scene the eye scrolls past. |
+
+### 11.2 The finding that changes how the gates are understood
+
+`contrast.py` reported all 20 pairs passing throughout, and axe found a real contrast failure
+anyway. Both were right.
+
+The static gate compares **token pairs**. The failing colour was not a token — it was
+`--edge-hair`, an alpha, composited by the browser over the page background. The gate resolves
+tokens and drops alpha, so it cannot see a colour that only exists after compositing. Its own table
+calls `--surface-3` the "worst ground"; that assumption is false and had never been checked.
+
+**The two gates are complementary, not redundant.** One catches decisions, the other catches
+compositions. This is the case that proves it, and it is why neither should be dropped as
+duplicative.
+
+### 11.3 A test that was passing vacuously
+
+The reduced-motion tests initially used Playwright's `reducedMotion` fixture, and the page reported
+`matchMedia('(prefers-reduced-motion: reduce)').matches === false`. The suite was exercising the
+ordinary path while claiming to test the reduced one — and it **reported a product defect that did
+not exist** (an infinite animation the CSS in fact handles correctly).
+
+The tests now assert the media query is active before asserting anything about it. A reduced-motion
+test that does not verify reduced motion is on passes whether or not the feature works, which makes
+it *worse* than absent: it converts an untested area into one that looks tested.
+
+### 11.4 Still open, and newly discovered
+
+- **`states.html` renders to a different height on each load** — ~156px of variance across
+  identical loads after `document.fonts.ready`. The visual suite works around it by clipping per
+  component rather than full-page. **The instability itself is unexplained** and is a layout that is
+  still settling after fonts resolve, which is CLS-shaped and ties to the absent type families.
+- **Two tests are load-dependent flakes, cause not established.** Both pass 6/6 in isolation and
+  fail roughly one run in twenty under 8 workers across 4 projects:
+  `[mobile] landing — every focus stop is visible` and `[firefox] site-404 — axe clean in light`.
+  Suspected contention — GPU contexts for the WebGL surface, and layout settling on a page already
+  known to reflow after `load`. `retries: 1` is now set for every run, so a retried pass is
+  reported as **flaky** rather than as passed; the row is the record. **Retried is not explained**,
+  and this stays open.
+
+### 11.5 What the suite still cannot see
+
+The gates are green. That is not the same as correct, and the gap is worth naming precisely:
+
+- **Firefox, WebKit and mobile projects are configured and have never been run.** H-4 is *reduced*,
+  not closed. Everything green today is green in Chromium.
+- **No screen reader, ever.** H-1 stays open. The keyboard tests assert focus stops are visible;
+  they do not assert focus *return*, `Esc` from nested state, or announcement order.
+- **Nine components still document keyboard contracts in comments and do not implement them**
+  (H-2). The suite does not test what does not exist.
+- **Not one performance number** (§4.1). Unchanged.
+- **The JavaScript bundle verifier is still untested** (H-3) — the one a customer would rely on.
+- **Print (§4.6), i18n (§4.4) and the privacy surface (§4.5)** are untouched.

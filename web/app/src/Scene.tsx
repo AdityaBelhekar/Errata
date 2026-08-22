@@ -634,6 +634,11 @@ function Archive({ tier, palette }: { tier: Tier; palette: Palette }) {
         transparent
         depthWrite={false}
         blending={palette.additive ? THREE.AdditiveBlending : THREE.MultiplyBlending}
+        // three warns on every frame otherwise: MultiplyBlending needs premultiplied alpha, and
+        // without it the multiply is performed against an un-premultiplied source so the dark
+        // theme's points composite slightly wrong as well as noisily. Surfaced by the smoke
+        // suite's console-error assertion -- it had been printing into a console nobody watched.
+        premultipliedAlpha={!palette.additive}
         uniforms={useMemo(
           () => ({
             uFall: { value: 0 },

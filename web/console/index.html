@@ -88,7 +88,10 @@
           <button class="tab" role="tab" aria-selected="false" data-filter="decided">Done</button>
         </div>
       </div>
-      <div class="queue" id="queue-list" role="listbox" aria-label="Findings" tabindex="0"></div>
+      <!-- role and tabindex are set by console.js when there are rows to select. A listbox with
+           no options fails aria-required-children, and an empty one with tabindex=0 is a focus
+           stop with nothing in it -- both reported by the first axe run. -->
+      <div class="queue" id="queue-list" aria-label="Findings"></div>
       <p class="pane-body t-micro u-dimmer" id="queue-note"></p>
     </section>
 

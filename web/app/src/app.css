@@ -11,6 +11,16 @@
 @import '../../datum/styles/type.css';
 @import '../../datum/styles/base.css';
 @import '../../datum/styles/components.css';
+/* shell.css carries `.site-nav` and `.nav-links`, which index.html has always used and this
+   bundle never imported -- so the landing page's primary navigation rendered completely
+   unstyled, as a row of default-blue inline links. Nobody had noticed, because looking at the
+   page is how it was checked and the nav sits above the fold of a scene you scroll past.
+   Surfaced by axe: unstyled inline links are text-height, which fails WCAG 2.2 target-size.
+
+   shell.css is described in its own header as "the chrome every surface shares... so the
+   console and the public site cannot drift into looking like two products". The landing is one
+   of those surfaces. */
+@import '../../site/shell.css';
 
 :root {
   --p: 0;

@@ -1,0 +1,100 @@
+<h1 class="t-d3">Errata</h1>
+
+<p class="t-lead" style="margin-top:var(--s-24);max-width:66ch">
+  Defects found in this product, published by us, before anyone asked. A company selling a
+  verification layer that does not publish its own defects is asking for a trust it will
+  not extend.
+</p>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Fixed</h2>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">G-1 — evidence boxes landed wrong on rotated pages</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      The reviewer console projected a PDF box onto the rendered page by multiplying by the
+      zoom. That is correct only for a page with no rotation and no cropbox offset — which
+      every document in our corpus happens to be. On a page rotated 90°, every evidence box
+      landed on a different part of the page.
+    </p>
+    <p class="t-body u-dim" style="margin-top:var(--s-12)">
+      It could not fire on the corpus we had, and was certain to fire on the corpus we had
+      committed to: rotated pages are how datasheets carry fold-out tables, and fold-outs
+      are named in our own frozen test split. Fixed by deleting the arithmetic and importing
+      the single canonical implementation — then tested by rendering the page and looking at
+      the pixels underneath the box, which is the only check that can tell "correct" from
+      "correct by coincidence on this corpus".
+    </p>
+  </article>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">G-2 — scans carrying an OCR layer were treated as evidence</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      A scanned document with an OCR text layer reported 161,731 words and nothing declined
+      it. Those words are a model's reading of pixels, not the document's own text, so a
+      citation into them quotes something the document does not say — and the evidence box
+      has nothing true to point at.
+    </p>
+    <p class="t-body u-dim" style="margin-top:var(--s-12)">
+      Fixed by measuring image area per page and declining with a reason that names what
+      actually happened. <strong>This lowers our measured coverage.</strong> It was never
+      grounding; it was grounding-shaped, and the lower number is the honest one.
+    </p>
+  </article>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">O-11 — a refusal named a decision the reviewer did not make</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      A reviewer who rejected a redline and kept their own catalog value was told their
+      <em>acceptance</em> had been refused. It survived because the test asserted that an
+      error was raised, never what the error said.
+    </p>
+  </article>
+</section>
+
+<section class="rhythm-m" style="margin-top:var(--s-56)">
+  <h2 class="t-h2">Open</h2>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">One page fails our own projection gate</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      A born-digital page in the ABB S200 M UC datasheet measures 54% agreement against a
+      60% bar. Two candidate fixes are named; neither is tested. <strong>The bar has not
+      been moved.</strong>
+    </p>
+  </article>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">A measurement may be sitting at the edge of its own search window</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      One document's best-fit offset lands exactly on the boundary of the range we search,
+      which means the true value may lie outside it. Unexplained. Recorded rather than
+      rounded off.
+    </p>
+  </article>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">A threshold was moved to make a measurement pass</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      A contrast threshold was changed from 1.5 to 1.25 after it rejected 80% of otherwise
+      good words. It was the right change for the right reason, and it is also exactly the
+      shape of the wrong one. It is listed here because it needs a reviewer who is not its
+      author.
+    </p>
+  </article>
+
+  <article class="card" style="margin-top:var(--s-24)">
+    <h3 class="t-h3">The typography this design specifies is not installed</h3>
+    <p class="t-body" style="margin-top:var(--s-12)">
+      Three type families are specified and absent, so every page you are reading renders in
+      a fallback face. The design's most distinctive decision — type that degrades as its
+      source becomes less certain — has never been seen by anyone, including us.
+    </p>
+  </article>
+</section>
+
+<p class="t-body u-dim" style="max-width:70ch;margin-top:var(--s-56)">
+  This list is not complete in the sense of "everything that is wrong". It is complete in
+  the sense of "everything we have found and not yet fixed". The difference matters, and
+  claiming the first would be the same category of error as everything above.
+</p>

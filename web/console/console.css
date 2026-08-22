@@ -47,6 +47,21 @@ body.app { overflow: hidden; }
   background: var(--bg-void);
 }
 .head-centre { justify-self: center; }
+
+/* The register recorded the console's stacked mobile layout as "never opened on a phone".
+   It had not been: at 375px this three-column grid measured 738px -- twice the viewport --
+   because `auto 1fr auto` gives the outer columns their content width and no instruction to
+   yield. The first automated run at a phone width is what surfaced it.
+
+   Below the tablet breakpoint the header becomes one column and the control cluster wraps. */
+@media (max-width: 767px) {
+  .console-head {
+    grid-template-columns: 1fr;
+    gap: var(--s-8);
+  }
+  .head-centre { justify-self: start; }
+}
+.head-group { flex-wrap: wrap; }
 .console-foot {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-24);
   padding: var(--s-8) var(--s-16);

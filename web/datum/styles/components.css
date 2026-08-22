@@ -333,7 +333,13 @@ textarea.input { height: auto; min-height: 96px; padding: var(--s-12); line-heig
    Sticky head, hairline rows, tabular numerals (LAW). Hover on a data row is
    background ONLY — never lift, never shadow, never move (§10.3). A row that
    jumps under the cursor makes a reader lose the line they were checking. */
-.table-wrap { overflow-x: auto; border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-control); background: var(--surface-1); }
+/* `min-width: 0` is doing real work here and is easy to delete by accident. `overflow-x: auto`
+   alone does NOT contain a wide table: as a grid/flex item the wrapper defaults to
+   `min-width: auto`, which refuses to shrink below its content, so the wrapper grows to the
+   table's width and the PAGE scrolls instead of the table. Found at 375px by the smoke suite;
+   the table is legitimately wider than a phone, and wide content scrolling inside its own box
+   is the intended behaviour. */
+.table-wrap { overflow-x: auto; min-width: 0; max-width: 100%; border: var(--w-hair) solid var(--edge-hair); border-radius: var(--r-control); background: var(--surface-1); }
 .table { width: 100%; border-collapse: collapse; font-family: var(--f-data); }
 .table thead th {
   position: sticky; top: 0; z-index: 2;
@@ -379,8 +385,19 @@ textarea.input { height: auto; min-height: 96px; padding: var(--s-12); line-heig
   content: ""; display: block; height: 10px; width: 68%;
   background: var(--edge-hair); border-radius: 1px;
 }
+/* `background` is load-bearing, not cosmetic. `.queue` paints `--edge-hair` and lets its gap
+   show through as the 1px rules between rows, so every child must supply its own surface --
+   `.queue-row` does, and this did not. The empty state therefore rendered its text directly on
+   the translucent hairline, composited to #e1dbd3, giving 4.19:1 against a 4.5 requirement.
+   On `--surface-1` the same text measures 5.31:1.
+
+   The static contrast gate could not see this: it compares TOKEN pairs, and this colour is not
+   a token -- it is two layers composited by the browser, one of them an alpha the gate drops
+   when it resolves. Found by axe, which measures rendered pixels. The two gates are not
+   redundant, and this is the case that proves it. */
 .table-empty, .table-error {
   padding: var(--s-56) var(--s-24); text-align: center; color: var(--text-3);
+  background: var(--surface-1);
   display: grid; gap: var(--s-8); justify-items: center;
 }
 .table-error { color: var(--signal-text); }
@@ -492,8 +509,20 @@ textarea.input { height: auto; min-height: 96px; padding: var(--s-12); line-heig
   padding: var(--s-16) var(--grid-margin);
   background: var(--bg-void);
   border-bottom: var(--w-hair) solid var(--edge-hair);
+  /* Wraps rather than overflowing. Found by the first automated run of the smoke suite: at a
+     375px viewport this row was 9px wider than the page and scrolled the whole document
+     sideways. `min-width: 0` on the children is the half that is easy to forget -- a flex item
+     defaults to `min-width: auto`, which refuses to shrink below its content and is why
+     `flex-wrap` alone does not fix it. */
+  flex-wrap: wrap;
 }
+.site-header > * { min-width: 0; }
 .wordmark { font-family: var(--f-data-micro); font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--text-1); }
+/* WCAG 2.2 AA target-size (minimum) is 24x24 CSS px, and 11px uppercase type is about half that
+   tall. The type size is a design decision and stays; the TARGET grows to meet the criterion,
+   which is the distinction the success criterion actually draws. Applies to the anchor form only
+   -- `.wordmark` is also used as a plain label, and a label is not a target. */
+a.wordmark { display: inline-flex; align-items: center; min-height: var(--s-24); }
 .site-footer { border-top: var(--w-hair) solid var(--edge-hair); padding-block: var(--s-56); color: var(--text-3); }
 
 .hud { position: fixed; z-index: 40; color: var(--text-3); pointer-events: none; }

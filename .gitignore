@@ -26,3 +26,11 @@ out/
 node_modules/
 .DS_Store
 
+
+# Playwright run artifacts. The SNAPSHOT baselines under e2e/*-snapshots/ are
+# committed on purpose -- they are the reference the diff runs against. These are
+# the per-run outputs and reports, which are regenerated every run.
+test-results/
+playwright-report/
+blob-report/
+.playwright/

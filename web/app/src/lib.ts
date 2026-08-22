@@ -35,6 +35,50 @@ export const ease = (t: number): number => {
   return x * x * (3 - 2 * x);
 };
 
+/* ── The five acts, and their cross-fade — §11.2 ───────────────────────
+   Moved here from Overlay.tsx so it can be TESTED. `actOpacity` shipped with
+   the same off-by-one at both ends — the hero invisible at scroll 0 and the
+   queue invisible at scroll 1 — and both were found by eye, separately. A
+   three-line unit test on the boundaries would have caught either one before it
+   reached a screenshot; there was nowhere to put one, because the function
+   lived inside a component and was never exported.
+
+   That is the actual lesson, and it is why this moved rather than being fixed
+   in place: a function whose boundaries matter belongs where its boundaries can
+   be asserted. */
+
+export interface Act {
+  id: string;
+  name: string;
+  from: number;
+  to: number;
+}
+
+export const ACTS: readonly Act[] = [
+  { id: 'I', name: 'Approach', from: 0.0, to: 0.16 },
+  { id: 'II', name: 'Compression', from: 0.14, to: 0.32 },
+  { id: 'III', name: 'Blacklight', from: 0.30, to: 0.58 },
+  { id: 'IV', name: 'The archive', from: 0.56, to: 0.86 },
+  { id: 'V', name: 'The queue', from: 0.84, to: 1.0 },
+];
+
+/** Opacity for an act: up over the first fifth of its span, down over the last.
+ *  Cross-fades rather than cuts, so nothing pops at a boundary.
+ *
+ *  The FIRST and LAST acts are exceptions, and both have to be. An act that
+ *  begins at scroll 0 has no room to fade in, and one that ends at scroll 1 has
+ *  no room to fade out — the general formula gave the hero zero opacity at the
+ *  top of the page and the queue zero opacity at the bottom, so a visitor who
+ *  scrolled all the way to the product panel arrived at an empty room.
+ *
+ *  The same mistake at both ends, found separately, which is the argument for
+ *  fixing the rule rather than the symptom. */
+export function actOpacity(t: number, from: number, to: number): number {
+  const inn = from <= 0 ? 1 : ease(span(t, from, from + (to - from) * 0.22));
+  const out = to >= 1 ? 1 : 1 - ease(span(t, to - (to - from) * 0.22, to));
+  return Math.min(inn, out);
+}
+
 /* ── F-01 · ONE scroll authority — LAW (§10.5) ─────────────────────────────
    The prototype smoothed `window.scrollY` with a lerp while native scroll kept
    running. Two motion systems on one axis produce beat frequencies, which is

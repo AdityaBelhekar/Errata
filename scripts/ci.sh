@@ -120,6 +120,71 @@ else
 fi
 
 # ---------------------------------------------------------------------------------------------
+# 4. The frontend
+# ---------------------------------------------------------------------------------------------
+#
+# Until this section existed, `scripts/ci.sh` had no reference to web/, to npm, or to either
+# design gate -- so both gates could be broken by any commit and nothing would notice. The test
+# register called that out as blocker B-2, and it was right: 1,335 Python tests covered the domain
+# and zero covered what a user touches.
+#
+# These steps live HERE rather than in the workflow file, for the reason stated at the top of this
+# script: a pipeline that only exists as YAML is a second, invisible definition of correct.
+
+step "design -- token lint (LAW: colour, spacing, motion)" "$PY" web/datum/tools/lint-tokens.py
+step "design -- contrast law" "$PY" web/datum/tools/contrast.py
+
+# The public site is generated from one shell so eight pages cannot drift into eight navs. The
+# generated files are committed because a Python-only install has no Node and the console serves
+# them as static files -- so this checks that what is committed is what the generator produces.
+step "site -- generated pages are current" "$PY" web/site/build.py --check
+
+if command -v npm >/dev/null 2>&1; then
+    # `npm ci`, never `npm install`: ci fails on a lockfile that disagrees with package.json,
+    # which is the difference between a reproducible install and a hopeful one.
+    step "frontend -- install (npm ci)" bash -c 'cd web/app && npm ci --no-audit --no-fund'
+    step "frontend -- typecheck" bash -c 'cd web/app && npx tsc --noEmit'
+    step "frontend -- unit (vitest)" bash -c 'cd web/app && npm run test:unit'
+    step "frontend -- dependency audit" bash -c 'cd web/app && npm audit --omit=dev --audit-level=high'
+    step "frontend -- build" bash -c 'cd web/app && npm run build'
+
+    # web/landing/ is BUILT OUTPUT that is committed, because the Python console serves it and a
+    # Python-only install cannot rebuild it. The register warned that committed build output
+    # drifts from its source the first time someone edits one without rebuilding -- and it had
+    # already happened: an accessibility fix sat in web/app/src for a full run before anyone
+    # noticed the served page still carried the old bundle.
+    #
+    # The build above just regenerated it. If that changed anything, the committed copy was stale.
+    step "frontend -- committed build output is not stale" bash -c '
+        if ! git diff --quiet -- web/landing; then
+            echo "web/landing/ is stale. `cd web/app && npm run build` and commit the result." >&2
+            git --no-pager diff --stat -- web/landing >&2
+            exit 1
+        fi
+        echo "web/landing matches its source"
+    '
+
+    # Playwright needs browsers, which are a ~150MB download rather than an npm package. A runner
+    # without them skips rather than fails -- the same treatment var/ gets above, and for the same
+    # reason: a step that cannot run is not a step that failed.
+    # All four projects, not just chromium: the config runs chromium, firefox, webkit and a
+    # mobile profile, and a guard that checks one of them lets the other three fail as "missing
+    # executable" -- 176 such failures in the first run of this section, which is noise that hides
+    # whatever real failure sits underneath it.
+    if bash -c 'cd web/app && npx playwright install --dry-run chromium firefox webkit' >/dev/null 2>&1; then
+        step "frontend -- e2e, axe and visual diff" bash -c 'cd web/app && npm run test:e2e'
+    else
+        echo
+        echo "==> Playwright browsers absent; skipping the browser gates."
+        echo "    Run: cd web/app && npx playwright install"
+    fi
+else
+    echo
+    echo "==> npm not found; skipping the frontend gates."
+    echo "    The design lints above still ran -- they are Python."
+fi
+
+# ---------------------------------------------------------------------------------------------
 
 echo
 echo "=============================================================================="

@@ -12,32 +12,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from 'react';
-import { clamp01, ease, scroll, span } from './lib';
-
-const ACTS = [
-  { id: 'I', name: 'Approach', from: 0.0, to: 0.16 },
-  { id: 'II', name: 'Compression', from: 0.14, to: 0.32 },
-  { id: 'III', name: 'Blacklight', from: 0.30, to: 0.58 },
-  { id: 'IV', name: 'The archive', from: 0.56, to: 0.86 },
-  { id: 'V', name: 'The queue', from: 0.84, to: 1.0 },
-];
-
-/** Opacity for an act: up over the first fifth of its span, down over the last.
- *  Cross-fades rather than cuts, so nothing pops at a boundary.
- *
- *  The FIRST and LAST acts are exceptions, and both have to be. An act that
- *  begins at scroll 0 has no room to fade in, and one that ends at scroll 1 has
- *  no room to fade out — the general formula gave the hero zero opacity at the
- *  top of the page and the queue zero opacity at the bottom, so a visitor who
- *  scrolled all the way to the product panel arrived at an empty room.
- *
- *  The same mistake at both ends, found separately, which is the argument for
- *  fixing the rule rather than the symptom. */
-function actOpacity(t: number, from: number, to: number) {
-  const inn = from <= 0 ? 1 : ease(span(t, from, from + (to - from) * 0.22));
-  const out = to >= 1 ? 1 : 1 - ease(span(t, to - (to - from) * 0.22, to));
-  return Math.min(inn, out);
-}
+import { ACTS, actOpacity, clamp01, scroll } from './lib';
 
 export default function Overlay() {
   const [ready, setReady] = useState(false);

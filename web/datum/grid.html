@@ -37,6 +37,15 @@
 .space-bar { background: var(--signal); height: var(--s-8); }
 .spec-line { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: var(--s-24); align-items: baseline; padding-block: var(--s-16); border-bottom: var(--w-hair) solid var(--edge-hair); }
 .spec-line > .spec-meta { color: var(--text-3); white-space: nowrap; }
+/* The meta column is `white-space: nowrap` because a type spec broken across two lines is
+   harder to scan than one that runs long -- true on a desktop, and the reason this row forced
+   the whole page 33px wider than a phone. Below the tablet breakpoint the row stacks and the
+   spec sits under its own sample, which keeps both readable without unpicking the desktop
+   layout. Found by the smoke suite's first run at 375px. */
+@media (max-width: 767px) {
+  .spec-line { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); }
+  .spec-line > .spec-meta { white-space: normal; }
+}
 .demo-block { background: var(--surface-1); border: var(--w-hair) solid var(--edge-hair); padding: var(--s-16); }
 </style>
 </head>
@@ -117,7 +126,7 @@
   <section class="rhythm-m poche">
     <span class="poche-mark t-micro">02</span>
     <h2 class="t-d3">The structural grid</h2>
-    <div class="table-wrap" style="margin-top:var(--s-32)">
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Table, scrollable" style="margin-top:var(--s-32)">
       <table class="table">
         <thead><tr><th>Breakpoint</th><th class="num">Columns</th><th class="num">Content max</th><th class="num">Gutter</th><th class="num">Margin</th></tr></thead>
         <tbody>
