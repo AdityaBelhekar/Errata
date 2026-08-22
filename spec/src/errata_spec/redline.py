@@ -41,6 +41,16 @@ class Decision(str, enum.Enum):
     ESCALATE = "escalate"
 
 
+#: How each decision is named in prose addressed to the reviewer who made it. A refusal that
+#: misnames the decision reads as a refusal of something else entirely, and the reviewer is left
+#: correcting the record instead of reading it (register O-11).
+_DECISION_NOUN: dict[Decision, str] = {
+    Decision.ACCEPT_REDLINE: "acceptance",
+    Decision.KEEP_CATALOG: "decision to keep the catalog value",
+    Decision.ESCALATE: "escalation",
+}
+
+
 class BlastRadius(BaseModel):
     """How much damage one wrong value causes (§5.1, FR-8.4).
 
@@ -186,9 +196,15 @@ class Redline(BaseModel):
             and self.adjudication is not None
             and not self.adjudication.second_adjudicator
         ):
+            # Name the decision the reviewer ACTUALLY made. This message used to say
+            # "acceptance" for every disposition, so a reviewer who chose KEEP_CATALOG -- who
+            # rejected the redline and kept their own value -- was told their acceptance was
+            # refused. In a product whose entire claim is provenance, telling someone they made a
+            # decision they did not make is an integrity defect, not a wording nit (register O-11).
             raise ValueError(
-                f"{self.attribute_uri} is a safety-class attribute; single-signature "
-                "acceptance is impossible by construction (FR-8.9)"
+                f"{self.attribute_uri} is a safety-class attribute; a single-signature "
+                f"{_DECISION_NOUN[self.adjudication.decision]} is impossible by construction "
+                "(FR-8.9)"
             )
         return self
 

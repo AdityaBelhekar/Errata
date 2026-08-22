@@ -268,6 +268,35 @@ def test_safety_class_acceptance_needs_a_second_named_adjudicator() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("decision", "expected_noun", "forbidden_noun"),
+    [
+        (Decision.ACCEPT_REDLINE, "acceptance", None),
+        (Decision.KEEP_CATALOG, "keep the catalog value", "acceptance"),
+        (Decision.ESCALATE, "escalation", "acceptance"),
+    ],
+)
+def test_the_refusal_names_the_decision_the_reviewer_actually_made(
+    decision: Decision, expected_noun: str, forbidden_noun: str | None
+) -> None:
+    """Register O-11. The refusal used to say "acceptance" for every disposition.
+
+    A reviewer who chose KEEP_CATALOG rejected the redline and kept their own value. Telling them
+    their *acceptance* was refused attributes to them a decision they did not make -- which, in a
+    product whose whole claim is provenance, is an integrity defect rather than a wording nit. It
+    went unnoticed because no test read the message, only that one was raised.
+    """
+    with pytest.raises(ValidationError) as raised:
+        _redline(adjudication=Adjudication(decision=decision, decided_by="alex"))
+
+    message = str(raised.value)
+    assert expected_noun in message
+    if forbidden_noun is not None:
+        assert forbidden_noun not in message, (
+            f"a {decision.value} refusal must not describe itself as {forbidden_noun!r}"
+        )
+
+
 def test_non_safety_attributes_accept_on_one_signature() -> None:
     redline = _redline(
         attribute_uri="package_depth",

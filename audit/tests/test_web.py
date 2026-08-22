@@ -20,6 +20,7 @@ port being free or on a server somebody left running.
 from __future__ import annotations
 
 import json
+import re
 import threading
 import urllib.error
 import urllib.parse
@@ -339,8 +340,56 @@ def test_the_pages_carry_a_restrictive_content_security_policy(client: str) -> N
     with urllib.request.urlopen(client + "/") as response:
         policy = response.headers["Content-Security-Policy"]
         assert response.headers["X-Frame-Options"] == "DENY"
+        assert response.headers["Referrer-Policy"] == "no-referrer"
+        # Without nosniff a browser may override the Content-Type it was given, which turns any
+        # endpoint that echoes bytes into a script host. It was the one of the four that was
+        # missing, and the test register recorded all four as missing (corrected in
+        # docs/EXECUTION-BLUEPRINT.md C-A).
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert "default-src 'none'" in policy
     assert "img-src 'self' data:" in policy
+
+
+def test_inline_script_and_style_run_from_a_nonce_not_unsafe_inline(client: str) -> None:
+    """`'unsafe-inline'` gives away most of what a CSP is for: with it, any string that reaches the
+    page as markup executes. Escaping already stops that here -- the nonce means a single escaping
+    mistake is not also a script execution."""
+    with urllib.request.urlopen(client + "/") as response:
+        policy = response.headers["Content-Security-Policy"]
+        body = response.read().decode("utf-8")
+
+    assert "unsafe-inline" not in policy
+
+    nonces = set(re.findall(r"'nonce-([A-Za-z0-9_-]+)'", policy))
+    assert len(nonces) == 1, f"script-src and style-src must share one nonce, found {nonces}"
+    (nonce,) = nonces
+
+    # The header and the markup are written in the same place so they cannot disagree. This asserts
+    # they actually do agree -- a nonce in the header that no tag carries blocks the page's own
+    # stylesheet, and a browser reports that as a blank screen rather than as an error.
+    assert f"<style nonce='{nonce}'>" in body
+
+
+def test_every_response_gets_a_different_nonce(client: str) -> None:
+    """A nonce reused across responses is a constant, and a constant is `'unsafe-inline'` spelled
+    less honestly."""
+    seen = set()
+    for _ in range(3):
+        with urllib.request.urlopen(client + "/") as response:
+            seen.update(re.findall(r"'nonce-([A-Za-z0-9_-]+)'", response.headers["Content-Security-Policy"]))
+    assert len(seen) == 3
+
+
+def test_the_nonce_placeholder_never_reaches_the_client(client: str) -> None:
+    """If substitution is ever skipped the page still renders -- and silently loses its styling and
+    its timing script. A test is the only thing that notices."""
+    # /sku/ is included deliberately: it is the only page carrying the inline <script>, so a
+    # substitution that worked for <style> and not for <script> would pass on the other three.
+    for path in ("/", "/status", "/ledger", "/sku/AX-16"):
+        _status, body = get(client, path)
+        assert "__csp_nonce_" not in body, f"{path} leaked the placeholder"
+        if "<script" in body:
+            assert "<script nonce=" in body, f"{path} has an inline script with no nonce"
 
 
 def test_the_status_page_lists_what_is_not_built(client: str) -> None:

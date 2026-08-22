@@ -29,6 +29,7 @@ customer's PIM, and there is no code path that could.
 from __future__ import annotations
 
 import html
+import secrets
 import threading
 import traceback
 import urllib.parse
@@ -48,6 +49,15 @@ from .etim import EtimModel
 from .ingest import CatalogRecord, load_catalog
 from .layout import extract_layer
 from .ledger import Ledger, calibration_examples
+
+#: Placeholder written into every inline ``<script>``/``<style>`` tag, swapped for a fresh random
+#: nonce in :meth:`_send` -- the one place that also writes the CSP header, so the two cannot drift
+#: apart. Threading a nonce through nine render call sites would work until someone added a tenth.
+#:
+#: The slot is randomised per process rather than being a fixed literal so that no user-supplied
+#: string -- an SKU id, a manufacturer name -- can contain it and have a live nonce substituted into
+#: page text. Escaping already prevents injection; this removes the question entirely.
+_NONCE_SLOT = f"__csp_nonce_{secrets.token_hex(8)}__"
 
 __all__ = ["AuditService", "serve"]
 
@@ -437,7 +447,8 @@ def _page(
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        f"<title>Errata — {_e(title)}</title><style>{_CSS}{_WEB_CSS}</style></head><body>"
+        f"<title>Errata — {_e(title)}</title>"
+        f"<style nonce='{_NONCE_SLOT}'>{_CSS}{_WEB_CSS}</style></head><body>"
         f"<nav><span class='brand'>ERRATA</span>{nav}<span class='spacer'></span>"
         "<span class='badge'>R1 · local reviewer console</span></nav>"
         + (f"{flash_html}<main>{body}</main>" if wrap else f"{flash_html}{body}")
@@ -784,7 +795,7 @@ def _sku_page(service: AuditService, result: SkuAudit, *, focus_id: str = "") ->
         # number on its own cannot be audited -- nothing about "47.3" says when it started or
         # whether the tab sat open over lunch. Two ISO timestamps can be read, checked against the
         # ledger's own event time, and thrown out if they disagree.
-        "<script>document.addEventListener('DOMContentLoaded',function(){"
+        f"<script nonce='{_NONCE_SLOT}'>" + "document.addEventListener('DOMContentLoaded',function(){"
         "var t=Date.now();var iso=new Date(t).toISOString();"
         "document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',"
         "function(){var now=Date.now();"
@@ -879,6 +890,14 @@ class _Handler(BaseHTTPRequestHandler):
     # -- helpers --------------------------------------------------------------------------
 
     def _send(self, payload: bytes, *, status: int = 200, content_type: str = "text/html; charset=utf-8") -> None:
+        # A fresh nonce per response, swapped into the markup and named in the header together.
+        # `'unsafe-inline'` used to stand where these do, which is the clause that gives away most
+        # of what a CSP is for: with it, any string that reaches the page as markup executes.
+        # Escaping already stops that here; the nonce means a single escaping mistake is not also a
+        # script execution.
+        nonce = secrets.token_urlsafe(16)
+        payload = payload.replace(_NONCE_SLOT.encode("ascii"), nonce.encode("ascii"))
+
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
@@ -887,10 +906,13 @@ class _Handler(BaseHTTPRequestHandler):
         # off-origin -- there is nothing off-origin to talk to.
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        # Without this, a browser may sniff a response body and decide it knows better than the
+        # Content-Type -- which turns any endpoint that echoes bytes into a script host.
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; "
-            "script-src 'unsafe-inline'; form-action 'self'",
+            "default-src 'none'; img-src 'self' data:; "
+            f"style-src 'nonce-{nonce}'; script-src 'nonce-{nonce}'; form-action 'self'",
         )
         self.end_headers()
         if self.command != "HEAD":
