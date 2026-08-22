@@ -55,6 +55,11 @@ export default defineConfig({
   },
 
   projects: [
+    // Screenshot baselines and perf budgets belong to ONE project. Font rasterisation,
+    // scrollbar width, subpixel rounding and frame timing are all engine- and
+    // device-specific, and a budget that means four different things is not a budget.
+    // Original text follows.
+    //
     // Screenshot baselines belong to ONE project. Font rasterisation, scrollbar width and
     // subpixel rounding differ per engine and per viewport, so sharing a baseline across
     // projects produces diffs about the renderer rather than about the change — and a suite that
@@ -65,12 +70,12 @@ export default defineConfig({
     // the desktop baselines at a phone viewport. Projects are defined here, so the rule that
     // depends on project identity belongs here too.
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: /visual\.spec\.ts/ },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] }, testIgnore: /visual\.spec\.ts/ },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: /(visual|perf)\.spec\.ts/ },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] }, testIgnore: /(visual|perf)\.spec\.ts/ },
     // H-4: the console degrades to a stacked layout that has never been opened on a phone.
     // Emulation is not a real device and does not close that item — it is the part of it that
     // can be automated.
-    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: /visual\.spec\.ts/ },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: /(visual|perf)\.spec\.ts/ },
   ],
 
   webServer: {

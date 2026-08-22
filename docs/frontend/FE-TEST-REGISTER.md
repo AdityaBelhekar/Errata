@@ -16,14 +16,14 @@ rests on a single manual observation, it is labelled **SMOKE**, not PASS.
 | | Was (21 Aug) | Now (22 Aug) | Comment |
 |---|---:|---:|---|
 | Python tests | 1,335 | **1,357** | +22: G-1 geometry, ADR-004 OCR decline, CSP/nonce, O-11 wording |
-| **Frontend automated tests** | **0** | **158** | 28 Vitest + 130 Playwright (smoke, axe, keyboard, visual) |
+| **Frontend automated tests** | **0** | **435** | 28 Vitest + 407 Playwright (smoke, axe, keyboard, visual, perf, bundle) |
 | **CI steps touching the frontend** | **0** | **9** | `ci.sh` §4: both design gates, site drift, typecheck, unit, audit, build, build-drift, e2e |
 | axe violations (serious+critical) | never run | **0** | First run found 6; all fixed. `docs/frontend/A11Y-BASELINE.md` |
 | Screenshot baselines on `states.html` | 0 | **42** | 21 components × 2 themes, per-component clips |
 | PRD requirements (FR-*) | 59 | 59 | |
 | …with no surface at all | 45 | **39** | 6 specified pages built: `/method` `/benchmark` `/errata` `/pricing` `/docs` `/500` |
 | Browsers configured | 1 | **4** | Chromium green; Firefox/WebKit/mobile configured, **not yet run** |
-| Frontend perf measurements | **0** | **0** | §11.9's budget still never recorded — unchanged |
+| Frontend perf measurements | **0** | **7** | `docs/frontend/PERF-BASELINE.md`. Shader compile still unmeasured — §11.9 partially open |
 
 **The second line was the most important one in this table and it has moved.** What has not moved
 is the perf row: §11.9 remains unmeasured, and FE-5's gate ("budget met *before* integration") is
@@ -96,11 +96,15 @@ the components document but do not implement (FE-2 O-5).
 `Select`, `Menu`, `Modal`, `Drawer`, `Tabs` and others have their keyboard contracts written in
 comments and not in code. `ThemeToggle` is the only fully implemented one. (FE-2 O-5.)
 
-### H-3 · The client-side bundle verifier is untested
-`errata_bundle.verify` has Python tests including tamper detection. The **JavaScript** verifier in
-`console.js` has none — and it is the one a customer would rely on. The byte-digest interop is
-tested in one direction only (Python writes, `sha256sum` agrees); nothing asserts the browser
-computes the same value.
+### ~~H-3 · The client-side bundle verifier is untested~~ — **CLOSED 22 Aug**
+Five browser tests in `web/app/e2e/bundle.spec.ts`, run on all four projects, against a **real
+bundle from the real writer** (`e2e/fixtures/make_bundle.py`, committed). They mirror the Python
+tamper cases one for one: page-image tamper, manifest tamper, and a missing file failing closed
+rather than open.
+
+The missing interop direction is now covered — three implementations (Python `hashlib`, Node
+`crypto`, browser WebCrypto) agreeing on one hex string over the same bytes. One direction was
+never interop; it was a coincidence waiting to end.
 
 ### H-4 · No cross-browser or device testing
 Everything ran in one Chromium build. Untested and at genuine risk:
@@ -171,7 +175,26 @@ Blueprint pages specified in §12 and **not built**: `/method`, `/evidence`, `/b
 
 ## 4. NON-FUNCTIONAL — untested categories
 
-### 4.1 Performance — **nothing measured**
+### 4.1 Performance — **partially measured, 22 Aug** (was: nothing measured)
+
+See `docs/frontend/PERF-BASELINE.md`. Recorded: initial transfer (274,791 B raw / ~78 KB gzipped),
+LCP (~2,700 ms), CLS (0.0000 — **which may not be quoted**, see below), steady frame median
+(~58 ms under 8 parallel workers), and `?nogl=1` engine bytes (0, asserted exactly).
+
+**Still open, by name:**
+- **Shader compile is UNMEASURED.** Two attempts mislabelled it — 554 ms reported as a frame time,
+  then 1.0 ms reported as a compile. Both numbers were arithmetically true and neither described
+  its label; publishing the second would have been exactly the FR-9.1 failure. Closing it needs
+  `performance.mark()` around the program link inside `Scene.tsx`.
+- **CLS 0.0000 may not be quoted.** The type families are absent, so no font swap occurs and
+  §5.3's `size-adjust` overrides are still `<MEASURE>`. It is the CLS of a page nobody will ship.
+- **A real frame-rate measurement has not been taken** — ~58 ms is measured under full-suite
+  contention and is a regression floor, not a claim about a visitor's experience.
+- 150k-point fill rate, memory profile, INP, and the 1.2M-row queue remain untouched.
+
+The original entry follows, because FE-5's gate is not retroactively satisfiable.
+
+### 4.1a Performance — the original finding
 §11.9 states budgets as "spec, not aspiration". Not one has been recorded:
 - Frame time on the procession · shader **compile** time · LCP, CLS, INP
 - Bundle budget compliance (initial is 77.6 KB gzipped; no stated ceiling to compare against)

@@ -1,0 +1,1 @@
+{"declined":[],"findings":[{"attribute":"rated_current","catalog_value":"61 A","counter_evidence":[],"counter_summary":"No supporting evidence found.","derived_value":"16 A","evidence":[{"box":[0.12101,0.17815,0.20168,0.19596],"page":1,"table_cell":"16"}]}],"resolved":[],"sku":"TEST-1"}
