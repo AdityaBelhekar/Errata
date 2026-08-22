@@ -46,3 +46,24 @@ Manufacturer datasheets
 ExtractBench
   Grounding metric definition (value accepted AND predicted box overlapping an accepted evidence
   box at IoU 0.5) is reused verbatim for comparability. ExtractBench is Apache-2.0.
+
+Typefaces — bundled, SIL Open Font License 1.1
+  REDISTRIBUTED under the OFL, which requires the licence to travel with the fonts. Each family's
+  verbatim licence is at web/datum/fonts/<family>/OFL.txt. Acquisition log -- source URL, date and
+  archive digest -- is in web/datum/fonts/README.md.
+
+  Redaction        Forest Young & Jeremy Mickel (MCKL). 5 cuts.
+                   Commissioned for Titus Kaphar & Reginald Dwayne Betts' "The Redaction"
+                   at MoMA PS1. Obtained from the project's own site, redaction.us.
+
+  Apfel Grotezk    Collletttivo. 4 cuts.
+                   Obtained from the foundry's own repository, github.com/collletttivo.
+
+  Sligoil          Ariel Martin Perez, Velvetyne Type Foundry. 1 cut (Micro).
+                   Obtained from gitlab.com/velvetyne/sligoil. The non-Micro "Regular" cut named
+                   in blueprint §5.2 is NOT present in the foundry's current release and has NOT
+                   been substituted -- see docs/adr/ADR-006.
+
+  No font file is modified. None is subsetted: the full-range faces are shipped as published,
+  because a subset is a derivative and the reserved-name and attribution questions that raises are
+  not worth the 40 KB it would save on a page that already loads 183 KB of WebGL engine.

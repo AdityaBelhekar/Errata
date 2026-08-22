@@ -12,45 +12,83 @@
      Redaction 50   a claim we have not verified
      Redaction 100  fully corrupted; unreadable as record
 
-   FONT FILES ARE NOT IN THIS REPOSITORY. See `web/datum/fonts/README.md` for
-   what to fetch, from where, and under which licence. Until they land, every
-   rule below resolves through its fallback stack — which is why the stacks are
-   metric-matched rather than arbitrary. This is stated in FE-1's gate report as
-   an open item, not asserted as done.
+   THE FONT FILES LANDED, 22 August 2026, from the sources named in
+   `web/datum/fonts/README.md` — which now carries the acquisition log: what was
+   downloaded, from where, and its digest.
+
+   TEN of the ELEVEN declared faces are present. `Sligoil` (the non-Micro cut) is
+   NOT, because the foundry's current release does not contain it. It has NOT
+   been mapped to Sligoil Micro, which is a different face — see ADR-006. That
+   `@font-face` is left declared and unresolvable on purpose: the stack falls
+   through to the next entry, and the missing file stays visible instead of
+   becoming a silent substitution.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── @font-face · Redaction (SIL OFL — Forest Young & Jeremy Mickel) ────────
    LAW §5.3: every face carries size-adjust / ascent-override / descent-override
-   tuned to its fallback so the swap causes zero layout shift. The overrides
-   below are PLACEHOLDERS marked <MEASURE> — they must be produced from the real
-   files with a fallback-metrics tool before FE-6, and no CLS number may be
-   quoted until they are. Ground rule 1: do not publish a metric nobody measured. */
+   tuned to its fallback so the swap causes zero layout shift.
+
+   These are MEASURED, not approximated — produced by `web/datum/tools/font-metrics.py`
+   from the real webfont and the real fallback, and regenerable from it. The
+   overrides go on the WEBFONT and tune it to the fallback, not the other way
+   round: the fallback paints first under `font-display: swap`, the reader is
+   already looking at it, and moving the thing that arrives late is the only way
+   nothing shifts under their eye.
+
+   `size-adjust` matches x-height rather than the em box, because x-height is what
+   the eye reads as "the size of the text".
+
+   NOTE ON WHAT MAY STILL NOT BE QUOTED: these were measured against the
+   fallbacks AS INSTALLED ON ONE MACHINE. Georgia is stable across platforms;
+   `system-ui` resolves to Segoe UI here and to something else elsewhere. The
+   overrides are therefore right for the common case and approximate for the
+   rest. A CLS number now has a measured basis it did not have — see
+   docs/frontend/PERF-BASELINE.md §3 for what that does and does not license. */
 
 @font-face {
   font-family: 'Redaction 0';
   src: url('../fonts/redaction/Redaction_0-Regular.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
-  /* <MEASURE> against Spectral / Georgia */
+  /* §5.3 — measured against Georgia. web/datum/tools/font-metrics.py */
+  size-adjust: 102.44%;
+  ascent-override: 89.52%;
+  descent-override: 21.40%;
 }
 @font-face {
   font-family: 'Redaction 20';
   src: url('../fonts/redaction/Redaction_20-Regular.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Georgia. web/datum/tools/font-metrics.py */
+  size-adjust: 102.44%;
+  ascent-override: 89.52%;
+  descent-override: 21.40%;
 }
 @font-face {
   font-family: 'Redaction 20';
   src: url('../fonts/redaction/Redaction_20-Italic.woff2') format('woff2');
   font-weight: 400; font-style: italic; font-display: swap;
+  /* §5.3 — measured against Georgia Italic. web/datum/tools/font-metrics.py */
+  size-adjust: 103.99%;
+  ascent-override: 88.18%;
+  descent-override: 21.08%;
 }
 @font-face {
   font-family: 'Redaction 50';
   src: url('../fonts/redaction/Redaction_50-Regular.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Georgia. web/datum/tools/font-metrics.py */
+  size-adjust: 102.44%;
+  ascent-override: 89.52%;
+  descent-override: 21.40%;
 }
 @font-face {
   font-family: 'Redaction 100';
   src: url('../fonts/redaction/Redaction_100-Regular.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Georgia. web/datum/tools/font-metrics.py */
+  size-adjust: 102.44%;
+  ascent-override: 89.52%;
+  descent-override: 21.40%;
 }
 
 /* ── @font-face · Apfel Grotezk (OFL — Collletttivo) ───────────────────────── */
@@ -58,26 +96,52 @@
   font-family: 'Apfel Grotezk';
   src: url('../fonts/apfel/ApfelGrotezk-Regular.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Segoe UI. web/datum/tools/font-metrics.py */
+  size-adjust: 100.00%;
+  ascent-override: 107.91%;
+  descent-override: 25.10%;
 }
 @font-face {
   font-family: 'Apfel Grotezk';
   src: url('../fonts/apfel/ApfelGrotezk-Mittel.woff2') format('woff2');
   font-weight: 500; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Segoe UI. web/datum/tools/font-metrics.py */
+  size-adjust: 100.00%;
+  ascent-override: 107.91%;
+  descent-override: 25.10%;
 }
 @font-face {
   font-family: 'Apfel Grotezk';
   src: url('../fonts/apfel/ApfelGrotezk-Fett.woff2') format('woff2');
   font-weight: 700; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Segoe UI Bold. web/datum/tools/font-metrics.py */
+  size-adjust: 100.00%;
+  ascent-override: 107.91%;
+  descent-override: 25.10%;
 }
 @font-face {
   font-family: 'Apfel Grotezk Brukt';
   src: url('../fonts/apfel/ApfelGrotezk-Brukt.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Segoe UI. web/datum/tools/font-metrics.py */
+  size-adjust: 100.00%;
+  ascent-override: 107.91%;
+  descent-override: 25.10%;
 }
 
 /* ── @font-face · Sligoil (OFL — Ariel Martín Pérez, Velvetyne) ─────────────
    Sligoil Micro is the small-optical-size cut. It is a separate family, not a
    weight, which is why the token layer names it separately. */
+/* NOT SHIPPED, and deliberately still declared. Velvetyne's current release
+   (gitlab.com/velvetyne/sligoil, fetched 22 Aug 2026) contains only the Micro
+   cuts — Micro, MicroMedium, MicroBold. There is no `Sligoil-Regular`.
+
+   Blueprint §5.2 names "Regular, Micro". Mapping this to Sligoil Micro would be
+   exactly the silent substitution `fonts/README.md` forbids: Micro is a distinct
+   design drawn for small sizes, not the same face at another weight. So the
+   declaration stays, the file stays absent, the stack falls through to
+   'Geist Mono' → ui-monospace, and the gap stays visible. ADR-006 records the
+   decision this needs. */
 @font-face {
   font-family: 'Sligoil';
   src: url('../fonts/sligoil/Sligoil-Regular.woff2') format('woff2');
@@ -87,6 +151,11 @@
   font-family: 'Sligoil Micro';
   src: url('../fonts/sligoil/Sligoil-Micro.woff2') format('woff2');
   font-weight: 400; font-style: normal; font-display: swap;
+  /* §5.3 — measured against Consolas. web/datum/tools/font-metrics.py */
+  size-adjust: 90.78%;
+  ascent-override: 81.81%;
+  descent-override: 28.34%;
+  line-gap-override: 18.82%;
 }
 
 /* ═══ THE OPTICAL TRACKING CURVE (§5.4) ═══════════════════════════════════════

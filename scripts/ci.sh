@@ -134,6 +134,13 @@ fi
 step "design -- token lint (LAW: colour, spacing, motion)" "$PY" web/datum/tools/lint-tokens.py
 step "design -- contrast law" "$PY" web/datum/tools/contrast.py
 
+# §5.3 is a LAW: every @font-face carries measured size-adjust / ascent / descent overrides so the
+# font swap causes zero layout shift. They were `<MEASURE>` placeholders -- absent, not
+# approximated -- until the fonts landed. This fails the build if a placeholder comes back, which
+# is how a re-added face without measured metrics gets caught rather than shipping a page that
+# jumps when its type arrives.
+step "design -- font metric overrides are measured (§5.3)" "$PY" web/datum/tools/font-metrics.py --check
+
 # The public site is generated from one shell so eight pages cannot drift into eight navs. The
 # generated files are committed because a Python-only install has no Node and the console serves
 # them as static files -- so this checks that what is committed is what the generator produces.

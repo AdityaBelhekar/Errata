@@ -97,19 +97,20 @@ export const SURFACES: Surface[] = [
 ];
 
 /**
- * Requests that are allowed to fail, by name, with an expiry condition.
+ * Requests that are allowed to fail, by name.
  *
- * The three type families specified in blueprint §5.2 are not in the repository
- * (`web/datum/fonts/README.md`), so every page requests them and every request
- * 404s. That is a known, recorded, open item — FE-1 O-1, the oldest in the
- * project — and failing the smoke suite on it would mean the suite is red from
- * the day it is written, which is how a suite gets ignored.
+ * **This list used to hold all three type families and now holds one file.** The
+ * fonts landed on 22 August 2026 (`web/datum/fonts/README.md` carries the
+ * acquisition log), so ten of the eleven declared faces now resolve and a 404 on
+ * any of them is a real failure.
  *
- * **This list is deleted when the fonts land.** At that point a missing font
- * becomes a test failure rather than a known exception, which is the whole
- * point of writing the exception down instead of loosening the assertion.
+ * The survivor is `Sligoil-Regular.woff2`, which the foundry's current release
+ * does not contain. It is NOT mapped to Sligoil Micro — a different face — so the
+ * declaration stays, the file stays absent, and the exception stays written down
+ * here rather than the assertion being loosened. ADR-006 records the decision it
+ * needs; when that lands, this list goes to empty.
  */
-export const KNOWN_MISSING = [/\/fonts\/redaction\//i, /\/fonts\/apfel\//i, /\/fonts\/sligoil\//i];
+export const KNOWN_MISSING = [/Sligoil-Regular\.woff2/i];
 
 export function isKnownMissing(url: string): boolean {
   return KNOWN_MISSING.some((pattern) => pattern.test(url));

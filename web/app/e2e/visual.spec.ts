@@ -17,12 +17,23 @@
  * failure names the component that changed instead of reporting that 0.01 of a
  * very large image is different.
  *
- * **Baselines are captured with the specified fonts absent.** The three families
- * in blueprint §5.2 are not in the repository yet (`web/datum/fonts/README.md`),
- * so every glyph is currently a fallback and every baseline changes at once when
- * Redaction lands. Hence the `-fallback` suffix: when the fonts arrive, add a
- * second set rather than overwriting this one. A mass baseline update is
- * otherwise indistinguishable from a mass regression.
+ * **Baselines are `-specified`: captured with the real type installed.** They were
+ * `-fallback` until 22 August 2026, when the families named in blueprint §5.2
+ * landed (`web/datum/fonts/README.md` carries the acquisition log). All 42
+ * changed at once, which is exactly the event the old suffix was warning about —
+ * a mass baseline update that is indistinguishable from a mass regression unless
+ * you knew in advance which one it was. This comment is that advance notice,
+ * kept rather than deleted.
+ *
+ * The rename happened in the same commit as the content change on purpose: the
+ * images all changed regardless, so splitting it would have produced two
+ * unreviewable diffs instead of one. What must NOT happen again is a rename
+ * without a stated cause.
+ *
+ * One face is still absent — `Sligoil-Regular`, which the foundry does not
+ * publish (ADR-006). These baselines therefore show the data voice falling
+ * through to `ui-monospace` at body size, which is the current shipped state and
+ * not the specified one.
  *
  * The rule for reviewers: `--update-snapshots` on a red run launders a regression
  * as intent. Every baseline change is a reviewed diff.
@@ -57,7 +68,7 @@ test.describe('states gallery — the §13.5 diff target', () => {
         test(`${id}`, async ({ page }) => {
           const section = page.locator(`#${id}`);
           await section.scrollIntoViewIfNeeded();
-          await expect(section).toHaveScreenshot(`${id}-${theme}-fallback.png`, {
+          await expect(section).toHaveScreenshot(`${id}-${theme}-specified.png`, {
             animations: 'disabled',
             caret: 'hide',
           });
