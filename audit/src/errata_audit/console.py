@@ -34,6 +34,7 @@ from dataclasses import dataclass
 
 import pymupdf
 
+from errata_bundle.geometry import PageProjection, project_page
 from errata_spec import Evidence, Severity
 
 from .audit import AttributeOutcome, SkuAudit
@@ -48,27 +49,42 @@ PAGE_ZOOM = 2.0
 
 @dataclass(frozen=True, slots=True)
 class PageImage:
-    """One rendered page, plus the transform that puts a PDF box onto it."""
+    """One rendered page, plus the transform that puts a PDF box onto it.
+
+    The transform is :class:`errata_bundle.geometry.PageProjection` and is **not** recomputed here.
+    This class used to carry its own ``x * zoom``, which is correct only for a page with
+    ``rotation = 0`` and ``mediabox == cropbox`` -- the geometry every document in the current
+    corpus happens to have. On a ``/Rotate 90`` page it put every evidence box on a different part
+    of the page (FE-2.5 defect G-1), and FR-9.6 names fold-outs as part of the frozen hard-tail
+    split, so "cannot fire today" was never the same as "will not fire".
+
+    The fix is not a second copy of the correct arithmetic. Two implementations of the coordinate
+    system is *how* the defect happened; ``errata_bundle.geometry`` is the one implementation, and
+    ``audit/tests/test_console_geometry.py`` asserts identity with it rather than agreement to a
+    tolerance, so a reintroduced local shortcut fails even where it happens to agree.
+    """
 
     page: int
     width: int
     height: int
     data_uri: str
     zoom: float = PAGE_ZOOM
+    projection: PageProjection | None = None
+    """The renderer's own transform. Optional only so a hand-built ``PageImage`` in an old test
+    still constructs; :meth:`place` refuses rather than guessing when it is absent."""
 
     def place(self, box: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
-        """PDF user-space box -> percentage rectangle on the rendered image.
+        """PDF user-space box -> CSS ``(left, top, width, height)`` percentages.
 
         Percentages rather than pixels so the image can be scaled to fit a screen without the
         boxes drifting off the words -- the one failure that would make the whole panel worthless.
         """
-        x0, y0, x1, y1 = box
-        return (
-            100.0 * x0 * self.zoom / self.width,
-            100.0 * y0 * self.zoom / self.height,
-            100.0 * (x1 - x0) * self.zoom / self.width,
-            100.0 * (y1 - y0) * self.zoom / self.height,
-        )
+        if self.projection is None:
+            raise ValueError(
+                "PageImage has no projection: build it with render_page() rather than by hand. "
+                "A projection composed from zoom and rotation by the caller is defect G-1."
+            )
+        return self.projection.to_percent(box)
 
 
 def render_page(path, page_number: int, *, zoom: float = PAGE_ZOOM) -> PageImage:
@@ -79,7 +95,9 @@ def render_page(path, page_number: int, *, zoom: float = PAGE_ZOOM) -> PageImage
     """
     document = pymupdf.open(path)
     page = document[page_number - 1]
-    pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+    # The projection and the pixmap come back together on purpose: a transform describing one
+    # render and an image from another is worse than no transform at all.
+    projection, pixmap = project_page(page, zoom=zoom)
     buffer = io.BytesIO(pixmap.tobytes("png"))
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return PageImage(
@@ -88,6 +106,7 @@ def render_page(path, page_number: int, *, zoom: float = PAGE_ZOOM) -> PageImage
         height=pixmap.height,
         data_uri=f"data:image/png;base64,{encoded}",
         zoom=zoom,
+        projection=projection,
     )
 
 

@@ -78,7 +78,7 @@ def over(fg, bg):
     r, g, b, alpha = fg
     return tuple(
         _encode(_decode(f) * alpha + _decode(k) * (1 - alpha))
-        for f, k in zip((r, g, b), bg)
+        for f, k in zip((r, g, b), bg, strict=True)
     )
 
 

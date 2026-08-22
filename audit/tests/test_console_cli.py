@@ -18,6 +18,7 @@ import json
 import re
 from pathlib import Path
 
+import pymupdf
 import pytest
 from conftest import etim_archive, requires_etim
 
@@ -25,7 +26,7 @@ from errata_audit.attributes import load_attributes
 from errata_audit.audit import audit_sku
 from errata_audit.classify import load_scope
 from errata_audit.cli import main
-from errata_audit.console import PageImage, render_html, render_text
+from errata_audit.console import render_html, render_page, render_text
 from errata_audit.etim import load_etim
 from errata_audit.ingest import record_from_mapping
 from errata_audit.layout import extract_layer
@@ -128,10 +129,25 @@ def test_the_value_and_its_headers_are_boxed_in_different_colours(result) -> Non
     assert "class='box header'" in html
 
 
-def test_a_box_is_placed_as_a_percentage_of_the_rendered_page() -> None:
+def test_a_box_is_placed_as_a_percentage_of_the_rendered_page(tmp_path: Path) -> None:
     """A rectangle computed with the wrong scale still renders and still looks plausible. The
-    arithmetic is pinned here because the failure is invisible in a screenshot."""
-    image = PageImage(page=1, width=800, height=600, data_uri="", zoom=2.0)
+    arithmetic is pinned here because the failure is invisible in a screenshot.
+
+    The page is rendered rather than described. This test used to build a ``PageImage`` by hand with
+    a width, a height and a zoom, which pinned the arithmetic *and* pinned the assumption that a
+    transform can be reconstructed from those three numbers -- it cannot, on a rotated or
+    cropbox-offset page, and that assumption was defect G-1. The expected percentages below are
+    unchanged; only the way the transform is obtained is.
+    """
+    document = pymupdf.open()
+    document.new_page(width=400.0, height=300.0)  # 400x300 at zoom 2 -> the same 800x600 image
+    path = tmp_path / "placement.pdf"
+    document.save(str(path))
+    document.close()
+
+    image = render_page(path, 1, zoom=2.0)
+    assert (image.width, image.height) == (800, 600)
+
     left, top, width, height = image.place((100.0, 150.0, 120.0, 160.0))
     assert (left, top) == pytest.approx((25.0, 50.0))
     assert (width, height) == pytest.approx((5.0, 3.3333), rel=1e-3)
