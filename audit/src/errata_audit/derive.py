@@ -149,6 +149,21 @@ def derive(
             "worse than declining it",
         )
 
+    # A scan that arrives WITH an OCR layer is the case the paragraph above does not catch: it has
+    # plenty of words, so `is_born_digital` is true, and every one of them is a guess. ADR-004.
+    if layer.is_ocr_over_scan:
+        worst = max((page.image_area_ratio for page in layer.pages), default=0.0)
+        return _abstain(
+            attribute,
+            sku_id,
+            class_uri,
+            DeclinedReason.OCR_TEXT_NOT_EVIDENCE,
+            f"{doc_id} is a scan carrying an OCR text layer ({len(layer.words)} words over "
+            f"{layer.page_count} pages, up to {worst:.0%} of a page is image); those words are a "
+            "reading of the pixels, not the document's own text, so a citation into them would "
+            "quote something the document does not say",
+        )
+
     cell, table = _table_cell(tables, mpn=mpn, attribute=attribute)
     if cell is not None and table is not None:
         return _from_cell(

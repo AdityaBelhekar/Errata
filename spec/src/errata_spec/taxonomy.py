@@ -131,6 +131,18 @@ class DeclinedReason(str, enum.Enum):
     LAYOUT_UNREADABLE = "layout_unreadable"
     """Fold-out page, rotated table, cross-page table split."""
 
+    OCR_TEXT_NOT_EVIDENCE = "ocr_text_not_evidence"
+    """The document is a scan carrying an OCR layer (ADR-004).
+
+    Deliberately NOT ``LAYOUT_UNREADABLE``: the layout is not what defeated us. The text is
+    perfectly legible -- that is the problem. It is a model's reading of pixels rather than the
+    document's own character stream, so grounding a claim in it cites something the document does
+    not say, and the evidence box has nothing true to project onto.
+
+    A reason that misdescribes what happened is worse than no reason, which is why this is its own
+    member rather than a comment on an existing one.
+    """
+
     AMBIGUOUS_MULTI_PRODUCT_PAGE = "ambiguous_multi_product_page"
     """Cannot determine which of several products on the page the value belongs to."""
 

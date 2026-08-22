@@ -41,6 +41,7 @@ import pymupdf
 
 __all__ = [
     "COLUMN_GAP_FRACTION",
+    "IMAGE_DOMINATED_RATIO",
     "JOIN",
     "LAYOUT_VERSION",
     "ColumnBand",
@@ -66,6 +67,17 @@ JOIN = " "
 #: spacing is millimetres -- and NOT tuned against an accuracy score. Tuning a layout constant
 #: until the audit agrees with itself more often is fitting the instrument to the answer.
 COLUMN_GAP_FRACTION = 0.06
+
+#: A page whose image blocks cover at least this fraction of it is a picture, not a typeset page.
+#: See ADR-004. Measured, not guessed: the two real datasheets on hand -- photographs, wiring
+#: diagrams and dimension drawings included -- peak at 0.191, and a scanned page is 1.0. This sits
+#: 3.1x above the highest observed born-digital page and 0.4 below a scan, in the middle of a gap
+#: nothing occupies.
+#:
+#: It is set from that separation and NOT from a coverage target. Moving it in the direction that
+#: recovers coverage needs a new ADR and a reviewer who is not the person whose number it restores
+#: -- the failure mode this repository already has one instance of (MIN_CONTRAST, 1.5 -> 1.25).
+IMAGE_DOMINATED_RATIO = 0.60
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +111,19 @@ class Page:
     number: int
     width: float
     height: float
+
+    image_area_ratio: float = 0.0
+    """Fraction of the page covered by image blocks, 0..1, measured at extraction (ADR-004).
+
+    Carried on the page rather than computed on demand because it is a property of the bytes that
+    were extracted, and recomputing it later means reopening a document that may no longer be
+    reachable at the same URL -- the case the document register exists to catch.
+    """
+
+    @property
+    def is_image_dominated(self) -> bool:
+        """The page is a picture. Any text over it is an OCR guess, not the document's own bytes."""
+        return self.image_area_ratio >= IMAGE_DOMINATED_RATIO
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +185,36 @@ class TextLayer:
         return bool(self.words)
 
     @property
+    def ocr_over_scan_pages(self) -> tuple[int, ...]:
+        """Page numbers that carry words *and* are image-dominated -- i.e. OCR over a scan."""
+        carrying = {word.page for word in self.words}
+        return tuple(
+            page.number
+            for page in self.pages
+            if page.number in carrying and page.is_image_dominated
+        )
+
+    @property
+    def is_ocr_over_scan(self) -> bool:
+        """Every page carrying text is a picture: the text layer is OCR output (ADR-004).
+
+        This is orthogonal to :attr:`is_born_digital`, not a refinement of it. That property
+        distinguishes *unreadable* (no words) from *thin* (few words), a distinction its own
+        docstring records as having taken a revision to get right. OCR-over-scan is a third thing:
+        plenty of words, all of them a model's reading of pixels rather than the document's
+        character stream. Grounding a claim in them cites something the document does not say, and
+        the boxes cannot land because they were never in the same coordinate space as the span.
+
+        **Every** page carrying words, not most: a document with one scanned insert among fifteen
+        typeset pages is not an OCR-over-scan document, and declining it whole would throw away
+        fifteen good pages to avoid one bad one.
+        """
+        carrying = {word.page for word in self.words}
+        if not carrying:
+            return False
+        return len(self.ocr_over_scan_pages) == len(carrying)
+
+    @property
     def words_per_page(self) -> float:
         return len(self.words) / self.page_count if self.page_count else 0.0
 
@@ -218,6 +273,26 @@ class TextLayer:
         return self.text[max(0, start - context) : min(len(self.text), end + context)]
 
 
+
+def _image_area_ratio(page: pymupdf.Page) -> float:
+    """Fraction of ``page`` covered by image blocks, clamped to 1.0 (ADR-004).
+
+    Overlapping images are summed rather than unioned, so the figure is an upper bound on coverage.
+    That is the safe direction: it can only push a page towards being called a picture, and a page
+    wrongly called a picture is declined and visible, while a scan wrongly called typeset is
+    grounded and silent.
+    """
+    area = abs(page.rect.width * page.rect.height)
+    if area <= 0:
+        return 0.0
+    covered = 0.0
+    for block in page.get_text("dict")["blocks"]:
+        if block.get("type") == 1:  # 1 == image, 0 == text
+            x0, y0, x1, y1 = block["bbox"]
+            covered += abs((x1 - x0) * (y1 - y0))
+    return min(covered / area, 1.0)
+
+
 def layer_cache_key(document_sha256: str) -> str:
     """The cache identity: content hash plus extractor version, never the file path.
 
@@ -253,7 +328,12 @@ def extract_layer(
 
     for page_index, page in enumerate(document, start=1):
         pages.append(
-            Page(number=page_index, width=float(page.rect.width), height=float(page.rect.height))
+            Page(
+                number=page_index,
+                width=float(page.rect.width),
+                height=float(page.rect.height),
+                image_area_ratio=_image_area_ratio(page),
+            )
         )
         for x0, y0, x1, y1, text, block, line, _word_index in page.get_text("words"):
             words.append(

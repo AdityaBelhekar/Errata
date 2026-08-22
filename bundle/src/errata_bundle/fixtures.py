@@ -33,7 +33,7 @@ from pathlib import Path
 
 import pymupdf
 
-__all__ = ["GEOMETRIES", "FixtureSpec", "write_all", "write_fixture"]
+__all__ = ["GEOMETRIES", "FixtureSpec", "write_all", "write_fixture", "write_ocr_over_scan"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,3 +97,40 @@ def write_fixture(spec: FixtureSpec, directory: Path) -> Path:
 
 def write_all(directory: Path) -> dict[str, Path]:
     return {spec.name: write_fixture(spec, directory) for spec in GEOMETRIES}
+
+
+def write_ocr_over_scan(directory: Path, *, name: str = "ocr-over-scan") -> Path:
+    """A scanned page carrying an OCR text layer -- the counterexample for ADR-004.
+
+    ``H28-1957-Part-I.pdf`` is the real instance: 100% image area, an OCR layer, 161,731 words, and
+    nothing in the pipeline declining it. It lives in ``var/``, which is gitignored under FR-9.5
+    because the documents are the manufacturers' and not ours to redistribute, so a test that
+    depends on it is a test that does not run on a fresh clone.
+
+    So the counterexample is manufactured here, the same way the rotated and cropped geometries
+    were: render typeset text to a raster, place the raster as the whole page, and lay the same
+    words back over it in render mode 3 -- invisible. That is structurally what an OCR tool
+    produces, and it reproduces both properties that matter: ``image_area_ratio == 1.0``, and a
+    word list that looks entirely reasonable until you ask where it came from.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{name}.pdf"
+
+    typeset = pymupdf.open()
+    page = typeset.new_page(width=595.0, height=842.0)
+    for x, y, text, size in _LINES:
+        page.insert_text((x, y), text, fontname="helv", fontsize=size, color=(0, 0, 0))
+    raster = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).tobytes("png")
+    typeset.close()
+
+    scanned = pymupdf.open()
+    scan_page = scanned.new_page(width=595.0, height=842.0)
+    scan_page.insert_image(scan_page.rect, stream=raster)
+    for x, y, text, size in _LINES:
+        # render_mode=3 is "invisible": drawn into the text layer, never onto the page. This is how
+        # every OCR tool attaches its reading to a scan, and why the words extract cleanly.
+        scan_page.insert_text((x, y), text, fontname="helv", fontsize=size, render_mode=3)
+
+    scanned.save(str(path))
+    scanned.close()
+    return path
