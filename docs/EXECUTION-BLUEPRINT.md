@@ -684,18 +684,26 @@ reproduced the numbers, D-5). Both are half-open and both are load-bearing for t
 Nothing ships until every line below is green. Ordered by what it costs to be wrong about — this
 is the register's §9 list, expanded with the items P0 and P1 added.
 
-| # | Gate | Phase |
-|---|---|---|
-| 1 | Everything committed; clean clone builds | P0 |
-| 2 | Frontend test suite exists and runs in `ci.sh` | P2 |
-| 3 | G-1 rotation and OCR-decline fixed, with failing-first tests | P1 |
-| 4 | Q1 answered as an ADR | P3 |
-| 5 | axe clean, both themes, every route + one real screen-reader pass | P2/P5 |
-| 6 | §11.9 budgets recorded — bad numbers beat none | P5 |
-| 7 | Fonts landed, subset, metrics measured, design re-judged | P4 |
-| 8 | Safari, Firefox, one real phone | P5 |
-| 9 | FR-8.1 built | P6 |
-| 10 | Every marketing claim checked against §P6-6 | P6 |
+**Status as of 22 August 2026.** ✅ done · ⚠️ partly done, gap named · ❌ open.
+
+| # | Gate | Phase | Status |
+|---|---|---|---|
+| 1 | Everything committed; clean clone builds | P0 | ✅ 59 files tracked, `ci.sh` green |
+| 2 | Frontend test suite exists and runs in `ci.sh` | P2 | ✅ 435 tests, 9 CI steps |
+| 3 | G-1 rotation and OCR-decline fixed, with failing-first tests | P1 | ✅ both, observed failing first |
+| 4 | Q1 answered as an ADR | P3 | ✅ ADR-005 |
+| 5 | axe clean both themes every route **+ one real screen-reader pass** | P2/P5 | ⚠️ axe clean; **no screen reader has ever been used** |
+| 6 | §11.9 budgets recorded — bad numbers beat none | P5 | ⚠️ 7 recorded; **shader compile still unmeasured**, CLS not quotable |
+| 7 | Fonts landed, metrics measured, **design re-judged** | P4 | ⚠️ 10/11 faces, metrics measured & gated; **nobody has judged the degradation axis** |
+| 8 | Safari, Firefox, **one real phone** | P5 | ⚠️ all 4 projects green in CI; **no physical device** |
+| 9 | FR-8.1 (Groundable Fraction Report) built | P6 | ❌ not built |
+| 10 | Every marketing claim checked against §P6-6 | P6 | ✅ `/benchmark` states the dead heat and the table-blind provenance |
+
+**Three gates are ⚠️ for the same reason: a human has not looked.** A screen
+reader, a phone, and a design judgement on type that can now be seen for the
+first time. None of them is blocked on engineering, and none of them can be
+closed by more automation — which is why they are listed as open rather than
+quietly counted as done.
 
 ---
 
