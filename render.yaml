@@ -30,9 +30,6 @@ services:
     region: oregon
     branch: main
 
-    # 3.11 is what pyproject targets. Render's default is older than some of the syntax here.
-    pythonVersion: "3.11"
-
     buildCommand: |
       python -m pip install --upgrade pip setuptools wheel
       python -m pip install -r requirements-lock.txt
@@ -53,6 +50,10 @@ services:
     healthCheckPath: /
 
     envVars:
+      # 3.11 is what pyproject targets. Render sets the interpreter from this variable -- there
+      # is no top-level `pythonVersion` key, and a blueprint carrying one is rejected.
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       # The reference documents are fetched at build time into var/, which is gitignored. Nothing
       # here reaches the network at request time (FR-4.1).
       - key: PYTHONUNBUFFERED
