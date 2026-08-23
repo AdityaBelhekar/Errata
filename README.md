@@ -1,3 +1,15 @@
+---
+title: Errata Reviewer Console
+emoji: 📐
+colorFrom: gray
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+license: apache-2.0
+short_description: Catalog verification grounded to the datasheet page it came from
+---
+
 # Errata
 
 **Your product catalog is already wrong, and we can prove it — record by record, with the datasheet page open beside it.**
