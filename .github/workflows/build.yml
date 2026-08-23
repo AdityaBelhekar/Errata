@@ -60,7 +60,7 @@ jobs:
           python -m pip install --quiet -r requirements-lock.txt
           python -m pip install --quiet --no-deps \
             -e ./valuesem -e ./spec -e ./comparator -e ./bench \
-            -e ./audit -e ./scale -e ./ecosystem
+            -e ./audit -e ./scale -e ./ecosystem -e ./bundle
 
       - name: R2 demonstration corpus
         run: .venv/bin/python scale/tools/build_scale_catalog.py
@@ -94,7 +94,7 @@ jobs:
           python -m pip install --quiet -r requirements-lock.txt
           python -m pip install --quiet --no-deps \
             -e ./valuesem -e ./spec -e ./comparator -e ./bench \
-            -e ./audit -e ./scale -e ./ecosystem
+            -e ./audit -e ./scale -e ./ecosystem -e ./bundle
           .venv/bin/python scale/tools/build_scale_catalog.py
 
       - name: reconstruct the reference corpus from its publishers
@@ -141,7 +141,7 @@ jobs:
           python -m pip install --quiet -r requirements-lock.txt
           python -m pip install --quiet --no-deps \
             -e ./valuesem -e ./spec -e ./comparator -e ./bench \
-            -e ./audit -e ./scale -e ./ecosystem
+            -e ./audit -e ./scale -e ./ecosystem -e ./bundle
 
       # FR-9.8 and ADR-003. A clean working tree says nothing about what a package-data glob swept
       # into a wheel, and "no licensed dictionary content committed" is a claim about what we ship.
@@ -149,7 +149,7 @@ jobs:
         run: |
           . .venv/bin/activate
           mkdir -p var/ci/dist
-          for d in valuesem spec comparator bench audit scale ecosystem; do
+          for d in valuesem spec comparator bench audit scale ecosystem bundle; do
             python -m build --outdir var/ci/dist "$d"
           done
           python - <<'PY'

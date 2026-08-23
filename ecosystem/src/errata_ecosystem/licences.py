@@ -55,9 +55,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #: What every distribution in this repository must declare.
 REQUIRED_LICENCE = "Apache-2.0"
 
-#: The seven distributions. Listed rather than globbed: a new one that forgets a licence field
+#: The eight distributions. Listed rather than globbed: a new one that forgets a licence field
 #: should fail this check, and a glob would simply not see it.
-DISTRIBUTIONS = ("valuesem", "spec", "comparator", "bench", "audit", "scale", "ecosystem")
+#:
+#: `bundle` was the case that comment predicted. It shipped declaring Apache-2.0, and because it
+#: was never added here NFR-7 reported "ok" on seven of eight for a full release -- the gate was
+#: green about a set that no longer matched what the repository builds.
+DISTRIBUTIONS = ("valuesem", "spec", "comparator", "bench", "audit", "scale", "ecosystem", "bundle")
 
 #: Licence families a repository distributed under Apache-2.0 may depend on without further
 #: thought. Matched as a substring of the declared licence string, lowercased, because the

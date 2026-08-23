@@ -24,7 +24,7 @@ import pytest
 
 PACKAGE = Path(__file__).resolve().parents[1] / "src" / "errata_audit"
 REPO = Path(__file__).resolve().parents[2]
-DISTRIBUTIONS = ("spec", "valuesem", "comparator", "bench", "audit", "scale", "ecosystem")
+DISTRIBUTIONS = ("spec", "valuesem", "comparator", "bench", "audit", "scale", "ecosystem", "bundle")
 
 
 def _imports(path: Path) -> set[str]:

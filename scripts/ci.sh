@@ -84,7 +84,7 @@ step "FR-9.8 / ADR-003 -- no ECLASS content in the tree" "$BIN/errata-r3" eclass
 step "FR-9.8 -- no ECLASS content in the BUILT distributions" bash -c '
     set -e
     rm -rf var/ci/dist && mkdir -p var/ci/dist
-    for d in valuesem spec comparator bench audit scale ecosystem; do
+    for d in valuesem spec comparator bench audit scale ecosystem bundle; do
         '"$PY"' -m build --outdir var/ci/dist "$d" >/dev/null
     done
     '"$PY"' - <<PYEOF
@@ -178,7 +178,11 @@ if command -v npm >/dev/null 2>&1; then
     # mobile profile, and a guard that checks one of them lets the other three fail as "missing
     # executable" -- 176 such failures in the first run of this section, which is noise that hides
     # whatever real failure sits underneath it.
-    if bash -c 'cd web/app && npx playwright install --dry-run chromium firefox webkit' >/dev/null 2>&1; then
+    # The check used to be `npx playwright install --dry-run ...`, which is NOT a presence
+    # check -- it prints what it WOULD download and exits 0 with nothing on disk. The guard
+    # therefore always said "present", the step always ran, and a machine without browsers got
+    # 429 launch failures: the exact noise the paragraph above exists to prevent.
+    if bash scripts/have-playwright-browsers.sh >/dev/null 2>&1; then
         step "frontend -- e2e, axe and visual diff" bash -c 'cd web/app && npm run test:e2e'
     else
         echo
