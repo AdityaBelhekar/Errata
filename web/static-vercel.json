@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/web/console", "destination": "https://token-wasters-errata.onrender.com/" },
+    { "source": "/web/console/:path*", "destination": "https://token-wasters-errata.onrender.com/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/web/:tree(landing|site|datum)/assets/:path*",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/:path*",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    }
+  ]
+}

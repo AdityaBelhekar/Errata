@@ -68,6 +68,12 @@ def main() -> int:
 
     (OUT / "index.html").write_text(REDIRECT, encoding="utf-8")
 
+    # The routing config travels WITH the output, because public/ is gitignored and this
+    # is a prebuilt deploy:  reads vercel.json from the directory it is
+    # given. Without this copy the console rewrite and the cache headers are lost on the
+    # first rebuild, silently -- the site still serves, and /web/console/ 404s.
+    shutil.copy2(REPO_ROOT / "web" / "static-vercel.json", OUT / "vercel.json")
+
     total = sum(1 for p in OUT.rglob("*") if p.is_file())
     print(f"\npublic/ ready -- {total} files")
     return 0
