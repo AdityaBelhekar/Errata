@@ -1,0 +1,46 @@
+# What must not reach the build context.
+#
+# `gcloud run deploy --source .` uploads this directory to Cloud Build, so anything listed here is
+# something the build would otherwise pay for in upload time -- or, worse, would bake into the
+# image and ship.
+
+# Local interpreters and installs. .venv alone is several hundred MB and is Windows-specific --
+# it would not run in the container even if it arrived.
+.venv/
+**/__pycache__/
+*.pyc
+
+# Fetched reference data. The image rebuilds it with scripts/fetch_deploy_data.py so that what
+# ships is hash-verified at build time rather than whatever happened to be on the developer's
+# disk. Copying it in would defeat that check silently.
+var/
+
+# Frontend build inputs and outputs. The console serves none of this -- the static site is on
+# Vercel, and node_modules is ~200MB of dependency tree the container never opens.
+node_modules/
+web/app/node_modules/
+web/app/test-results/
+web/app/playwright-report/
+public/
+
+# Version control and CI. The image does not need history, and .git on this repository carries
+# the full frontend asset history.
+.git/
+.github/
+.gitignore
+
+# Test and tooling artefacts
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+test-results/
+playwright-report/
+.playwright/
+
+# Editor and platform noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.vercel/
+.env.local
