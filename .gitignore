@@ -34,3 +34,6 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+
+# Vercel build output, assembled by scripts/build_static.py from web/ -- generated, never source.
+public/

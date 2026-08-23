@@ -1,0 +1,59 @@
+# Errata -- the reviewer console, as a Render web service.
+#
+# The frontend is static and lives on Vercel; this is the half that has to run Python, because
+# `errata-audit serve` reads real PDFs with PyMuPDF and renders evidence boxes over them.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository. Render reads this file.
+# The service MUST be named `token-wasters-errata`, because vercel.json rewrites
+# /web/console/* to https://token-wasters-errata.onrender.com and that hostname is derived
+# from the name below.
+#
+# TWO THINGS TO KNOW BEFORE THIS IS PUBLIC
+#
+# 1. The console has NO AUTHENTICATION. `--allow-remote` exists precisely so that binding a
+#    non-loopback interface is a decision somebody typed rather than a default. The CLI says it
+#    plainly: "put something in front of it that does authenticate." For a hackathon demo on a
+#    constructed demo catalog that is a fine trade; it is not a fine trade for a real customer
+#    catalog. The data served here is `audit/src/errata_audit/demo/catalog.csv` plus two public
+#    ABB datasheets, all of it published or synthetic.
+#
+# 2. PyMuPDF is AGPL-3.0-or-later. Section 13's network clause reaches exactly this deployment --
+#    a web application users interact with remotely. `errata-r3 licences` records the risk in
+#    full, with three costed options, as ACKNOWLEDGED / owner UNASSIGNED. Publishing this service
+#    is the event that makes the obligation live rather than theoretical.
+
+services:
+  - type: web
+    name: token-wasters-errata
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+
+    # 3.11 is what pyproject targets. Render's default is older than some of the syntax here.
+    pythonVersion: "3.11"
+
+    buildCommand: |
+      python -m pip install --upgrade pip setuptools wheel
+      python -m pip install -r requirements-lock.txt
+      python -m pip install --no-deps \
+        -e ./valuesem -e ./spec -e ./comparator -e ./bench \
+        -e ./audit -e ./scale -e ./ecosystem -e ./bundle
+      python scripts/fetch_deploy_data.py
+
+    # $PORT is Render's, and it is not optional -- a service that binds anything else is marked
+    # unhealthy and killed. --allow-remote is required because the CLI refuses a non-loopback
+    # bind without it; see the note above about what that flag is admitting.
+    startCommand: >
+      errata-audit serve
+      --host 0.0.0.0
+      --port $PORT
+      --allow-remote
+
+    healthCheckPath: /
+
+    envVars:
+      # The reference documents are fetched at build time into var/, which is gitignored. Nothing
+      # here reaches the network at request time (FR-4.1).
+      - key: PYTHONUNBUFFERED
+        value: "1"
