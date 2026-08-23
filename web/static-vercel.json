@@ -2,22 +2,44 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/web/console", "destination": "https://token-wasters-errata-production.up.railway.app/" },
-    { "source": "/web/console/:path*", "destination": "https://token-wasters-errata-production.up.railway.app/:path*" }
-  ],
   "headers": [
     {
       "source": "/web/:tree(landing|site|datum)/assets/:path*",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/:path*",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/web/console",
+      "destination": "https://token-wasters-errata-production.up.railway.app/",
+      "permanent": false
+    },
+    {
+      "source": "/web/console/:path*",
+      "destination": "https://token-wasters-errata-production.up.railway.app/:path*",
+      "permanent": false
     }
   ]
 }
