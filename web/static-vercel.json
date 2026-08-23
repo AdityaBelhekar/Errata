@@ -3,8 +3,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/web/console", "destination": "https://token-wasters-errata.onrender.com/" },
-    { "source": "/web/console/:path*", "destination": "https://token-wasters-errata.onrender.com/:path*" }
+    { "source": "/web/console", "destination": "https://token-wasters-errata-production.up.railway.app/" },
+    { "source": "/web/console/:path*", "destination": "https://token-wasters-errata-production.up.railway.app/:path*" }
   ],
   "headers": [
     {

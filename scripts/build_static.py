@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -53,9 +54,22 @@ REDIRECT = """<!doctype html>
 
 
 def main() -> int:
+    # .vercel/ holds the project link (projectId, orgId). Wiping it silently unlinks the
+    # directory, and the next `vercel deploy` cheerfully creates a NEW project named after the
+    # folder -- "public" -- instead of updating the real one. Preserved across the rebuild.
+    link = OUT / ".vercel"
+    saved = None
+    if link.is_dir():
+        saved = Path(tempfile.mkdtemp(prefix="vercel-link-")) / ".vercel"
+        shutil.copytree(link, saved)
+
     if OUT.exists():
         shutil.rmtree(OUT)
     (OUT / "web").mkdir(parents=True)
+
+    if saved is not None:
+        shutil.copytree(saved, OUT / ".vercel")
+        shutil.rmtree(saved.parent, ignore_errors=True)
 
     for name in TREES:
         source = REPO_ROOT / "web" / name
