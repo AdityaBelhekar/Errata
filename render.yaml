@@ -50,10 +50,10 @@ services:
     healthCheckPath: /
 
     envVars:
-      # 3.11 is what pyproject targets. Render sets the interpreter from this variable -- there
-      # is no top-level `pythonVersion` key, and a blueprint carrying one is rejected.
-      - key: PYTHON_VERSION
-        value: "3.11.9"
+      # NOT pinned, deliberately. Render's default is 3.14.3, which is the interpreter
+      # requirements-lock.txt was frozen on ("pip freeze from a clean venv, Python 3.14.3") --
+      # so the default is the closest match to the pins, not a version to correct away from.
+      # pyproject targets py311 for ruff and mypy; that is a linting target, not a runtime floor.
       # The reference documents are fetched at build time into var/, which is gitignored. Nothing
       # here reaches the network at request time (FR-4.1).
       - key: PYTHONUNBUFFERED
