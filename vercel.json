@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd web/app && npm ci --no-audit --no-fund && npm run build && cd ../.. && python3 scripts/build_static.py",
+  "buildCommand": "cd web/app && npm ci --no-audit --no-fund && npm run build && cd ../.. && rm -rf public && mkdir -p public/web && cp -R web/landing web/site web/datum public/web/ && cp web/root-index.html public/index.html",
   "outputDirectory": "public",
   "installCommand": "echo 'install runs inside buildCommand (web/app is not the repo root)'",
   "framework": null,
